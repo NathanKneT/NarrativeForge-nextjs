@@ -8,7 +8,6 @@ interface GameStore {
   isLoading: boolean;
   error: string | null;
   
-  // Actions
   initializeGame: (startNodeId: string) => void;
   makeChoice: (choiceId: string, nextNodeId: string) => void;
   saveGame: (saveName: string) => void;
@@ -34,8 +33,10 @@ export const useGameStore = create<GameStore>()(
           startTime: new Date(),
           playTime: 0,
           variables: {},
+          inventory: [],
         };
         
+        console.log('🚀 Jeu initialisé:', { startNodeId, gameState: newGameState });
         set({ 
           gameState: newGameState, 
           error: null,
@@ -57,6 +58,7 @@ export const useGameStore = create<GameStore>()(
           },
         };
 
+        console.log('🎮 Choix effectué:', { choiceId, nextNodeId, visitedCount: updatedGameState.visitedNodes.size });
         set({ gameState: updatedGameState });
       },
 
@@ -64,16 +66,25 @@ export const useGameStore = create<GameStore>()(
         const { gameState } = get();
         if (!gameState) return;
 
+        // Convertir Set en Array pour la sérialisation
         const saveData: SaveData = {
           id: Date.now().toString(),
           name: saveName,
-          gameState,
+          gameState: {
+            ...gameState,
+            visitedNodes: new Set(gameState.visitedNodes), // S'assurer que c'est bien un Set
+          },
           timestamp: new Date(),
           storyProgress: gameState.visitedNodes.size,
         };
 
-        // Ici, vous pouvez implémenter la logique de sauvegarde
-        localStorage.setItem(`asylum-save-${saveData.id}`, JSON.stringify(saveData));
+        localStorage.setItem(`asylum-save-${saveData.id}`, JSON.stringify({
+          ...saveData,
+          gameState: {
+            ...saveData.gameState,
+            visitedNodes: Array.from(saveData.gameState.visitedNodes), // Convertir en Array
+          }
+        }));
       },
 
       loadGame: (saveData: SaveData) => {
@@ -92,6 +103,7 @@ export const useGameStore = create<GameStore>()(
       },
 
       setCurrentNode: (node: StoryNode) => {
+        console.log('📄 Noeud actuel:', { id: node.id, title: node.title, choicesCount: node.choices.length });
         set({ currentNode: node });
       },
 
@@ -101,7 +113,18 @@ export const useGameStore = create<GameStore>()(
     }),
     {
       name: 'asylum-game-storage',
-      partialize: (state) => ({ gameState: state.gameState }),
+      partialize: (state) => ({ 
+        gameState: state.gameState ? {
+          ...state.gameState,
+          visitedNodes: Array.from(state.gameState.visitedNodes), // Sérialiser Set comme Array
+        } : null 
+      }),
+      onRehydrateStorage: () => (state) => {
+        // Reconvertir Array en Set après hydration
+        if (state?.gameState?.visitedNodes && Array.isArray(state.gameState.visitedNodes)) {
+          state.gameState.visitedNodes = new Set(state.gameState.visitedNodes as string[]);
+        }
+      },
     }
   )
 );
