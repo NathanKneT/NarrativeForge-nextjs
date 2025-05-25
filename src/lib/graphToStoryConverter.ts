@@ -49,7 +49,7 @@ export class GraphToStoryConverter {
     }
 
     // Vérification finale de l'intégrité
-    const integrityCheck = this.verifyStoryIntegrity(story, edges);
+    const integrityCheck = this.verifyStoryIntegrity(story);
     warnings.push(...integrityCheck.warnings);
     errors.push(...integrityCheck.errors);
 
@@ -151,7 +151,27 @@ export class GraphToStoryConverter {
     // Si le nœud original avait des choix mais pas de connexions,
     // préserver les choix originaux (peut arriver pendant l'édition)
     if (choices.length === 0 && storyNode.choices.length > 0) {
-      choices.push(...storyNode.choices);
+      choices.push(...storyNode.choices.map(choice => ({
+        ...choice,
+        conditions: choice.conditions ?? [],
+        consequences: choice.consequences ?? []
+      })));
+    }
+
+    // AJOUT AUTOMATIQUE DU BOUTON RECOMMENCER POUR LES NŒUDS DE FIN
+    if (node.data.nodeType === 'end') {
+    // Vérifier si le bouton recommencer n'existe pas déjà
+    const hasRestartChoice = choices.some(choice => choice.nextNodeId === '-1');
+    
+    if (!hasRestartChoice) {
+        choices.push({
+        id: `restart_${node.id}`,
+        text: 'Recommencer',
+        nextNodeId: '-1',
+        conditions: [],
+        consequences: []
+        });
+    }
     }
 
     return {
@@ -163,7 +183,7 @@ export class GraphToStoryConverter {
   /**
    * Vérifie l'intégrité de l'histoire convertie
    */
-  private static verifyStoryIntegrity(story: StoryNode[], edges: EditorEdge[]) {
+  private static verifyStoryIntegrity(story: StoryNode[]) {
     const errors: string[] = [];
     const warnings: string[] = [];
     const nodeIds = new Set(story.map(n => n.id));
@@ -229,7 +249,11 @@ export class GraphToStoryConverter {
       averageChoicesPerNode: story.length > 0 
         ? (story.reduce((sum, node) => sum + node.choices.length, 0) / story.length).toFixed(2)
         : '0',
-      endNodes: story.filter(node => node.choices.length === 0).length,
+      endNodes: story.filter(node => {
+        // Un nœud de fin a soit aucun choix, soit seulement un choix "Recommencer"
+        return node.choices.length === 0 || 
+               (node.choices.length === 1 && node.choices[0].nextNodeId === '-1');
+      }).length,
       maxDepth: this.calculateMaxDepth(story, result.startNodeId),
       hasErrors: result.errors.length > 0,
       hasWarnings: result.warnings.length > 0
@@ -248,12 +272,17 @@ export class GraphToStoryConverter {
       visited.add(nodeId);
       const node = story.find(n => n.id === nodeId);
       
-      if (!node || node.choices.length === 0) return depth;
+      if (!node || node.choices.length === 0 || 
+          (node.choices.length === 1 && node.choices[0].nextNodeId === '-1')) {
+        return depth;
+      }
       
       let maxChildDepth = depth;
       for (const choice of node.choices) {
-        const childDepth = traverse(choice.nextNodeId, depth + 1);
-        maxChildDepth = Math.max(maxChildDepth, childDepth);
+        if (choice.nextNodeId !== '-1') {
+          const childDepth = traverse(choice.nextNodeId, depth + 1);
+          maxChildDepth = Math.max(maxChildDepth, childDepth);
+        }
       }
       
       visited.delete(nodeId); // Permettre la réutilisation pour différents chemins

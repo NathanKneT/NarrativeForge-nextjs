@@ -29,30 +29,32 @@ export const StoryNodeComponent: React.FC<StoryNodeComponentProps> = ({
   }, [storyNode.content]);
 
   // Calcul optimisé des positions des handles
-  const handlePositions = useMemo(() => {
-    const choicesCount = storyNode.choices.length;
-    if (choicesCount === 0) return [];
+const handlePositions = useMemo(() => {
+  const choicesCount = storyNode.choices.length;
+  if (choicesCount === 0) return [];
 
-    const nodeWidth = 250; // largeur fixe du nœud
-    const handleWidth = 12; // largeur du handle (w-3 = 12px)
-    const minSpacing = 20; // espacement minimum entre handles
-    const maxSpacing = 60; // espacement maximum entre handles
-    
-    // Calculer l'espacement optimal
-    const totalAvailableWidth = nodeWidth - (2 * minSpacing); // marges de sécurité
-    const idealSpacing = Math.min(maxSpacing, totalAvailableWidth / (choicesCount + 1));
-    const actualSpacing = Math.max(minSpacing, idealSpacing);
-    
-    // Position de départ pour centrer les handles
-    const totalUsedWidth = (choicesCount - 1) * actualSpacing;
-    const startOffset = (nodeWidth - totalUsedWidth) / 2;
-    
-    return storyNode.choices.map((choice, index) => ({
-      choiceId: choice.id,
-      left: startOffset + (index * actualSpacing),
-      bottom: -6, // Position fixe en bas
-    }));
-  }, [storyNode.choices]);
+  const nodeWidth = 250;
+  const minSpacing = 30;
+  
+  // Un seul choix : centrer
+  if (choicesCount === 1) {
+    return [{
+      choiceId: storyNode.choices[0].id,
+      left: nodeWidth / 2 - 6, // Centré (6px = moitié de la largeur du handle)
+      bottom: -6,
+    }];
+  }
+  
+  // Plusieurs choix : répartir uniformément
+  const totalSpacing = nodeWidth - 60; // Marges de sécurité (30px de chaque côté)
+  const spaceBetween = totalSpacing / Math.max(1, choicesCount - 1);
+  
+  return storyNode.choices.map((choice, index) => ({
+    choiceId: choice.id,
+    left: 30 + (index * spaceBetween),
+    bottom: -6,
+  }));
+}, [storyNode.choices]);
 
   return (
     <div className={`bg-gray-800 border-2 rounded-lg p-4 min-w-[250px] max-w-[300px] shadow-lg transition-all group relative ${

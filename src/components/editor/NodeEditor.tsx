@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Save, Trash2, Copy, Plus, Minus, Eye, Code } from 'lucide-react';
+import { X, Save, Trash2, Copy, Plus, Minus, Eye, Code, LucideIcon } from 'lucide-react';
 import { EditorNode } from '@/types/editor';
 import { StoryNode, Choice } from '@/types/story';
 
@@ -83,7 +83,7 @@ export const NodeEditor: React.FC<NodeEditorProps> = ({
     });
   };
 
-  const tabs: Array<{ id: 'content' | 'choices' | 'metadata', label: string, icon: React.FC<{ size: number }> }> = [
+const tabs: Array<{ id: 'content' | 'choices' | 'metadata', label: string, icon: LucideIcon }> = [
     { id: 'content', label: 'Contenu', icon: Code },
     { id: 'choices', label: 'Choix', icon: Plus },
     { id: 'metadata', label: 'Métadonnées', icon: Eye },

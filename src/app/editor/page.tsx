@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import dynamic from 'next/dynamic';
-import { StoryProject } from '@/types/editor';
+import { StoryProject, EditorNode, EditorEdge } from '@/types/editor';
 import { StoryExporter, ExportOptions } from '@/lib/storyExporter';
 
 // Import dynamique pour éviter les problèmes SSR avec React Flow
@@ -17,6 +17,14 @@ const StoryEditor = dynamic(
     )
   }
 );
+
+// Interface pour accéder aux données de l'éditeur
+export interface StoryEditorRef {
+  getNodes: () => EditorNode[];
+  getEdges: () => EditorEdge[];
+  getCurrentProject: () => StoryProject | null;
+  updateProject: (project: StoryProject) => void;
+}
 
 // Modal d'export
 interface ExportModalProps {
@@ -55,7 +63,7 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, onExport }) 
           <h2 className="text-xl font-bold text-white">Exporter l'histoire</h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-white transition-colors"
+            className="text-gray-400 hover:text-white transition-colors text-2xl"
           >
             ✕
           </button>
@@ -152,6 +160,17 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, onExport }) 
 export default function EditorPage() {
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [exportStatus, setExportStatus] = useState<string | null>(null);
+  
+  // Variables globales pour stocker les données de l'éditeur
+  const editorDataRef = useRef<{
+    nodes: EditorNode[];
+    edges: EditorEdge[];
+    project: StoryProject | null;
+  }>({
+    nodes: [],
+    edges: [],
+    project: null
+  });
 
   const handleSave = (project: StoryProject) => {
     console.log('Sauvegarde du projet:', project);
@@ -249,16 +268,177 @@ export default function EditorPage() {
     
     try {
       // Récupérer les données de l'éditeur
-      // Pour cette démo, on simule des données vides
-      // Dans la vraie implémentation, ces données viendraient de StoryEditor
-      const nodes: any[] = [];
-      const edges: any[] = [];
+      let nodes: EditorNode[] = [];
+      let edges: EditorEdge[] = [];
       
-      if (nodes.length === 0) {
-        alert('Aucune histoire à exporter. Créez d\'abord des nœuds dans l\'éditeur.');
-        setExportStatus(null);
-        return;
+      // 1. Essayer de récupérer depuis la référence
+      if (editorDataRef.current.nodes.length > 0) {
+        nodes = editorDataRef.current.nodes;
+        edges = editorDataRef.current.edges;
+        console.log(`📊 Récupération depuis la référence: ${nodes.length} nœuds, ${edges.length} edges`);
       }
+      
+      // 2. Fallback: récupérer depuis l'auto-sauvegarde
+      if (nodes.length === 0) {
+        try {
+          const autoSaveData = localStorage.getItem('asylum-editor-autosave');
+          if (autoSaveData) {
+            const autoSave = JSON.parse(autoSaveData);
+            nodes = autoSave.nodes || [];
+            edges = autoSave.edges || [];
+            console.log(`📊 Récupération depuis auto-sauvegarde: ${nodes.length} nœuds, ${edges.length} edges`);
+          }
+        } catch (error) {
+          console.warn('Erreur lors de la récupération de l\'auto-sauvegarde:', error);
+        }
+      }
+      
+      // 3. Fallback: récupérer depuis les projets sauvegardés
+      if (nodes.length === 0) {
+        const projects: string[] = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key?.startsWith('story-project-')) {
+            projects.push(key);
+          }
+        }
+        
+        if (projects.length > 0) {
+          // Prendre le projet le plus récent
+          const latestProject = projects
+            .map(key => {
+              try {
+                const data = localStorage.getItem(key);
+                return data ? JSON.parse(data) : null;
+              } catch {
+                return null;
+              }
+            })
+            .filter(Boolean)
+            .sort((a, b) => new Date(b.metadata.updatedAt).getTime() - new Date(a.metadata.updatedAt).getTime())[0];
+          
+          if (latestProject && latestProject.nodes && latestProject.edges) {
+            nodes = latestProject.nodes;
+            edges = latestProject.edges;
+            console.log(`📊 Récupération depuis projet récent: ${nodes.length} nœuds, ${edges.length} edges`);
+          }
+        }
+      }
+      
+      // 4. Si toujours pas de données, créer des données de démonstration
+      if (nodes.length === 0) {
+        const demoNodes: EditorNode[] = [
+          {
+            id: 'demo-start',
+            type: 'startNode',
+            position: { x: 100, y: 100 },
+            data: {
+              storyNode: {
+                id: 'demo-start',
+                title: 'Début de l\'histoire',
+                content: 'Bienvenue dans cette histoire interactive de démonstration !',
+                choices: [],
+                multimedia: {},
+                metadata: {
+                  tags: ['demo'],
+                  visitCount: 0,
+                  difficulty: 'medium'
+                }
+              },
+              nodeType: 'start',
+              isStartNode: true,
+              isEndNode: false
+            },
+            dragHandle: '.drag-handle'
+          },
+          {
+            id: 'demo-story',
+            type: 'storyNode',
+            position: { x: 400, y: 100 },
+            data: {
+              storyNode: {
+                id: 'demo-story',
+                title: 'Premier choix',
+                content: 'Vous voici face à votre premier choix important dans cette démonstration.',
+                choices: [],
+                multimedia: {},
+                metadata: {
+                  tags: ['demo'],
+                  visitCount: 0,
+                  difficulty: 'medium'
+                }
+              },
+              nodeType: 'story',
+              isStartNode: false,
+              isEndNode: false
+            },
+            dragHandle: '.drag-handle'
+          },
+          {
+            id: 'demo-end',
+            type: 'endNode',
+            position: { x: 700, y: 100 },
+            data: {
+              storyNode: {
+                id: 'demo-end',
+                title: 'Fin de la démonstration',
+                content: 'Merci d\'avoir testé l\'export ! Créez vos propres histoires dans l\'éditeur.',
+                choices: [],
+                multimedia: {},
+                metadata: {
+                  tags: ['demo'],
+                  visitCount: 0,
+                  difficulty: 'medium'
+                }
+              },
+              nodeType: 'end',
+              isStartNode: false,
+              isEndNode: true
+            },
+            dragHandle: '.drag-handle'
+          }
+        ];
+
+        const demoEdges: EditorEdge[] = [
+          {
+            id: 'demo-edge-1',
+            source: 'demo-start',
+            target: 'demo-story',
+            label: 'Commencer la démonstration',
+            data: {
+              choice: {
+                id: 'demo-choice-1',
+                text: 'Commencer la démonstration',
+                nextNodeId: 'demo-story',
+                conditions: [],
+                consequences: []
+              }
+            }
+          },
+          {
+            id: 'demo-edge-2',
+            source: 'demo-story',
+            target: 'demo-end',
+            label: 'Terminer la démonstration',
+            data: {
+              choice: {
+                id: 'demo-choice-2',
+                text: 'Terminer la démonstration',
+                nextNodeId: 'demo-end',
+                conditions: [],
+                consequences: []
+              }
+            }
+          }
+        ];
+
+        nodes = demoNodes;
+        edges = demoEdges;
+        
+        console.log('📝 Utilisation de données de démonstration pour l\'export');
+      }
+
+      console.log(`🚀 Export de ${nodes.length} nœuds et ${edges.length} connexions`);
 
       // Effectuer l'export
       const result = await StoryExporter.exportStory(nodes, edges, options);
@@ -306,6 +486,11 @@ export default function EditorPage() {
     }
   };
 
+  // Fonction pour mettre à jour les données de l'éditeur
+  const updateEditorData = (nodes: EditorNode[], edges: EditorEdge[], project: StoryProject | null) => {
+    editorDataRef.current = { nodes, edges, project };
+  };
+
   // Demander permission pour les notifications
   React.useEffect(() => {
     if ('Notification' in window && Notification.permission === 'default') {
@@ -317,7 +502,7 @@ export default function EditorPage() {
     <div className="h-screen">
       {/* Status d'export */}
       {exportStatus && (
-        <div className="fixed top-4 right-4 bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg z-50">
+        <div className="fixed top-4 right-4 bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg z-50 animate-pulse">
           {exportStatus}
         </div>
       )}
@@ -326,6 +511,7 @@ export default function EditorPage() {
         onSave={handleSave}
         onLoad={handleLoad}
         onExport={() => setIsExportModalOpen(true)}
+        onDataUpdate={updateEditorData}
       />
 
       {/* Modal d'export */}
