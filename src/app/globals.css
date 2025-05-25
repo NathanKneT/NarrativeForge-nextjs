@@ -5,6 +5,12 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  
+  /* Couleurs asylum */
+  --asylum-dark: #1a1a1a;
+  --asylum-medium: #2d3748;
+  --asylum-light: #4a5568;
+  --asylum-accent: #e94560;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -18,4 +24,49 @@ body {
   color: var(--foreground);
   background: var(--background);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Classes CSS personnalisées pour asylum */
+.bg-asylum-dark {
+  background-color: var(--asylum-dark);
+}
+
+.bg-asylum-medium {
+  background-color: var(--asylum-medium);
+}
+
+.bg-asylum-light {
+  background-color: var(--asylum-light);
+}
+
+.bg-asylum-accent {
+  background-color: var(--asylum-accent);
+}
+
+.border-asylum-light {
+  border-color: var(--asylum-light);
+}
+
+.border-asylum-accent {
+  border-color: var(--asylum-accent);
+}
+
+.text-asylum-accent {
+  color: var(--asylum-accent);
+}
+
+.ring-asylum-accent {
+  --tw-ring-color: var(--asylum-accent);
+}
+
+.hover\:bg-asylum-accent:hover {
+  background-color: var(--asylum-accent);
+}
+
+.hover\:border-asylum-accent:hover {
+  border-color: var(--asylum-accent);
+}
+
+.focus\:ring-asylum-accent:focus {
+  --tw-ring-color: var(--asylum-accent);
 }

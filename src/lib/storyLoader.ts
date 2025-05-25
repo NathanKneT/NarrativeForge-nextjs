@@ -14,8 +14,8 @@ export class StoryLoader {
       this.nodes.set(node.id, node);
     });
 
-    // Définir le noeud de départ (ID 203 d'après ton exemple)
-    const startNode = storyData.find(node => node.id === '203');
+    // Définir le noeud de départ - le vrai début de l'histoire est le nœud 1
+    const startNode = storyData.find(node => node.id === '1');
     if (startNode) {
       this.startNodeId = startNode.id;
     } else if (storyData.length > 0) {
@@ -58,6 +58,12 @@ export class StoryLoader {
       return null;
     }
 
+    // Gestion spéciale pour "Recommencer" (nextNodeId === "-1")
+    if (choice.nextNodeId === '-1') {
+      console.log('🔄 Redémarrage demandé');
+      return null; // Retourner null pour signaler un redémarrage
+    }
+
     console.log(`🎯 Navigation: ${currentNodeId} -> ${choice.nextNodeId} (choix: ${choice.text})`);
     return this.getNode(choice.nextNodeId);
   }
@@ -67,9 +73,9 @@ export class StoryLoader {
     const errors: string[] = [];
 
     this.nodes.forEach((node, nodeId) => {
-      // Vérifier que tous les choix pointent vers des noeuds existants
+      // Vérifier que tous les choix pointent vers des noeuds existants ou vers -1 (recommencer)
       node.choices.forEach(choice => {
-        if (!this.nodes.has(choice.nextNodeId)) {
+        if (choice.nextNodeId !== '-1' && !this.nodes.has(choice.nextNodeId)) {
           errors.push(`Node "${nodeId}" has choice "${choice.id}" pointing to non-existent node "${choice.nextNodeId}"`);
         }
       });
