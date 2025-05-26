@@ -2,7 +2,7 @@
 'use client';
 
 import React from 'react';
-import { Handle, Position, type NodeProps } from '@xyflow/react';
+import { Handle, PositionEnum as Position, type NodeProps } from '@/components/LazyReactFlow';
 import { Flag, Trophy, Skull, Heart } from 'lucide-react';
 import { type EditorNode } from '@/types/editor';
 

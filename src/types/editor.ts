@@ -1,4 +1,4 @@
-import { Node, Edge } from '@xyflow/react';
+import type { Node, Edge } from '@xyflow/react';
 import { StoryNode, Choice } from './story';
 
 export interface EditorNodeData extends Record<string, unknown> {

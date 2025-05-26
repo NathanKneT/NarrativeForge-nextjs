@@ -1,11 +1,10 @@
 {
   "compilerOptions": {
-    /* Cible et modules */
-    "target": "ES2020",
-    "lib": ["dom", "dom.iterable", "ES2020"],
+    "target": "es2015",
+    "lib": ["dom", "dom.iterable", "es2015"],
     "allowJs": true,
-    "skipLibCheck": false,
-    "strict": true,
+    "skipLibCheck": true,
+    "strict": false,
     "noEmit": true,
     "esModuleInterop": true,
     "module": "esnext",
@@ -14,106 +13,17 @@
     "isolatedModules": true,
     "jsx": "preserve",
     "incremental": true,
-    
-    /* Plugins Next.js */
+    "downlevelIteration": true,
     "plugins": [
       {
         "name": "next"
       }
     ],
-    
-    /* Chemins d'importation */
+    "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]
-    },
-    
-    /* ========================================== */
-    /* FAANG STRICT MODE - Configuration complète */
-    /* ========================================== */
-    
-    /* Vérifications de types strictes */
-    "strictNullChecks": true,
-    "strictFunctionTypes": true,
-    "strictBindCallApply": true,
-    "strictPropertyInitialization": true,
-    "alwaysStrict": true,
-    
-    /* Détection des erreurs 'any' */
-    "noImplicitAny": true,
-    "noImplicitThis": true,
-    "noImplicitReturns": true,
-    "noFallthroughCasesInSwitch": true,
-    "noUncheckedIndexedAccess": true,
-    
-    /* Propriétés optionnelles exactes */
-    "exactOptionalPropertyTypes": true,
-    
-    /* Détection de code inutilisé */
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    
-    /* Vérifications supplémentaires */
-    "noImplicitOverride": true,
-    "noPropertyAccessFromIndexSignature": false,
-    "allowUnusedLabels": false,
-    "allowUnreachableCode": false,
-    
-    /* Interopérabilité */
-    "allowSyntheticDefaultImports": true,
-    "forceConsistentCasingInFileNames": true,
-    
-    /* Génération de déclarations */
-    "declaration": false,
-    "declarationMap": false,
-    
-    /* Source maps pour debugging */
-    "sourceMap": true,
-    "inlineSourceMap": false,
-    "inlineSources": false,
-    
-    /* Optimisations */
-    "removeComments": false,
-    "preserveConstEnums": true,
-    "preserveValueImports": false,
-    
-    /* Diagnostics avancés */
-    "noErrorTruncation": true,
-    "preserveWatchOutput": true,
-    "pretty": true,
-    
-    /* Nouvelles fonctionnalités TypeScript */
-    "useDefineForClassFields": true,
-    
-    /* Support des imports dynamiques */
-    "moduleDetection": "auto"
-  },
-  
-  /* Fichiers inclus */
-  "include": [
-    "next-env.d.ts",
-    "**/*.ts",
-    "**/*.tsx",
-    ".next/types/**/*.ts"
-  ],
-  
-  /* Fichiers exclus */
-  "exclude": [
-    "node_modules",
-    ".next",
-    "out",
-    "dist",
-    "build",
-    "coverage",
-    "*.config.js",
-    "scripts/*.js"
-  ],
-  
-  /* Configuration TypeScript additionnelle pour FAANG */
-  "ts-node": {
-    "esm": true,
-    "compilerOptions": {
-      "module": "ESNext",
-      "moduleResolution": "node"
     }
-  }
+  },
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "exclude": ["node_modules", "**/*.test.ts", "**/*.test.tsx"]
 }

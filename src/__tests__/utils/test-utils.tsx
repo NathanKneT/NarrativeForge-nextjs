@@ -498,6 +498,6 @@ export function expectTypeError<T>(fn: () => T): void {
 
 // Re-export tout ce dont on a besoin
 export * from '@testing-library/react';
-export * from '@testing-library/jest-dom';
+import '@testing-library/jest-dom';
 export { customRender as render };
 export { TestProviders };

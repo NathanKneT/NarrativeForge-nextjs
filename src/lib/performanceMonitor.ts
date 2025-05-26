@@ -463,7 +463,7 @@ class PerformanceMonitor {
 
     WrappedComponent.displayName = `PerformanceMonitored(${Component.displayName || Component.name})`;
     
-    return WrappedComponent as T;
+    return WrappedComponent as unknown as T;
   }
 }
 

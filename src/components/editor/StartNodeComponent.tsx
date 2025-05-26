@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import { Handle, Position, type NodeProps } from '@xyflow/react';
+import { Handle, PositionEnum as Position, type NodeProps } from '@/components/LazyReactFlow';
 import { Play, Star } from 'lucide-react';
 import { type EditorNode } from '@/types/editor';
 

@@ -2,26 +2,28 @@
 
 import React, { useState, useCallback, useMemo, useImperativeHandle, forwardRef } from 'react';
 import {
-  ReactFlow,
   Node,
-  addEdge,
-  useNodesState,
-  useEdgesState,
-  Controls,
-  MiniMap,
-  Background,
   Connection,
-  Panel,
-  ReactFlowProvider,
   ConnectionLineType,
   type NodeChange,
   type EdgeChange,
   type OnConnect,
   type OnNodesChange,
   type OnEdgesChange,
+  addEdge,
+  useNodesState,
+  useEdgesState,
   applyNodeChanges,
   applyEdgeChanges,
 } from '@xyflow/react';
+import {
+  LazyReactFlowEditor as ReactFlow,
+  Controls,
+  MiniMap,
+  Background,
+  Panel,
+  ReactFlowProvider,
+} from '@/components/LazyReactFlow';
 import '@xyflow/react/dist/style.css';
 
 import { EditorNode, EditorEdge, StoryProject } from '@/types/editor';

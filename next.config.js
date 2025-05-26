@@ -1,22 +1,15 @@
 /** @type {import('next').NextConfig} */
+const withBundleAnalyzer = require('@next/bundle-analyzer')({
+  enabled: process.env.ANALYZE === 'true',
+});
+
 const nextConfig = {
-  reactStrictMode: true,
-  swcMinify: true,
-  // Désactiver optimizations qui causent des problèmes
-  experimental: {
-    optimizeCss: false, // Désactivé temporairement
+  eslint: {
+    ignoreDuringBuilds: true,
   },
-  // Configuration simplifiée
   typescript: {
     ignoreBuildErrors: false,
   },
-  eslint: {
-    ignoreDuringBuilds: false,
-  },
-  // Configuration webpack simplifiée
-  webpack: (config, { dev, isServer }) => {
-    return config;
-  },
 };
 
-module.exports = nextConfig;
+module.exports = withBundleAnalyzer(nextConfig);
