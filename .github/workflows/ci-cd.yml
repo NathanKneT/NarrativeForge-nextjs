@@ -1,0 +1,337 @@
+name: 🚀 CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  NODE_VERSION: '18'
+  CACHE_KEY: 'npm-cache'
+
+jobs:
+  # Job 1: Validation et Tests
+  validate:
+    name: 🔍 Validate & Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    strategy:
+      matrix:
+        node-version: [18, 20]
+
+    steps:
+      - name: 📚 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: 📥 Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: 🔍 Lint code
+        run: npm run lint
+
+      - name: 📝 Type check
+        run: npm run type-check
+
+      - name: 🧪 Run tests
+        run: npm run test:ci
+
+      - name: 📊 Upload coverage
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage/lcov.info
+          flags: unittests
+          name: codecov-umbrella
+
+  # Job 2: Build et Validation de Production
+  build:
+    name: 🏗️ Build & Validate
+    runs-on: ubuntu-latest
+    needs: validate
+    timeout-minutes: 20
+
+    steps:
+      - name: 📚 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 📥 Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: 🏗️ Build application
+        run: npm run build
+        env:
+          NODE_ENV: production
+
+      - name: 🔍 Run production validation
+        run: npm run validate
+
+      - name: 📊 Analyze bundle
+        run: npm run analyze
+
+      - name: 📦 Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-files
+          path: |
+            .next/
+            public/
+          retention-days: 1
+
+  # Job 3: Tests E2E
+  e2e:
+    name: 🎭 E2E Tests
+    runs-on: ubuntu-latest
+    needs: build
+    timeout-minutes: 30
+
+    steps:
+      - name: 📚 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 📥 Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: 📦 Download build artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: build-files
+
+      - name: 🎭 Install Playwright
+        run: npx playwright install --with-deps
+
+      - name: 🚀 Start application
+        run: |
+          npm start &
+          npx wait-on http://localhost:3000 --timeout 60000
+
+      - name: 🧪 Run E2E tests
+        run: npm run test:e2e
+
+      - name: 📊 Upload E2E results
+        uses: actions/upload-artifact@v3
+        if: failure()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+
+  # Job 4: Security Audit
+  security:
+    name: 🔒 Security Audit
+    runs-on: ubuntu-latest
+    needs: validate
+    timeout-minutes: 10
+
+    steps:
+      - name: 📚 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 📥 Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: 🔒 Run security audit
+        run: npm run security:audit
+
+      - name: 🛡️ Run CodeQL Analysis
+        uses: github/codeql-action/init@v2
+        with:
+          languages: javascript
+
+      - name: 🔍 Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v2
+
+  # Job 5: Lighthouse Performance
+  lighthouse:
+    name: 🔍 Lighthouse Audit
+    runs-on: ubuntu-latest
+    needs: build
+    timeout-minutes: 15
+
+    steps:
+      - name: 📚 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 📥 Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: 📦 Download build artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: build-files
+
+      - name: 🚀 Start application
+        run: |
+          npm start &
+          npx wait-on http://localhost:3000 --timeout 60000
+
+      - name: 🔍 Run Lighthouse audit
+        run: |
+          npm install -g @lhci/cli
+          lhci autorun
+        env:
+          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
+
+      - name: 📊 Upload Lighthouse results
+        uses: actions/upload-artifact@v3
+        with:
+          name: lighthouse-report
+          path: .lighthouseci/
+          retention-days: 7
+
+  # Job 6: Docker Build (sur push vers main)
+  docker:
+    name: 🐳 Docker Build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    needs: [validate, build, e2e, security]
+    timeout-minutes: 20
+
+    steps:
+      - name: 📚 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🐳 Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: 🔑 Login to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 🏷️ Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: 🏗️ Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # Job 7: Deploy (production uniquement)
+  deploy:
+    name: 🚀 Deploy
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    needs: [validate, build, e2e, security, lighthouse, docker]
+    environment: production
+    timeout-minutes: 10
+
+    steps:
+      - name: 📚 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🚀 Deploy to Vercel
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          vercel-args: '--prod'
+
+      - name: 📊 Post-deployment health check
+        run: |
+          sleep 30
+          curl -f ${{ secrets.PRODUCTION_URL }}/api/health || exit 1
+
+      - name: 📢 Notify success
+        if: success()
+        run: |
+          echo "🎉 Deployment successful!"
+          echo "🔗 Production URL: ${{ secrets.PRODUCTION_URL }}"
+
+  # Job 8: Notification finale
+  notify:
+    name: 📢 Notify
+    runs-on: ubuntu-latest
+    if: always()
+    needs: [validate, build, e2e, security, lighthouse]
+
+    steps:
+      - name: 📊 Calculate success rate
+        id: success-rate
+        run: |
+          TOTAL=5
+          SUCCESS=0
+          [[ "${{ needs.validate.result }}" == "success" ]] && ((SUCCESS++))
+          [[ "${{ needs.build.result }}" == "success" ]] && ((SUCCESS++))
+          [[ "${{ needs.e2e.result }}" == "success" ]] && ((SUCCESS++))
+          [[ "${{ needs.security.result }}" == "success" ]] && ((SUCCESS++))
+          [[ "${{ needs.lighthouse.result }}" == "success" ]] && ((SUCCESS++))
+          
+          RATE=$((SUCCESS * 100 / TOTAL))
+          echo "rate=$RATE" >> $GITHUB_OUTPUT
+          echo "success=$SUCCESS" >> $GITHUB_OUTPUT
+          echo "total=$TOTAL" >> $GITHUB_OUTPUT
+
+      - name: 🏆 FAANG Quality Check
+        run: |
+          if [[ "${{ steps.success-rate.outputs.rate }}" -ge "90" ]]; then
+            echo "🏆 FAANG QUALITY ACHIEVED! (${{ steps.success-rate.outputs.rate }}%)"
+            echo "quality=FAANG" >> $GITHUB_ENV
+          elif [[ "${{ steps.success-rate.outputs.rate }}" -ge "75" ]]; then
+            echo "🥈 Production Quality (${{ steps.success-rate.outputs.rate }}%)"
+            echo "quality=PRODUCTION" >> $GITHUB_ENV
+          else
+            echo "🚫 Quality issues detected (${{ steps.success-rate.outputs.rate }}%)"
+            echo "quality=NEEDS_WORK" >> $GITHUB_ENV
+          fi
+
+      - name: 📝 Summary
+        run: |
+          echo "## 📊 Pipeline Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Quality Level:** ${{ env.quality }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Success Rate:** ${{ steps.success-rate.outputs.success }}/${{ steps.success-rate.outputs.total }} (${{ steps.success-rate.outputs.rate }}%)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Job Results:" >> $GITHUB_STEP_SUMMARY
+          echo "- 🔍 Validation: ${{ needs.validate.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- 🏗️ Build: ${{ needs.build.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- 🎭 E2E Tests: ${{ needs.e2e.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- 🔒 Security: ${{ needs.security.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- 🔍 Lighthouse: ${{ needs.lighthouse.result }}" >> $GITHUB_STEP_SUMMARY

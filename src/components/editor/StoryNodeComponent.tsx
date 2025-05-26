@@ -1,23 +1,23 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import { Handle, Position } from 'reactflow';
+import { Handle, Position, type NodeProps } from '@xyflow/react';
 import { FileText, Eye, Edit, Copy, Trash2 } from 'lucide-react';
-import { EditorNode } from '@/types/editor';
+import { type EditorNode } from '@/types/editor';
 
-interface StoryNodeComponentProps {
-  data: EditorNode['data'];
-  selected?: boolean;
+// Types stricts pour les props du composant avec compatibilité React Flow v12
+interface StoryNodeComponentProps extends NodeProps<EditorNode> {
+  // Props additionnelles si nécessaires
 }
 
 export const StoryNodeComponent: React.FC<StoryNodeComponentProps> = ({ 
   data, 
-  selected = false 
+  selected = false,
 }) => {
   const { storyNode } = data;
   
   // Optimisation: mémoriser le contenu tronqué
-  const { truncatedContent, cleanContent } = useMemo(() => {
+  const { cleanContent } = useMemo(() => {
     const truncated = storyNode.content.length > 100 
       ? storyNode.content.substring(0, 100) + '...'
       : storyNode.content;
@@ -25,36 +25,38 @@ export const StoryNodeComponent: React.FC<StoryNodeComponentProps> = ({
     // Remove HTML tags for preview
     const clean = truncated.replace(/<[^>]*>/g, '');
     
-    return { truncatedContent: truncated, cleanContent: clean };
+    return { cleanContent: clean };
   }, [storyNode.content]);
 
   // Calcul optimisé des positions des handles
-const handlePositions = useMemo(() => {
-  const choicesCount = storyNode.choices.length;
-  if (choicesCount === 0) return [];
+  const handlePositions = useMemo(() => {
+    const choicesCount = storyNode.choices.length;
+    if (choicesCount === 0) return [];
 
-  const nodeWidth = 250;
-  const minSpacing = 30;
-  
-  // Un seul choix : centrer
-  if (choicesCount === 1) {
-    return [{
-      choiceId: storyNode.choices[0].id,
-      left: nodeWidth / 2 - 6, // Centré (6px = moitié de la largeur du handle)
+    const nodeWidth = 250;
+    
+    // Un seul choix : centrer
+    if (choicesCount === 1) {
+      const firstChoice = storyNode.choices[0];
+      if (!firstChoice) return [];
+      
+      return [{
+        choiceId: firstChoice.id,
+        left: nodeWidth / 2 - 6, // Centré (6px = moitié de la largeur du handle)
+        bottom: -6,
+      }];
+    }
+    
+    // Plusieurs choix : répartir uniformément
+    const totalSpacing = nodeWidth - 60; // Marges de sécurité (30px de chaque côté)
+    const spaceBetween = totalSpacing / Math.max(1, choicesCount - 1);
+    
+    return storyNode.choices.map((choice, index) => ({
+      choiceId: choice.id,
+      left: 30 + (index * spaceBetween),
       bottom: -6,
-    }];
-  }
-  
-  // Plusieurs choix : répartir uniformément
-  const totalSpacing = nodeWidth - 60; // Marges de sécurité (30px de chaque côté)
-  const spaceBetween = totalSpacing / Math.max(1, choicesCount - 1);
-  
-  return storyNode.choices.map((choice, index) => ({
-    choiceId: choice.id,
-    left: 30 + (index * spaceBetween),
-    bottom: -6,
-  }));
-}, [storyNode.choices]);
+    }));
+  }, [storyNode.choices]);
 
   return (
     <div className={`bg-gray-800 border-2 rounded-lg p-4 min-w-[250px] max-w-[300px] shadow-lg transition-all group relative ${
@@ -93,7 +95,7 @@ const handlePositions = useMemo(() => {
       {/* Tags */}
       {storyNode.metadata.tags.length > 0 && (
         <div className="flex flex-wrap gap-1 mb-3">
-          {storyNode.metadata.tags.slice(0, 3).map((tag, index) => (
+          {storyNode.metadata.tags.slice(0, 3).map((tag: string, index: number) => (
             <span
               key={index}
               className="px-2 py-1 bg-purple-600 text-white text-xs rounded"
@@ -132,24 +134,28 @@ const handlePositions = useMemo(() => {
         <button
           className="p-1 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors"
           title="Prévisualiser"
+          type="button"
         >
           <Eye size={12} />
         </button>
         <button
           className="p-1 bg-gray-600 hover:bg-gray-700 text-white rounded transition-colors"
           title="Éditer"
+          type="button"
         >
           <Edit size={12} />
         </button>
         <button
           className="p-1 bg-purple-600 hover:bg-purple-700 text-white rounded transition-colors"
           title="Dupliquer"
+          type="button"
         >
           <Copy size={12} />
         </button>
         <button
           className="p-1 bg-red-600 hover:bg-red-700 text-white rounded transition-colors"
           title="Supprimer"
+          type="button"
         >
           <Trash2 size={12} />
         </button>
@@ -157,7 +163,7 @@ const handlePositions = useMemo(() => {
 
       {/* Handles de sortie positionnés avec précision */}
       {handlePositions.length > 0 ? (
-        handlePositions.map(({ choiceId, left, bottom }) => (
+        handlePositions.map(({ choiceId, left, bottom }: { choiceId: string; left: number; bottom: number }) => (
           <Handle
             key={choiceId}
             type="source"

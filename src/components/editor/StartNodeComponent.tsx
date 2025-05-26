@@ -1,13 +1,13 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import { Handle, Position } from 'reactflow';
+import { Handle, Position, type NodeProps } from '@xyflow/react';
 import { Play, Star } from 'lucide-react';
-import { EditorNode } from '@/types/editor';
+import { type EditorNode } from '@/types/editor';
 
-interface StartNodeComponentProps {
-  data: EditorNode['data'];
-  selected?: boolean;
+// Types stricts pour les props du composant avec compatibilité React Flow v12
+interface StartNodeComponentProps extends NodeProps<EditorNode> {
+  // Props additionnelles si nécessaires
 }
 
 export const StartNodeComponent: React.FC<StartNodeComponentProps> = ({ 
@@ -17,14 +17,14 @@ export const StartNodeComponent: React.FC<StartNodeComponentProps> = ({
   const { storyNode } = data;
   
   // Optimisation: mémoriser le contenu tronqué
-  const { truncatedContent, cleanContent } = useMemo(() => {
+  const { cleanContent } = useMemo(() => {
     const truncated = storyNode.content.length > 80 
       ? storyNode.content.substring(0, 80) + '...'
       : storyNode.content;
     
     const clean = truncated.replace(/<[^>]*>/g, '');
     
-    return { truncatedContent: truncated, cleanContent: clean };
+    return { cleanContent: clean };
   }, [storyNode.content]);
 
   // Calcul optimisé des positions des handles pour les choix multiples
@@ -33,7 +33,6 @@ export const StartNodeComponent: React.FC<StartNodeComponentProps> = ({
     if (choicesCount <= 1) return [];
 
     const nodeWidth = 250;
-    const handleWidth = 12;
     const minSpacing = 25;
     const maxSpacing = 50;
     

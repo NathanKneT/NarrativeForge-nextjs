@@ -1,180 +1,86 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
-import dynamic from 'next/dynamic';
-import { StoryProject, EditorNode, EditorEdge } from '@/types/editor';
-import { StoryExporter, ExportOptions } from '@/lib/storyExporter';
+import React, { useState, useCallback, useEffect } from 'react';
+import { StoryEditor } from '@/components/StoryEditor';
+import { StoryProject } from '@/types/editor';
 
-// Import dynamique pour éviter les problèmes SSR avec React Flow
-const StoryEditor = dynamic(
-  () => import('@/components/StoryEditor').then(mod => ({ default: mod.StoryEditor })),
-  { 
-    ssr: false,
-    loading: () => (
-      <div className="h-screen bg-gray-900 flex items-center justify-center">
-        <div className="text-white text-xl animate-pulse">Chargement de l'éditeur...</div>
-      </div>
-    )
-  }
-);
-
-// Interface pour accéder aux données de l'éditeur
-export interface StoryEditorRef {
-  getNodes: () => EditorNode[];
-  getEdges: () => EditorEdge[];
-  getCurrentProject: () => StoryProject | null;
-  updateProject: (project: StoryProject) => void;
+// Type guard pour vérifier si nous sommes côté client
+function isClientSide(): boolean {
+  return typeof window !== 'undefined';
 }
 
-// Modal d'export
-interface ExportModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onExport: (format: string, options: ExportOptions) => void;
+// Fonction utilitaire pour obtenir une clé de projet sécurisée
+function getProjectKey(projectId: string): string {
+  // Validation et nettoyage de l'ID du projet
+  const cleanId = projectId.replace(/[^a-zA-Z0-9-_]/g, '');
+  return `asylum-project-${cleanId}`;
 }
 
-const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, onExport }) => {
-  const [selectedFormat, setSelectedFormat] = useState<'asylum-json' | 'json' | 'twine'>('asylum-json');
-  const [includeMetadata, setIncludeMetadata] = useState(true);
-  const [minify, setMinify] = useState(false);
-  const [validateBeforeExport, setValidateBeforeExport] = useState(true);
+export default function EditorPage(): React.ReactElement {
+  const [currentProject, setCurrentProject] = useState<StoryProject | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
-  if (!isOpen) return null;
+  // Charger un projet depuis localStorage avec gestion d'erreur stricte
+  const loadProject = useCallback((projectId: string): void => {
+    if (!isClientSide()) {
+      console.warn('loadProject appelé côté serveur');
+      return;
+    }
 
-  const formats = StoryExporter.getSupportedFormats();
-  const selectedFormatInfo = formats.find(f => f.id === selectedFormat);
-
-  const handleExport = () => {
-    const options: ExportOptions = {
-      format: selectedFormat,
-      includeMetadata,
-      minify,
-      validateBeforeExport
-    };
-    
-    onExport(selectedFormat, options);
-    onClose();
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-      <div className="bg-gray-800 rounded-lg p-6 w-full max-w-md">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-bold text-white">Exporter l'histoire</h2>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-white transition-colors text-2xl"
-          >
-            ✕
-          </button>
-        </div>
-
-        {/* Sélection du format */}
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-300 mb-3">
-            Format d'export
-          </label>
-          <div className="space-y-2">
-            {formats.map((format) => (
-              <label key={format.id} className="flex items-start gap-3 cursor-pointer">
-                <input
-                  type="radio"
-                  name="format"
-                  value={format.id}
-                  checked={selectedFormat === format.id}
-                  onChange={(e) => setSelectedFormat(e.target.value as any)}
-                  className="mt-1"
-                />
-                <div>
-                  <div className="text-white font-medium">{format.name}</div>
-                  <div className="text-sm text-gray-400">{format.description}</div>
-                  <div className="text-xs text-gray-500">Extension: {format.extension}</div>
-                </div>
-              </label>
-            ))}
-          </div>
-        </div>
-
-        {/* Options d'export */}
-        <div className="mb-6 space-y-3">
-          <label className="flex items-center gap-2 text-sm text-gray-300">
-            <input
-              type="checkbox"
-              checked={includeMetadata}
-              onChange={(e) => setIncludeMetadata(e.target.checked)}
-            />
-            Inclure les métadonnées
-          </label>
-          
-          <label className="flex items-center gap-2 text-sm text-gray-300">
-            <input
-              type="checkbox"
-              checked={minify}
-              onChange={(e) => setMinify(e.target.checked)}
-            />
-            Minifier le fichier (plus compact)
-          </label>
-          
-          <label className="flex items-center gap-2 text-sm text-gray-300">
-            <input
-              type="checkbox"
-              checked={validateBeforeExport}
-              onChange={(e) => setValidateBeforeExport(e.target.checked)}
-            />
-            Valider avant export
-          </label>
-        </div>
-
-        {/* Info sur le format sélectionné */}
-        {selectedFormatInfo && (
-          <div className="mb-6 p-3 bg-gray-700 rounded">
-            <div className="text-sm text-gray-300">
-              <div className="font-medium text-white mb-1">
-                {selectedFormatInfo.name}
-              </div>
-              <div>{selectedFormatInfo.description}</div>
-            </div>
-          </div>
-        )}
-
-        {/* Boutons d'action */}
-        <div className="flex justify-end gap-3">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded transition-colors"
-          >
-            Annuler
-          </button>
-          <button
-            onClick={handleExport}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors"
-          >
-            Exporter
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-export default function EditorPage() {
-  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
-  const [exportStatus, setExportStatus] = useState<string | null>(null);
-  
-  // Variables globales pour stocker les données de l'éditeur
-  const editorDataRef = useRef<{
-    nodes: EditorNode[];
-    edges: EditorEdge[];
-    project: StoryProject | null;
-  }>({
-    nodes: [],
-    edges: [],
-    project: null
-  });
-
-  const handleSave = (project: StoryProject) => {
-    console.log('Sauvegarde du projet:', project);
     try {
+      setIsLoading(true);
+      setError(null);
+
+      const projectKey = getProjectKey(projectId);
+      const projectData = localStorage.getItem(projectKey);
+      
+      if (!projectData) {
+        setError(`Projet "${projectId}" non trouvé`);
+        setIsLoading(false);
+        return;
+      }
+
+      const parsedProject = JSON.parse(projectData) as StoryProject;
+      
+      // Validation basique du projet
+      if (!parsedProject.id || !parsedProject.name || !Array.isArray(parsedProject.nodes)) {
+        setError('Format de projet invalide');
+        setIsLoading(false);
+        return;
+      }
+
+      // Reconvertir les dates si nécessaire
+      if (typeof parsedProject.metadata.createdAt === 'string') {
+        parsedProject.metadata.createdAt = new Date(parsedProject.metadata.createdAt);
+      }
+      if (typeof parsedProject.metadata.updatedAt === 'string') {
+        parsedProject.metadata.updatedAt = new Date(parsedProject.metadata.updatedAt);
+      }
+
+      setCurrentProject(parsedProject);
+      console.log('✅ Projet chargé:', parsedProject.name);
+      
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
+      console.error('❌ Erreur lors du chargement du projet:', error);
+      setError(`Erreur lors du chargement: ${errorMessage}`);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Sauvegarder un projet dans localStorage
+  const saveProject = useCallback((project: StoryProject): void => {
+    if (!isClientSide()) {
+      console.warn('saveProject appelé côté serveur');
+      return;
+    }
+
+    try {
+      const projectKey = getProjectKey(project.id);
+      
+      // Sérialiser le projet avec les dates en ISO string
       const serializedProject = {
         ...project,
         metadata: {
@@ -183,342 +89,234 @@ export default function EditorPage() {
           updatedAt: project.metadata.updatedAt.toISOString(),
         }
       };
-      localStorage.setItem(`story-project-${project.id}`, JSON.stringify(serializedProject));
-      console.log('✅ Projet sauvegardé localement');
+
+      localStorage.setItem(projectKey, JSON.stringify(serializedProject));
+      console.log('💾 Projet sauvegardé:', project.name);
       
-      // Notification améliorée
+      // Notifier le succès
       if ('Notification' in window && Notification.permission === 'granted') {
         new Notification('Projet sauvegardé', {
-          body: `Le projet "${project.name}" a été sauvegardé`,
+          body: `"${project.name}" a été sauvegardé avec succès`,
           icon: '/favicon.ico'
         });
-      } else {
-        alert('Projet sauvegardé !');
       }
+
     } catch (error) {
-      console.error('❌ Erreur de sauvegarde:', error);
-      alert('Erreur lors de la sauvegarde');
+      const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
+      console.error('❌ Erreur lors de la sauvegarde:', error);
+      alert(`Erreur lors de la sauvegarde: ${errorMessage}`);
     }
-  };
+  }, []);
 
-  const handleLoad = () => {
-    console.log('Chargement d\'un projet...');
-    
-    // Liste des projets sauvegardés
-    const projects: string[] = [];
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key?.startsWith('story-project-')) {
-        projects.push(key);
-      }
-    }
-    
-    if (projects.length === 0) {
-      alert('Aucun projet sauvegardé trouvé');
-      return;
-    }
-    
-    // Interface de sélection améliorée
-    const projectList = projects.map((key, index) => {
-      try {
-        const projectData = localStorage.getItem(key);
-        if (projectData) {
-          const project = JSON.parse(projectData);
-          const date = new Date(project.metadata.updatedAt).toLocaleDateString();
-          return `${index + 1}. ${project.name} (${date})`;
-        }
-      } catch (error) {
-        return `${index + 1}. Projet corrompu`;
-      }
-      return `${index + 1}. Projet invalide`;
-    }).join('\n');
-    
-    const choice = prompt(
-      `Projets sauvegardés :\n\n${projectList}\n\nEntrez le numéro du projet à charger :`
-    );
-    
-    const projectIndex = parseInt(choice || '') - 1;
-    
-    if (projectIndex >= 0 && projectIndex < projects.length) {
-      const projectKey = projects[projectIndex];
-      const projectData = localStorage.getItem(projectKey);
-      if (projectData) {
+  // Charger depuis une sélection de fichier
+  const loadFromFile = useCallback((): void => {
+    if (!isClientSide()) return;
+
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json,.asylum';
+    input.style.display = 'none';
+
+    input.onchange = (e: Event): void => {
+      const target = e.target as HTMLInputElement;
+      const file = target.files?.[0];
+      
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (event: ProgressEvent<FileReader>): void => {
         try {
-          const project = JSON.parse(projectData);
-          console.log('Projet chargé:', project);
-          
-          if ('Notification' in window && Notification.permission === 'granted') {
-            new Notification('Projet chargé', {
-              body: `Le projet "${project.name}" a été chargé`,
-              icon: '/favicon.ico'
-            });
-          } else {
-            alert(`Projet chargé: ${project.name}`);
+          const content = event.target?.result as string;
+          if (!content) {
+            throw new Error('Fichier vide ou illisible');
           }
-        } catch (error) {
-          alert('Erreur lors du chargement du projet');
-        }
-      }
-    }
-  };
 
-  const handleExport = async (format: string, options: ExportOptions) => {
-    console.log('Export au format:', format, 'avec options:', options);
-    setExportStatus('Export en cours...');
-    
+          const project = JSON.parse(content) as StoryProject;
+          
+          // Validation et conversion des dates
+          if (typeof project.metadata.createdAt === 'string') {
+            project.metadata.createdAt = new Date(project.metadata.createdAt);
+          }
+          if (typeof project.metadata.updatedAt === 'string') {
+            project.metadata.updatedAt = new Date(project.metadata.updatedAt);
+          }
+
+          setCurrentProject(project);
+          console.log('✅ Projet chargé depuis fichier:', project.name);
+          
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
+          console.error('❌ Erreur lors du chargement du fichier:', error);
+          alert(`Erreur lors du chargement du fichier: ${errorMessage}`);
+        }
+      };
+
+      reader.onerror = (): void => {
+        alert('Erreur lors de la lecture du fichier');
+      };
+
+      reader.readAsText(file);
+    };
+
+    document.body.appendChild(input);
+    input.click();
+    document.body.removeChild(input);
+  }, []);
+
+  // Exporter le projet dans différents formats
+  const exportProject = useCallback((format: string): void => {
+    if (!currentProject || !isClientSide()) return;
+
     try {
-      // Récupérer les données de l'éditeur
-      let nodes: EditorNode[] = [];
-      let edges: EditorEdge[] = [];
-      
-      // 1. Essayer de récupérer depuis la référence
-      if (editorDataRef.current.nodes.length > 0) {
-        nodes = editorDataRef.current.nodes;
-        edges = editorDataRef.current.edges;
-        console.log(`📊 Récupération depuis la référence: ${nodes.length} nœuds, ${edges.length} edges`);
-      }
-      
-      // 2. Fallback: récupérer depuis l'auto-sauvegarde
-      if (nodes.length === 0) {
-        try {
-          const autoSaveData = localStorage.getItem('asylum-editor-autosave');
-          if (autoSaveData) {
-            const autoSave = JSON.parse(autoSaveData);
-            nodes = autoSave.nodes || [];
-            edges = autoSave.edges || [];
-            console.log(`📊 Récupération depuis auto-sauvegarde: ${nodes.length} nœuds, ${edges.length} edges`);
-          }
-        } catch (error) {
-          console.warn('Erreur lors de la récupération de l\'auto-sauvegarde:', error);
-        }
-      }
-      
-      // 3. Fallback: récupérer depuis les projets sauvegardés
-      if (nodes.length === 0) {
-        const projects: string[] = [];
-        for (let i = 0; i < localStorage.length; i++) {
-          const key = localStorage.key(i);
-          if (key?.startsWith('story-project-')) {
-            projects.push(key);
-          }
-        }
-        
-        if (projects.length > 0) {
-          // Prendre le projet le plus récent
-          const latestProject = projects
-            .map(key => {
-              try {
-                const data = localStorage.getItem(key);
-                return data ? JSON.parse(data) : null;
-              } catch {
-                return null;
-              }
-            })
-            .filter(Boolean)
-            .sort((a, b) => new Date(b.metadata.updatedAt).getTime() - new Date(a.metadata.updatedAt).getTime())[0];
-          
-          if (latestProject && latestProject.nodes && latestProject.edges) {
-            nodes = latestProject.nodes;
-            edges = latestProject.edges;
-            console.log(`📊 Récupération depuis projet récent: ${nodes.length} nœuds, ${edges.length} edges`);
-          }
-        }
-      }
-      
-      // 4. Si toujours pas de données, créer des données de démonstration
-      if (nodes.length === 0) {
-        const demoNodes: EditorNode[] = [
-          {
-            id: 'demo-start',
-            type: 'startNode',
-            position: { x: 100, y: 100 },
-            data: {
-              storyNode: {
-                id: 'demo-start',
-                title: 'Début de l\'histoire',
-                content: 'Bienvenue dans cette histoire interactive de démonstration !',
-                choices: [],
-                multimedia: {},
-                metadata: {
-                  tags: ['demo'],
-                  visitCount: 0,
-                  difficulty: 'medium'
-                }
-              },
-              nodeType: 'start',
-              isStartNode: true,
-              isEndNode: false
-            },
-            dragHandle: '.drag-handle'
-          },
-          {
-            id: 'demo-story',
-            type: 'storyNode',
-            position: { x: 400, y: 100 },
-            data: {
-              storyNode: {
-                id: 'demo-story',
-                title: 'Premier choix',
-                content: 'Vous voici face à votre premier choix important dans cette démonstration.',
-                choices: [],
-                multimedia: {},
-                metadata: {
-                  tags: ['demo'],
-                  visitCount: 0,
-                  difficulty: 'medium'
-                }
-              },
-              nodeType: 'story',
-              isStartNode: false,
-              isEndNode: false
-            },
-            dragHandle: '.drag-handle'
-          },
-          {
-            id: 'demo-end',
-            type: 'endNode',
-            position: { x: 700, y: 100 },
-            data: {
-              storyNode: {
-                id: 'demo-end',
-                title: 'Fin de la démonstration',
-                content: 'Merci d\'avoir testé l\'export ! Créez vos propres histoires dans l\'éditeur.',
-                choices: [],
-                multimedia: {},
-                metadata: {
-                  tags: ['demo'],
-                  visitCount: 0,
-                  difficulty: 'medium'
-                }
-              },
-              nodeType: 'end',
-              isStartNode: false,
-              isEndNode: true
-            },
-            dragHandle: '.drag-handle'
-          }
-        ];
+      let content: string;
+      let filename: string;
+      let mimeType: string;
 
-        const demoEdges: EditorEdge[] = [
-          {
-            id: 'demo-edge-1',
-            source: 'demo-start',
-            target: 'demo-story',
-            label: 'Commencer la démonstration',
-            data: {
-              choice: {
-                id: 'demo-choice-1',
-                text: 'Commencer la démonstration',
-                nextNodeId: 'demo-story',
-                conditions: [],
-                consequences: []
-              }
+      switch (format) {
+        case 'json':
+          content = JSON.stringify(currentProject, null, 2);
+          filename = `${currentProject.name.replace(/[^a-zA-Z0-9]/g, '_')}.json`;
+          mimeType = 'application/json';
+          break;
+
+        case 'asylum':
+          content = JSON.stringify({
+            ...currentProject,
+            metadata: {
+              ...currentProject.metadata,
+              exportedAt: new Date().toISOString(),
+              exportFormat: 'asylum-v1'
             }
-          },
-          {
-            id: 'demo-edge-2',
-            source: 'demo-story',
-            target: 'demo-end',
-            label: 'Terminer la démonstration',
-            data: {
-              choice: {
-                id: 'demo-choice-2',
-                text: 'Terminer la démonstration',
-                nextNodeId: 'demo-end',
-                conditions: [],
-                consequences: []
-              }
-            }
-          }
-        ];
+          }, null, 2);
+          filename = `${currentProject.name.replace(/[^a-zA-Z0-9]/g, '_')}.asylum`;
+          mimeType = 'application/json';
+          break;
 
-        nodes = demoNodes;
-        edges = demoEdges;
-        
-        console.log('📝 Utilisation de données de démonstration pour l\'export');
+        default:
+          throw new Error(`Format d'export non supporté: ${format}`);
       }
 
-      console.log(`🚀 Export de ${nodes.length} nœuds et ${edges.length} connexions`);
-
-      // Effectuer l'export
-      const result = await StoryExporter.exportStory(nodes, edges, options);
+      // Créer et télécharger le fichier
+      const blob = new Blob([content], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
       
-      if (result.success && result.data) {
-        // Télécharger le fichier
-        StoryExporter.downloadExport(result);
-        
-        // Afficher les statistiques
-        const statsMessage = `✅ Export réussi !\n\n` +
-          `📊 Statistiques :\n` +
-          `• Fichier: ${result.filename}\n` +
-          `• Taille: ${(result.stats.fileSize / 1024).toFixed(2)} KB\n` +
-          `• Nœuds: ${result.stats.totalNodes}\n` +
-          `• Choix: ${result.stats.totalChoices}`;
-        
-        console.log(statsMessage);
-        
-        if (result.warnings.length > 0) {
-          console.warn('Avertissements:', result.warnings);
-        }
-        
-        if ('Notification' in window && Notification.permission === 'granted') {
-          new Notification('Export terminé', {
-            body: `Fichier ${result.filename} téléchargé`,
-            icon: '/favicon.ico'
-          });
-        } else {
-          alert(statsMessage);
-        }
-        
-      } else {
-        const errorMessage = result.errors.length > 0 
-          ? `Erreurs d'export :\n\n${result.errors.join('\n')}`
-          : 'Erreur inconnue lors de l\'export';
-        
-        alert(errorMessage);
-      }
+      link.href = url;
+      link.download = filename;
+      link.style.display = 'none';
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      URL.revokeObjectURL(url);
+      
+      console.log('📁 Projet exporté:', filename);
       
     } catch (error) {
-      console.error('❌ Erreur d\'export:', error);
-      alert(`Erreur lors de l'export :\n\n${error}`);
-    } finally {
-      setExportStatus(null);
+      const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
+      console.error('❌ Erreur lors de l\'export:', error);
+      alert(`Erreur lors de l'export: ${errorMessage}`);
     }
-  };
+  }, [currentProject]);
 
-  // Fonction pour mettre à jour les données de l'éditeur
-  const updateEditorData = (nodes: EditorNode[], edges: EditorEdge[], project: StoryProject | null) => {
-    editorDataRef.current = { nodes, edges, project };
-  };
+  // Charger automatiquement un projet au démarrage
+  useEffect(() => {
+    if (!isClientSide()) return;
+
+    try {
+      // Vérifier s'il y a un projet spécifié dans l'URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const projectId = urlParams.get('project');
+
+      if (projectId) {
+        loadProject(projectId);
+        return;
+      }
+
+      // Sinon, charger l'auto-sauvegarde s'il existe
+      const autoSaveData = localStorage.getItem('asylum-editor-autosave');
+      if (autoSaveData) {
+        try {
+          const autoSaveProject = JSON.parse(autoSaveData) as StoryProject;
+          
+          // Reconvertir les dates
+          if (typeof autoSaveProject.metadata.createdAt === 'string') {
+            autoSaveProject.metadata.createdAt = new Date(autoSaveProject.metadata.createdAt);
+          }
+          if (typeof autoSaveProject.metadata.updatedAt === 'string') {
+            autoSaveProject.metadata.updatedAt = new Date(autoSaveProject.metadata.updatedAt);
+          }
+
+          setCurrentProject(autoSaveProject);
+          console.log('✅ Auto-sauvegarde chargée');
+        } catch (error) {
+          console.warn('⚠️ Auto-sauvegarde corrompue, ignorée');
+        }
+      }
+
+    } catch (error) {
+      console.error('❌ Erreur lors du chargement initial:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [loadProject]);
 
   // Demander permission pour les notifications
-  React.useEffect(() => {
-    if ('Notification' in window && Notification.permission === 'default') {
+  useEffect(() => {
+    if (isClientSide() && 'Notification' in window && Notification.permission === 'default') {
       Notification.requestPermission();
     }
   }, []);
 
+  // Affichage de chargement
+  if (isLoading) {
+    return (
+      <div className="h-screen bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p className="text-white text-lg">Chargement de l'éditeur...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Affichage d'erreur
+  if (error) {
+    return (
+      <div className="h-screen bg-gray-900 flex items-center justify-center">
+        <div className="bg-gray-800 rounded-lg p-8 max-w-md text-center">
+          <div className="text-red-500 text-4xl mb-4">❌</div>
+          <h2 className="text-xl font-bold text-white mb-4">Erreur</h2>
+          <p className="text-gray-300 mb-6">{error}</p>
+          <button
+            onClick={() => {
+              setError(null);
+              setIsLoading(false);
+            }}
+            className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors"
+            type="button"
+          >
+            Continuer sans projet
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Rendu principal
   return (
     <div className="h-screen">
-      {/* Status d'export */}
-      {exportStatus && (
-        <div className="fixed top-4 right-4 bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg z-50 animate-pulse">
-          {exportStatus}
-        </div>
-      )}
-
       <StoryEditor
-        onSave={handleSave}
-        onLoad={handleLoad}
-        onExport={() => setIsExportModalOpen(true)}
-        onDataUpdate={updateEditorData}
-      />
-
-      {/* Modal d'export */}
-      <ExportModal
-        isOpen={isExportModalOpen}
-        onClose={() => setIsExportModalOpen(false)}
-        onExport={handleExport}
+        onSave={saveProject}
+        onLoad={loadFromFile}
+        onExport={exportProject}
+        onDataUpdate={(nodes, edges, project) => {
+          // Optionnel: synchroniser avec l'état local
+          if (project && project !== currentProject) {
+            setCurrentProject(project);
+          }
+        }}
       />
     </div>
   );

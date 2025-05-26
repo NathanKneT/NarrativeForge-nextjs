@@ -1,5 +1,4 @@
 import { EditorNode, EditorEdge } from '@/types/editor';
-import { StoryNode } from '@/types/story';
 import { GraphToStoryConverter } from './graphToStoryConverter';
 
 export interface ExportOptions {

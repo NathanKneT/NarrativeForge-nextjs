@@ -188,8 +188,8 @@ export class SaveManager {
     return {
       totalSaves: saves.length,
       totalSizeKB: Math.round(totalSize / 1024 * 100) / 100,
-      oldestSave: saves.length > 0 ? saves[saves.length - 1].timestamp : null,
-      newestSave: saves.length > 0 ? saves[0].timestamp : null,
+      oldestSave: saves.length > 0 ? saves[saves.length - 1]?.timestamp : null,
+      newestSave: saves.length > 0 ? saves[0]?.timestamp : null,
     };
   }
 }

@@ -1,22 +1,25 @@
-import { Node, Edge } from 'reactflow';
+import { Node, Edge } from '@xyflow/react';
 import { StoryNode, Choice } from './story';
 
-// Types spécifiques à l'éditeur
-export interface EditorNode extends Node {
-  data: {
-    storyNode: StoryNode;
-    isStartNode?: boolean;
-    isEndNode?: boolean;
-    nodeType: 'start' | 'story' | 'choice' | 'end';
-  };
+export interface EditorNodeData extends Record<string, unknown> {
+  storyNode: StoryNode;
+  isStartNode?: boolean;
+  isEndNode?: boolean;
+  nodeType: 'start' | 'story' | 'choice' | 'end';
 }
 
-export type EditorEdge = Edge & {
-  data?: {
-    choice?: Choice;
-    condition?: string;
-  };
-};
+export interface EditorNode extends Node<EditorNodeData, string> {
+  dragHandle?: string;
+}
+
+export interface EditorEdgeData extends Record<string, unknown> {
+  choice?: Choice;
+  condition?: string;
+}
+
+export interface EditorEdge extends Edge<EditorEdgeData> {
+  // Propriétés spécifiques à votre éditeur
+}
 
 export interface StoryProject {
   id: string;

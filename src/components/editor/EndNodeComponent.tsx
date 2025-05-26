@@ -1,13 +1,14 @@
+
 'use client';
 
 import React from 'react';
-import { Handle, Position } from 'reactflow';
+import { Handle, Position, type NodeProps } from '@xyflow/react';
 import { Flag, Trophy, Skull, Heart } from 'lucide-react';
-import { EditorNode } from '@/types/editor';
+import { type EditorNode } from '@/types/editor';
 
-interface EndNodeComponentProps {
-  data: EditorNode['data'];
-  selected?: boolean;
+// Types stricts pour les props du composant avec compatibilité React Flow v12
+interface EndNodeComponentProps extends NodeProps<EditorNode> {
+  // Props additionnelles si nécessaires
 }
 
 export const EndNodeComponent: React.FC<EndNodeComponentProps> = ({ 
@@ -109,7 +110,7 @@ export const EndNodeComponent: React.FC<EndNodeComponentProps> = ({
       {/* Special indicator */}
       <div className="flex items-center gap-2">
         <div className="w-2 h-2 bg-red-400 rounded-full"></div>
-        <span className="text-xs text-red-200">Fin de lhistoire</span>
+        <span className="text-xs text-red-200">Fin de l'histoire</span>
       </div>
 
       {/* Pas de handle de sortie car c'est un nœud terminal */}

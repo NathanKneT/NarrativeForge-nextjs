@@ -1,4 +1,3 @@
-// lib/graphToStoryConverter.ts
 import { EditorNode, EditorEdge } from '@/types/editor';
 import { StoryNode } from '@/types/story';
 
@@ -29,22 +28,29 @@ export class GraphToStoryConverter {
       };
     }
 
-    // Trouver le nœud de départ
-    const startNodes = nodes.filter(node => node.data.nodeType === 'start');
+    // Trouver le nœud de départ avec gestion stricte des types
+    const startNodes = nodes.filter(node => node.data?.nodeType === 'start');
     if (startNodes.length !== 1) {
       errors.push(`Il doit y avoir exactement un nœud de départ, trouvé: ${startNodes.length}`);
       return { story: [], startNodeId: '', errors, warnings };
     }
 
-    const startNodeId = startNodes[0].id;
+    const startNode = startNodes[0];
+    if (!startNode) {
+      errors.push('Nœud de départ non trouvé');
+      return { story: [], startNodeId: '', errors, warnings };
+    }
 
-    // Convertir chaque nœud
+    const startNodeId: string = startNode.id;
+
+    // Convertir chaque nœud avec gestion d'erreur stricte
     for (const node of nodes) {
       try {
         const convertedNode = this.convertNode(node, edges);
         story.push(convertedNode);
       } catch (error) {
-        errors.push(`Erreur lors de la conversion du nœud ${node.id}: ${error}`);
+        const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
+        errors.push(`Erreur lors de la conversion du nœud ${node.id}: ${errorMessage}`);
       }
     }
 
@@ -98,16 +104,16 @@ export class GraphToStoryConverter {
       warnings.push('Aucun nœud de fin trouvé');
     }
 
-    // Vérifier la connectivité
+    // Vérifier la connectivité avec gestion stricte des types
     for (const node of nodes) {
-      if (node.data.nodeType !== 'end') {
+      if (node.data?.nodeType !== 'end') {
         const outgoingEdges = edges.filter(e => e.source === node.id);
         if (outgoingEdges.length === 0) {
           warnings.push(`Le nœud "${node.data.storyNode.title}" (${node.id}) n'a pas de connexions sortantes`);
         }
       }
 
-      if (node.data.nodeType !== 'start') {
+      if (node.data?.nodeType !== 'start') {
         const incomingEdges = edges.filter(e => e.target === node.id);
         if (incomingEdges.length === 0) {
           warnings.push(`Le nœud "${node.data.storyNode.title}" (${node.id}) n'est pas accessible`);
@@ -123,7 +129,7 @@ export class GraphToStoryConverter {
   }
 
   /**
-   * Convertit un nœud individuel
+   * Convertit un nœud individuel avec gestion stricte des types
    */
   private static convertNode(node: EditorNode, edges: EditorEdge[]): StoryNode {
     const { storyNode } = node.data;
@@ -131,17 +137,20 @@ export class GraphToStoryConverter {
     // Trouver toutes les connexions sortantes pour ce nœud
     const outgoingEdges = edges.filter(edge => edge.source === node.id);
     
-    // Créer les choix basés sur les connexions
+    // Créer les choix basés sur les connexions avec validation stricte
     const choices = outgoingEdges.map((edge, index) => {
       // Utiliser le label de l'edge s'il existe, sinon créer un texte par défaut
       const choiceText = edge.label || 
                         edge.data?.choice?.text || 
-                        storyNode.choices[index]?.text || 
+                        (storyNode.choices[index]?.text) || 
                         `Choix ${index + 1}`;
+
+      // Assurer que choiceText est une string (pour exactOptionalPropertyTypes)
+      const textAsString: string = typeof choiceText === 'string' ? choiceText : String(choiceText);
 
       return {
         id: edge.id || `choice_${node.id}_${index}`,
-        text: choiceText,
+        text: textAsString,
         nextNodeId: edge.target,
         conditions: edge.data?.choice?.conditions || [],
         consequences: edge.data?.choice?.consequences || []
@@ -159,19 +168,19 @@ export class GraphToStoryConverter {
     }
 
     // AJOUT AUTOMATIQUE DU BOUTON RECOMMENCER POUR LES NŒUDS DE FIN
-    if (node.data.nodeType === 'end') {
-    // Vérifier si le bouton recommencer n'existe pas déjà
-    const hasRestartChoice = choices.some(choice => choice.nextNodeId === '-1');
-    
-    if (!hasRestartChoice) {
+    if (node.data?.nodeType === 'end') {
+      // Vérifier si le bouton recommencer n'existe pas déjà
+      const hasRestartChoice = choices.some(choice => choice.nextNodeId === '-1');
+      
+      if (!hasRestartChoice) {
         choices.push({
-        id: `restart_${node.id}`,
-        text: 'Recommencer',
-        nextNodeId: '-1',
-        conditions: [],
-        consequences: []
+          id: `restart_${node.id}`,
+          text: 'Recommencer',
+          nextNodeId: '-1',
+          conditions: [],
+          consequences: []
         });
-    }
+      }
     }
 
     return {
@@ -200,7 +209,7 @@ export class GraphToStoryConverter {
       }
     }
 
-    // Vérifier les nœuds inaccessibles
+    // Vérifier les nœuds inaccessibles avec gestion stricte des types
     const accessibleNodes = new Set<string>();
     const startNode = story.find(n => 
       story.filter(s => s.choices.some(c => c.nextNodeId === n.id)).length === 0
@@ -252,7 +261,7 @@ export class GraphToStoryConverter {
       endNodes: story.filter(node => {
         // Un nœud de fin a soit aucun choix, soit seulement un choix "Recommencer"
         return node.choices.length === 0 || 
-               (node.choices.length === 1 && node.choices[0].nextNodeId === '-1');
+               (node.choices.length === 1 && node.choices[0]?.nextNodeId === '-1');
       }).length,
       maxDepth: this.calculateMaxDepth(story, result.startNodeId),
       hasErrors: result.errors.length > 0,
@@ -273,7 +282,7 @@ export class GraphToStoryConverter {
       const node = story.find(n => n.id === nodeId);
       
       if (!node || node.choices.length === 0 || 
-          (node.choices.length === 1 && node.choices[0].nextNodeId === '-1')) {
+          (node.choices.length === 1 && node.choices[0]?.nextNodeId === '-1')) {
         return depth;
       }
       
