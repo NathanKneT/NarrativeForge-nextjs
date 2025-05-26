@@ -122,6 +122,14 @@ export function ClientOnlyGame() {
       const validation = loader.validateStory();
       if (!validation.isValid) {
         console.warn('Avertissements de validation de l\'histoire:', validation.errors);
+        // Ne pas arrêter pour des erreurs mineures, juste les logger
+        if (validation.errors.some(error => error.includes('introuvable') || error.includes('manquant'))) {
+          throw new Error('Erreurs critiques de validation : ' + validation.errors.join(', '));
+        }
+      }
+      
+      if (validation.warnings.length > 0) {
+        console.warn('Avertissements de validation:', validation.warnings);
       }
       
       setStoryLoader(loader);

@@ -1,5 +1,6 @@
 // __tests__/setup.ts
 import '@testing-library/jest-dom';
+import { jest } from '@jest/globals';
 
 // Global test setup
 if (typeof global.TextEncoder === 'undefined') {
@@ -21,6 +22,14 @@ const localStorageMock = {
 Object.defineProperty(window, 'localStorage', {
   value: localStorageMock,
   writable: true,
+});
+
+beforeEach(() => {
+  jest.spyOn(console, 'error').mockImplementation((message) => {
+    if (message.includes('React does not recognize')) return;
+    if (message.includes('Unknown event handler')) return;
+    console.error(message);
+  });
 });
 
 // Mock IntersectionObserver

@@ -75,7 +75,6 @@ export function createMockEditorNode(overrides: Partial<EditorNode> = {}): Edito
       isStartNode: false,
       isEndNode: false,
     },
-    dragHandle: '.drag-handle',
     ...overrides,
   };
 }
