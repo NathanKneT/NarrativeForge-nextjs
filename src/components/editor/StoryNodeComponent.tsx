@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import { Handle, PositionEnum as Position, type NodeProps } from '@/components/LazyReactFlow';
+import { Handle, Position, type NodeProps } from '@/components/LazyReactFlow'; // ✅ CORRIGÉ: Import de Position directement
 import { FileText, Eye, Edit, Copy, Trash2 } from 'lucide-react';
 import { type EditorNode } from '@/types/editor';
 
@@ -67,7 +67,7 @@ export const StoryNodeComponent: React.FC<StoryNodeComponentProps> = ({
       {/* Handle d'entrée */}
       <Handle
         type="target"
-        position={Position.Top}
+        position={Position.Top} // ✅ CORRIGÉ: Utilisation de Position.Top
         className="w-3 h-3 bg-blue-500 border-2 border-white"
       />
 
@@ -167,7 +167,7 @@ export const StoryNodeComponent: React.FC<StoryNodeComponentProps> = ({
           <Handle
             key={choiceId}
             type="source"
-            position={Position.Bottom}
+            position={Position.Bottom} // ✅ CORRIGÉ: Utilisation de Position.Bottom
             id={choiceId}
             className="w-3 h-3 bg-green-500 border-2 border-white transition-all hover:bg-green-400 hover:scale-110"
             style={{
@@ -180,7 +180,7 @@ export const StoryNodeComponent: React.FC<StoryNodeComponentProps> = ({
         // Handle de sortie par défaut si pas de choix
         <Handle
           type="source"
-          position={Position.Bottom}
+          position={Position.Bottom} // ✅ CORRIGÉ: Utilisation de Position.Bottom
           className="w-3 h-3 bg-green-500 border-2 border-white"
         />
       )}

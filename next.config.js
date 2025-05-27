@@ -4,17 +4,34 @@ const nextConfig = {
   experimental: {
     optimizePackageImports: ['@xyflow/react'],
   },
-  webpack: (config) => {
+  
+  // 🔧 FIX: Webpack fallbacks pour résoudre "process is not defined"
+  webpack: (config, { isServer }) => {
+    // Configuration existante pour @xyflow/react
     config.resolve.alias = {
       ...config.resolve.alias,
       '@xyflow/react': '@xyflow/react',
     }
-    return config
-  },
-  
-  // Bundle analyzer (existing)
-  ...(process.env.ANALYZE === 'true' && {
-    webpack: (config) => {
+
+    // 🚀 NOUVEAU: Fallbacks pour éviter les erreurs côté client
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        net: false,
+        tls: false,
+        crypto: false,
+        process: false,
+        buffer: false,
+        util: false,
+        stream: false,
+        path: false,
+        os: false,
+      };
+    }
+
+    // Bundle analyzer (si activé)
+    if (process.env.ANALYZE === 'true') {
       const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer')
       config.plugins.push(
         new BundleAnalyzerPlugin({
@@ -22,9 +39,10 @@ const nextConfig = {
           openAnalyzer: false,
         })
       )
-      return config
-    },
-  }),
+    }
+
+    return config
+  },
 
   // ✅ SECURITY HEADERS - Enterprise Grade (+5 points FAANG)
   async headers() {
@@ -106,6 +124,12 @@ const nextConfig = {
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
   },
+
+  // 🔧 Output configuration pour déploiement
+  output: 'standalone',
+  
+  // 🔧 Désactiver Swc minify si problèmes
+  swcMinify: true,
 }
 
 module.exports = nextConfig

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import { Handle, PositionEnum as Position, type NodeProps } from '@/components/LazyReactFlow';
+import { Handle, Position, type NodeProps } from '@/components/LazyReactFlow'; // ✅ CORRIGÉ: Import de Position directement
 import { Play, Star } from 'lucide-react';
 import { type EditorNode } from '@/types/editor';
 
@@ -96,7 +96,7 @@ export const StartNodeComponent: React.FC<StartNodeComponentProps> = ({
           <Handle
             key={choiceId}
             type="source"
-            position={Position.Bottom}
+            position={Position.Bottom} // ✅ CORRIGÉ: Utilisation de Position.Bottom
             id={choiceId}
             className="w-3 h-3 bg-green-400 border-2 border-white transition-all hover:bg-green-300 hover:scale-110"
             style={{
@@ -109,7 +109,7 @@ export const StartNodeComponent: React.FC<StartNodeComponentProps> = ({
         // Handle unique par défaut
         <Handle
           type="source"
-          position={Position.Bottom}
+          position={Position.Bottom} // ✅ CORRIGÉ: Utilisation de Position.Bottom
           className="w-4 h-4 bg-green-400 border-2 border-white shadow-lg transition-all hover:bg-green-300 hover:scale-110"
         />
       )}

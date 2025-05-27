@@ -1,8 +1,7 @@
-
 'use client';
 
 import React from 'react';
-import { Handle, PositionEnum as Position, type NodeProps } from '@/components/LazyReactFlow';
+import { Handle, Position, type NodeProps } from '@/components/LazyReactFlow'; // ✅ CORRIGÉ: Import de Position directement
 import { Flag, Trophy, Skull, Heart } from 'lucide-react';
 import { type EditorNode } from '@/types/editor';
 
@@ -65,7 +64,7 @@ export const EndNodeComponent: React.FC<EndNodeComponentProps> = ({
       {/* Handle d'entrée */}
       <Handle
         type="target"
-        position={Position.Top}
+        position={Position.Top} // ✅ CORRIGÉ: Utilisation de Position.Top
         className="w-4 h-4 bg-red-400 border-2 border-white shadow-lg"
       />
 

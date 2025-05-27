@@ -5,7 +5,7 @@ export interface EditorNodeData extends Record<string, unknown> {
   storyNode: StoryNode;
   isStartNode?: boolean;
   isEndNode?: boolean;
-  nodeType: 'start' | 'story' | 'choice' | 'end';
+  nodeType: 'start' | 'story' | 'end'; // ✅ CORRIGÉ: Suppression de 'choice', ajout de 'story'
 }
 
 export interface EditorNode extends Node<EditorNodeData, string> {
@@ -49,7 +49,7 @@ export interface EditorState {
 export interface NodeFormData {
   title: string;
   content: string;
-  nodeType: 'start' | 'story' | 'choice' | 'end';
+  nodeType: 'start' | 'story' | 'end'; // ✅ CORRIGÉ: Synchronisé avec EditorNodeData
   tags: string[];
   metadata: {
     difficulty?: 'easy' | 'medium' | 'hard';
@@ -68,7 +68,7 @@ export interface NodeTemplate {
   id: string;
   name: string;
   description: string;
-  nodeType: 'start' | 'story' | 'choice' | 'end';
+  nodeType: 'start' | 'story' | 'end'; // ✅ CORRIGÉ: Synchronisé
   defaultData: Partial<StoryNode>;
   icon: string;
   color: string;

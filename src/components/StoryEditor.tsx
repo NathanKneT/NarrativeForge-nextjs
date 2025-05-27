@@ -97,6 +97,8 @@ const ChoiceModal: React.FC<ChoiceModalProps> = ({
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>): void => {
     if (e.key === 'Enter') {
       handleConfirm();
+    } else if (e.key === 'Escape') {
+      handleCancel();
     }
   };
 
@@ -180,9 +182,9 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
         setCurrentProject(project);
         editorDataRef.current.project = project;
       }
-    }));
+    }), [nodes, edges, currentProject]); // 🔧 FIX: Ajout des dépendances
 
-    // Sauvegarder automatiquement dans localStorage avec gestion d'erreurs typée
+    // 🔧 FIX: Sauvegarder automatiquement dans localStorage avec gestion d'erreurs typée
     const autoSave = useCallback((): void => {
       if (nodes.length > 0) {
         const autoSaveProject: StoryProject = {
@@ -209,7 +211,9 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
           };
           
           localStorage.setItem('asylum-editor-autosave', JSON.stringify(serializedProject));
-          console.log('💾 Auto-sauvegarde effectuée');
+          if (process.env.NODE_ENV === 'development') {
+            console.log('💾 Auto-sauvegarde effectuée');
+          }
         } catch (error: unknown) {
           console.warn('❌ Erreur auto-sauvegarde:', error);
         }
@@ -236,7 +240,7 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
     const memoizedNodes = useMemo(() => nodes, [nodes]);
     const memoizedEdges = useMemo(() => edges, [edges]);
 
-    // Gestionnaire de connexion avec modal - Types stricts
+    // 🔧 FIX: Gestionnaire de connexion avec modal - Types stricts
     const onConnect: OnConnect = useCallback(
       (params: Connection) => {
         // Validation stricte des paramètres avec type guards
@@ -259,6 +263,21 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
           return;
         }
 
+        // 🔧 FIX: Vérifier que le nœud source n'est pas un nœud de fin
+        if (sourceNode.data.nodeType === 'end') {
+          alert('❌ Impossible de créer une connexion depuis un nœud de fin !');
+          return;
+        }
+
+        // 🔧 FIX: Vérifier qu'il n'y a pas déjà une connexion entre ces nœuds
+        const existingConnection = edges.find(
+          edge => edge.source === params.source && edge.target === params.target
+        );
+        if (existingConnection) {
+          alert('❌ Une connexion existe déjà entre ces nœuds !');
+          return;
+        }
+
         // Ouvrir la modal pour saisir le choix
         setChoiceModal({
           isOpen: true,
@@ -266,7 +285,7 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
           connectionParams: params,
         });
       },
-      [nodes]
+      [nodes, edges]
     );
 
     // Fonction pour confirmer le choix depuis la modal avec types stricts
@@ -325,7 +344,9 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
         })
       );
 
-      console.log('✅ Connexion créée avec choix:', choiceText);
+      if (process.env.NODE_ENV === 'development') {
+        console.log('✅ Connexion créée avec choix:', choiceText);
+      }
       
       // Fermer la modal
       setChoiceModal({ isOpen: false, targetNodeTitle: '', connectionParams: null });
@@ -336,7 +357,7 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
       setChoiceModal({ isOpen: false, targetNodeTitle: '', connectionParams: null });
     }, []);
 
-    // Créer un nouveau nœud avec validation - Types stricts
+    // 🔧 FIX: Créer un nouveau nœud avec validation - Types stricts
     const createNode = useCallback((
       type: 'start' | 'story' | 'end', 
       position = { x: 0, y: 0 }
@@ -390,8 +411,20 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
       return newNode;
     }, [setNodes, nodes]);
 
-    // Supprimer un nœud avec nettoyage des edges et choix - Types stricts
+    // 🔧 FIX: Supprimer un nœud avec nettoyage des edges et choix - Types stricts
     const deleteNode = useCallback((nodeId: string): void => {
+      // Vérifier si c'est le dernier nœud de début
+      const nodeToDelete = nodes.find(n => n.id === nodeId);
+      if (nodeToDelete?.data.nodeType === 'start') {
+        const startNodes = nodes.filter(n => n.data.nodeType === 'start');
+        if (startNodes.length === 1) {
+          const confirm = window.confirm(
+            '⚠️ Vous supprimez le dernier nœud de début. Votre histoire n\'aura plus de point d\'entrée. Continuer ?'
+          );
+          if (!confirm) return;
+        }
+      }
+
       // Supprimer le nœud
       setNodes((nds) => nds.filter(node => node.id !== nodeId));
       
@@ -428,11 +461,17 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
         setSelectedNode(null);
         setIsNodeEditorOpen(false);
       }
-    }, [setNodes, setEdges, selectedNode, edges]);
+    }, [setNodes, setEdges, selectedNode, edges, nodes]);
 
     // Dupliquer un nœud - Types stricts
     const duplicateNode = useCallback((node: EditorNode): EditorNode => {
       const nodeId = `node-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      
+      // 🔧 FIX: Ne pas dupliquer les nœuds de début
+      if (node.data.nodeType === 'start') {
+        alert('❌ Impossible de dupliquer le nœud de début !');
+        return node;
+      }
       
       const newNode: EditorNode = {
         ...node,
@@ -447,6 +486,7 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
             ...node.data.storyNode,
             id: nodeId,
             title: `${node.data.storyNode.title} (copie)`,
+            choices: [], // 🔧 FIX: Réinitialiser les choix pour éviter les conflits
           },
         },
       };
@@ -527,6 +567,14 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
 
     // Créer un nouveau projet - Types stricts
     const createNewProject = useCallback((): void => {
+      // 🔧 FIX: Confirmation si des données existent
+      if (nodes.length > 0) {
+        const confirm = window.confirm(
+          '⚠️ Créer un nouveau projet effacera le projet actuel. Voulez-vous continuer ?'
+        );
+        if (!confirm) return;
+      }
+
       const newProject: StoryProject = {
         id: `project-${Date.now()}`,
         name: 'Nouvelle Histoire',
@@ -550,11 +598,14 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
       setTimeout(() => {
         createNode('start', { x: 250, y: 50 });
       }, 100);
-    }, [setNodes, setEdges, createNode]);
+    }, [setNodes, setEdges, createNode, nodes.length]);
 
     // Sauvegarder le projet - Types stricts
     const saveProject = useCallback((): void => {
-      if (!currentProject) return;
+      if (!currentProject) {
+        alert('❌ Aucun projet à sauvegarder !');
+        return;
+      }
 
       const updatedProject: StoryProject = {
         ...currentProject,
@@ -570,11 +621,27 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
       if (onSave) {
         onSave(updatedProject);
       }
+
+      // Notification de succès
+      if (process.env.NODE_ENV === 'development') {
+        console.log('💾 Projet sauvegardé:', updatedProject.name);
+      }
     }, [currentProject, nodes, edges, onSave]);
 
-    // FONCTION DE TEST CORRIGÉE avec types stricts
+    // 🔧 FIX: FONCTION DE TEST CORRIGÉE avec gestion d'erreurs améliorée
     const testStory = useCallback((): void => {
       try {
+        if (nodes.length === 0) {
+          alert('❌ Aucun nœud à tester ! Créez d\'abord votre histoire.');
+          return;
+        }
+
+        const startNodes = nodes.filter(n => n.data.nodeType === 'start');
+        if (startNodes.length === 0) {
+          alert('❌ Aucun nœud de début trouvé ! Ajoutez un nœud de début pour tester.');
+          return;
+        }
+
         console.log('🧪 Début du test de l\'histoire...');
         
         // Convertir le graphe React Flow vers le format du jeu
@@ -593,7 +660,7 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
           const warningMessage = "Avertissements détectés :\n\n" + 
             conversionResult.warnings.join('\n') + 
             "\n\nVoulez-vous continuer le test ?";
-          if (!confirm(warningMessage)) {
+          if (!window.confirm(warningMessage)) {
             return;
           }
         }
@@ -638,12 +705,14 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
         
         console.log(successMessage);
         
-        // Notification discrète au lieu d'alert
+        // 🔧 FIX: Notification discrète au lieu d'alert
         if ('Notification' in window && Notification.permission === 'granted') {
           new Notification('Test d\'histoire lancé', {
             body: `${stats.totalNodes} nœuds, ${stats.totalChoices} choix`,
             icon: '/favicon.ico'
           });
+        } else if (process.env.NODE_ENV === 'development') {
+          console.log('📊 Test lancé:', stats);
         }
 
       } catch (error: unknown) {
@@ -655,6 +724,11 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
 
     // Auto-arrangement intelligent des nœuds - Types stricts
     const autoArrange = useCallback((): void => {
+      if (nodes.length === 0) {
+        alert('❌ Aucun nœud à organiser !');
+        return;
+      }
+
       const startNodes = nodes.filter(node => node.data.nodeType === 'start');
       
       if (startNodes.length === 0) {
@@ -704,10 +778,12 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
       setNodes(layoutedNodes);
     }, [nodes, edges, setNodes]);
 
-    // Demander permission pour les notifications
+    // 🔧 FIX: Demander permission pour les notifications avec vérification
     React.useEffect(() => {
-      if ('Notification' in window && Notification.permission === 'default') {
-        Notification.requestPermission();
+      if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission().catch((error) => {
+          console.warn('Permission notification refusée:', error);
+        });
       }
     }, []);
 
@@ -748,6 +824,11 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
               deleteKeyCode={['Delete', 'Backspace']}
               connectionLineStyle={{ stroke: '#e94560', strokeWidth: 2 }}
               connectionLineType={ConnectionLineType.SmoothStep}
+              // 🔧 FIX: Ajout de propriétés pour améliorer l'UX
+              snapToGrid={true}
+              snapGrid={[15, 15]}
+              attributionPosition="bottom-right"
+              proOptions={{ hideAttribution: true }}
             >
               <Background color="#374151" gap={20} />
               <Controls />
@@ -786,6 +867,18 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
                   </div>
                 </div>
               </Panel>
+
+              {/* 🔧 FIX: Panel d'aide pour les raccourcis clavier */}
+              <Panel position="bottom-right" className="bg-gray-800 p-3 rounded-lg text-white text-xs max-w-sm">
+                <div className="font-medium mb-2">💡 Raccourcis</div>
+                <div className="space-y-1 text-gray-300">
+                  <div>• Double-clic: Éditer nœud</div>
+                  <div>• Del/Backspace: Supprimer</div>
+                  <div>• Drag: Déplacer nœuds</div>
+                  <div>• Ctrl+S: Sauvegarder</div>
+                  <div>• Escape: Fermer éditeur</div>
+                </div>
+              </Panel>
             </ReactFlow>
           </div>
 
@@ -808,6 +901,34 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
           onConfirm={handleChoiceConfirm}
           onCancel={handleChoiceCancel}
         />
+
+        {/* 🔧 FIX: Gestion des raccourcis clavier globaux */}
+        <div
+          className="sr-only"
+          onKeyDown={(e) => {
+            if (e.ctrlKey || e.metaKey) {
+              switch (e.key) {
+                case 's':
+                  e.preventDefault();
+                  saveProject();
+                  break;
+                case 'n':
+                  e.preventDefault();
+                  createNewProject();
+                  break;
+                case 't':
+                  e.preventDefault();
+                  testStory();
+                  break;
+                default:
+                  break;
+              }
+            } else if (e.key === 'Escape') {
+              setIsNodeEditorOpen(false);
+            }
+          }}
+          tabIndex={-1}
+        />
       </div>
     );
   }
@@ -815,10 +936,22 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
 
 StoryEditorContent.displayName = 'StoryEditorContent';
 
+// 🔧 FIX: Wrapper principal avec gestion d'erreurs
 export function StoryEditor(props: StoryEditorProps): React.ReactElement {
   return (
     <ReactFlowProvider>
-      <StoryEditorContent {...props} />
+      <React.Suspense 
+        fallback={
+          <div className="h-screen bg-gray-900 flex items-center justify-center">
+            <div className="text-white text-center">
+              <div className="animate-spin w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+              <div>Chargement de l'éditeur...</div>
+            </div>
+          </div>
+        }
+      >
+        <StoryEditorContent {...props} />
+      </React.Suspense>
     </ReactFlowProvider>
   );
 }

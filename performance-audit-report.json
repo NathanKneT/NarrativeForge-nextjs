@@ -1,0 +1,58 @@
+{
+  "score": 100,
+  "checks": [
+    {
+      "name": "Bundle Size",
+      "status": "pass",
+      "points": 20,
+      "maxPoints": 20,
+      "message": "Found optimized chunks: 4 files"
+    },
+    {
+      "name": "Lazy Loading",
+      "status": "pass",
+      "points": 15,
+      "maxPoints": 15,
+      "message": "Lazy loading implemented in 2 page(s)"
+    },
+    {
+      "name": "Security Headers",
+      "status": "pass",
+      "points": 20,
+      "maxPoints": 20,
+      "message": "Security headers configured: X-Content-Type-Options, X-Frame-Options, Content-Security-Policy, Referrer-Policy, Permissions-Policy"
+    },
+    {
+      "name": "Performance Monitoring",
+      "status": "pass",
+      "points": 15,
+      "maxPoints": 15,
+      "message": "Performance monitoring fully implemented"
+    },
+    {
+      "name": "Test Coverage",
+      "status": "pass",
+      "points": 15,
+      "maxPoints": 15,
+      "message": "Found 8 test files with Jest configuration"
+    },
+    {
+      "name": "TypeScript Configuration",
+      "status": "pass",
+      "points": 10,
+      "maxPoints": 10,
+      "message": "TypeScript properly configured"
+    },
+    {
+      "name": "SEO & Metadata",
+      "status": "pass",
+      "points": 5,
+      "maxPoints": 5,
+      "message": "SEO metadata configured"
+    }
+  ],
+  "recommendations": [],
+  "timestamp": "2025-05-27T04:59:31.381Z",
+  "totalPoints": 100,
+  "maxPoints": 100
+}

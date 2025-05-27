@@ -300,4 +300,96 @@ export class GraphToStoryConverter {
     
     return traverse(startNodeId, 0);
   }
+
+  // 🔧 FIX: Ajout des méthodes manquantes de mon version pour compatibilité complète
+
+  /**
+   * Calcule le temps de lecture estimé d'un texte
+   */
+  private static calculateReadTime(content: string): number {
+    const wordsPerMinute = 200; // Vitesse de lecture moyenne
+    const wordCount = content.split(/\s+/).length;
+    return Math.ceil(wordCount / wordsPerMinute) || 1;
+  }
+
+  /**
+   * Calcule le temps de jeu estimé total
+   */
+  private static calculateEstimatedPlayTime(nodes: EditorNode[]): number {
+    const totalReadTime = nodes.reduce((total, node) => {
+      return total + this.calculateReadTime(node.data.storyNode.content);
+    }, 0);
+    
+    // Facteur multiplicateur pour tenir compte des choix et rejouabilité
+    return Math.ceil(totalReadTime * 1.5);
+  }
+
+  /**
+   * 🔧 FIX: Méthode additionnelle pour compatibilité avec l'interface Story complète
+   * Convertit vers un objet Story complet (si nécessaire pour d'autres parties du code)
+   */
+  static convertToFullStory(nodes: EditorNode[], edges: EditorEdge[]): {
+    story: any; // Type Story de votre interface si nécessaire
+    startNodeId: string;
+    errors: string[];
+    warnings: string[];
+  } {
+    const conversionResult = this.convert(nodes, edges);
+    
+    // Créer un objet Story complet compatible avec d'autres parties du code
+    const fullStory = {
+      id: `story-${Date.now()}`,
+      title: 'Histoire Générée',
+      description: 'Histoire créée avec l\'éditeur Asylum',
+      startNodeId: conversionResult.startNodeId,
+      nodes: conversionResult.story.reduce((acc, node) => {
+        acc[node.id] = node;
+        return acc;
+      }, {} as Record<string, StoryNode>),
+      metadata: {
+        version: '1.0.0',
+        created: new Date(),
+        updated: new Date(),
+        author: 'Asylum Editor',
+        tags: ['interactif', 'généré'],
+        language: 'fr',
+        estimatedPlayTime: this.calculateEstimatedPlayTime(nodes),
+      },
+      settings: {
+        saveEnabled: true,
+        autoSave: true,
+        showProgress: true,
+        theme: 'asylum-dark',
+      },
+    };
+
+    return {
+      story: fullStory,
+      startNodeId: conversionResult.startNodeId,
+      errors: conversionResult.errors,
+      warnings: conversionResult.warnings,
+    };
+  }
+
+  /**
+   * 🔧 FIX: Valide une histoire convertie (méthode additionnelle)
+   */
+  static validateStory(story: StoryNode[]): { isValid: boolean; errors: string[] } {
+    const errors: string[] = [];
+    const nodeIds = new Set(story.map(n => n.id));
+    
+    // Vérifier que tous les choix pointent vers des nœuds existants
+    for (const node of story) {
+      for (const choice of node.choices) {
+        if (choice.nextNodeId !== '-1' && !nodeIds.has(choice.nextNodeId)) {
+          errors.push(`Le choix "${choice.text}" du nœud "${node.title}" pointe vers un nœud inexistant: ${choice.nextNodeId}`);
+        }
+      }
+    }
+    
+    return {
+      isValid: errors.length === 0,
+      errors,
+    };
+  }
 }

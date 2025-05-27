@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { StoryViewer } from '@/components/StoryViewer';
 import { ProgressTracker } from '@/components/ProgressTracker';
 import { GameControls } from '@/components/GameControls';
@@ -45,6 +45,7 @@ export function ClientOnlyGame() {
     restartGame,
     setCurrentNode,
     setError,
+    clearCorruptedState, // ✅ NEW: Fonction pour nettoyer l'état corrompu
   } = useGameStore();
 
   // S'assurer qu'on est côté client
@@ -110,7 +111,7 @@ export function ClientOnlyGame() {
   }, [hasHydrated, isClient, initializeGame, setError]);
 
   // Fonction pour charger l'histoire par défaut
-  const loadDefaultStory = () => {
+  const loadDefaultStory = useCallback(() => {
     try {
       console.log('🔄 Chargement de l\'histoire par défaut...');
       
@@ -146,24 +147,39 @@ export function ClientOnlyGame() {
       console.error('❌ Erreur lors du chargement de l\'histoire par défaut:', error);
       setError('Impossible de charger l\'histoire');
     }
-  };
+  }, [gameState, initializeGame, setError]);
 
-  // Charger le nœud actuel
+  // ✅ FIX: Charger le nœud actuel avec gestion des erreurs et nettoyage automatique
   useEffect(() => {
     if (storyLoader && gameState && hasHydrated && isClient) {
+      // Vérifier si le nœud actuel est déjà le bon
+      if (currentNode?.id === gameState.currentNodeId) {
+        return;
+      }
+
       const node = storyLoader.getNode(gameState.currentNodeId);
       if (node) {
         console.log('📖 Chargement du nœud:', node.id, node.title);
         setCurrentNode(node);
       } else {
         console.error('❌ Nœud introuvable:', gameState.currentNodeId);
-        setError(`Nœud introuvable: ${gameState.currentNodeId}`);
+        
+        // ✅ FIX: Auto-nettoyage de l'état corrompu
+        console.log('🧹 Détection d\'un état corrompu, nettoyage automatique...');
+        clearCorruptedState();
+        
+        // Recharger l'histoire par défaut
+        setTimeout(() => {
+          loadDefaultStory();
+        }, 100);
+        
+        return;
       }
     }
-  }, [storyLoader, gameState, setCurrentNode, hasHydrated, isClient, setError]);
+  }, [storyLoader, gameState?.currentNodeId, hasHydrated, isClient, setCurrentNode, setError, currentNode?.id, clearCorruptedState, loadDefaultStory]);
 
   // Gestionnaire de choix avec gestion du redémarrage
-  const handleChoiceSelect = (choiceId: string) => {
+  const handleChoiceSelect = useCallback((choiceId: string) => {
     if (!storyLoader || !gameState) return;
 
     console.log('🎮 Choix sélectionné:', choiceId);
@@ -185,18 +201,18 @@ export function ClientOnlyGame() {
         setError('Navigation impossible - nœud de destination introuvable');
       }
     }
-  };
+  }, [storyLoader, gameState, makeChoice, setError]);
 
   // Gestionnaires de contrôles
-  const handleSave = () => {
+  const handleSave = useCallback(() => {
     if (isTestMode) {
       alert('La sauvegarde n\'est pas disponible en mode test. Retournez à l\'éditeur pour sauvegarder votre projet.');
       return;
     }
     setSaveModalOpen(true);
-  };
+  }, [isTestMode]);
 
-  const handleLoad = () => {
+  const handleLoad = useCallback(() => {
     if (isTestMode) {
       const shouldContinue = confirm(
         'Vous êtes en mode test. Charger une sauvegarde quittera ce mode et retournera à l\'histoire principale. Continuer ?'
@@ -209,9 +225,9 @@ export function ClientOnlyGame() {
       loadDefaultStory();
     }
     setLoadModalOpen(true);
-  };
+  }, [isTestMode, loadDefaultStory]);
 
-  const handleSaveConfirm = async (saveName: string) => {
+  const handleSaveConfirm = useCallback(async (saveName: string) => {
     try {
       await saveGame(saveName);
       setSaveModalOpen(false);
@@ -229,9 +245,9 @@ export function ClientOnlyGame() {
       console.error('Erreur de sauvegarde:', error);
       alert('Erreur lors de la sauvegarde');
     }
-  };
+  }, [saveGame]);
 
-  const handleLoadConfirm = (saveData: SaveData) => {
+  const handleLoadConfirm = useCallback((saveData: SaveData) => {
     try {
       loadGame(saveData);
       setLoadModalOpen(false);
@@ -248,9 +264,9 @@ export function ClientOnlyGame() {
       console.error('Erreur de chargement:', error);
       alert('Erreur lors du chargement');
     }
-  };
+  }, [loadGame]);
 
-  const handleRestart = () => {
+  const handleRestart = useCallback(() => {
     const confirmMessage = isTestMode 
       ? 'Redémarrer l\'histoire de test ?'
       : 'Redémarrer l\'histoire ?';
@@ -265,13 +281,14 @@ export function ClientOnlyGame() {
       console.log('🚀 Redémarrage vers le nœud:', startNodeId);
       initializeGame(startNodeId);
     }
-  };
+  }, [isTestMode, restartGame, storyLoader, initializeGame]);
 
-  const handleSettings = () => {
+  const handleSettings = useCallback(() => {
     const options = [
       'Paramètres audio',
       'Paramètres d\'affichage', 
-      'Réinitialiser les données',
+      'Nettoyer les données corrompues', // ✅ NEW: Option de nettoyage
+      'Réinitialiser toutes les données',
       'À propos'
     ];
     
@@ -291,19 +308,26 @@ export function ClientOnlyGame() {
       case 1:
         alert('Paramètres d\'affichage à implémenter');
         break;
-      case 2:
+      case 2: // ✅ NEW: Nettoyage des données corrompues
+        if (confirm('Nettoyer les données de jeu corrompues ? Cela supprimera votre progression actuelle mais préservera vos sauvegardes.')) {
+          clearCorruptedState();
+          loadDefaultStory();
+          alert('✅ Données nettoyées ! Le jeu redémarre.');
+        }
+        break;
+      case 3: // ✅ FIX: Index mis à jour
         if (confirm('Voulez-vous vraiment réinitialiser toutes les données ? Cette action est irréversible.')) {
           localStorage.clear();
           window.location.reload();
         }
         break;
-      case 3:
+      case 4: // ✅ FIX: Index mis à jour
         alert(`Asylum Interactive Story\nVersion 1.0.0\n\n${isTestMode ? 'Mode Test Actif' : 'Mode Normal'}\n\nDéveloppé avec Next.js, React Flow et TypeScript`);
         break;
       default:
         break;
     }
-  };
+  }, [isMuted, clearCorruptedState, loadDefaultStory, isTestMode]);
 
   // Affichage pendant l'hydration et le chargement initial
   if (!isClient || !hasHydrated) {
