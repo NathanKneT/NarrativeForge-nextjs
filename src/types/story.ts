@@ -15,7 +15,6 @@ export interface Choice {
   consequences?: Effect[];
 }
 
-// Types manquants ajoutés
 export interface Condition {
   type: 'variable' | 'visited' | 'choice_made' | 'item_has';
   target: string;

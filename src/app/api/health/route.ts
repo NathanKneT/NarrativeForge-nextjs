@@ -1,3 +1,4 @@
+// src/app/api/health/route.ts - Enhanced version of your existing endpoint
 import { NextResponse } from 'next/server';
 import React from 'react';
 
@@ -12,6 +13,7 @@ interface HealthCheckResponse {
     redis?: 'connected' | 'disconnected' | 'error';
     react: 'loaded' | 'missing' | 'error';
     nextjs: 'loaded' | 'missing' | 'error';
+    metrics: 'available' | 'unavailable'; // ✅ NEW: Metrics service check
   };
   performance?: {
     memory: {
@@ -21,14 +23,32 @@ interface HealthCheckResponse {
     };
     cpu?: number;
   } | undefined;
+  // ✅ NEW: Quick performance summary from metrics endpoint
+  recentMetrics?: {
+    totalReports: number;
+    lastReportTime?: number;
+    criticalIssues: number;
+  };
 }
 
 // Fonction pour vérifier l'état des services
-function checkServices() {
+async function checkServices() {
   const services: HealthCheckResponse['services'] = {
     react: typeof React !== 'undefined' ? 'loaded' : 'missing',
     nextjs: 'loaded', // Si ce code s'exécute, Next.js fonctionne
+    metrics: 'unavailable', // Default
   };
+
+  // ✅ NEW: Check if metrics endpoint is available
+  try {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/metrics`, {
+      method: 'HEAD',
+      headers: { 'Cache-Control': 'no-cache' },
+    });
+    services.metrics = response.ok ? 'available' : 'unavailable';
+  } catch {
+    services.metrics = 'unavailable';
+  }
 
   // Vérifier d'autres services si nécessaire
   // services.database = await checkDatabaseConnection();
@@ -57,12 +77,40 @@ function getPerformanceMetrics(): HealthCheckResponse['performance'] {
   return undefined;
 }
 
+// ✅ NEW: Get recent metrics summary
+async function getRecentMetricsSummary(): Promise<HealthCheckResponse['recentMetrics']> {
+  try {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/metrics?format=summary&limit=10`, {
+      headers: { 'Cache-Control': 'no-cache' },
+    });
+    
+    if (!response.ok) return undefined;
+    
+    const data = await response.json();
+    const metricsArr = Object.values(data.metrics || {}) as Array<{ ratings?: { poor?: number } }>;
+    const criticalIssues: number = metricsArr.reduce((count, metric) => {
+      return count + (metric.ratings?.poor || 0);
+    }, 0);
+
+    return {
+      totalReports: data.totalReports || 0,
+      lastReportTime: data.timeRange?.end,
+      criticalIssues,
+    };
+  } catch {
+    return undefined;
+  }
+}
+
 export async function GET(): Promise<NextResponse<HealthCheckResponse>> {
   try {
     const startTime = process.hrtime.bigint();
     
-    const services = checkServices();
-    const performance = getPerformanceMetrics();
+    const [services, performance, recentMetrics] = await Promise.all([
+      checkServices(),
+      Promise.resolve(getPerformanceMetrics()),
+      getRecentMetricsSummary(),
+    ]);
     
     const response: HealthCheckResponse = {
       status: 'ok',
@@ -72,6 +120,7 @@ export async function GET(): Promise<NextResponse<HealthCheckResponse>> {
       uptime: process.uptime(),
       services,
       performance,
+      recentMetrics, // ✅ NEW: Include metrics summary
     };
 
     const endTime = process.hrtime.bigint();
@@ -82,6 +131,9 @@ export async function GET(): Promise<NextResponse<HealthCheckResponse>> {
       headers: {
         'Cache-Control': 'no-cache, no-store, must-revalidate',
         'X-Response-Time': `${duration.toFixed(2)}ms`,
+        // ✅ NEW: Additional monitoring headers
+        'X-Health-Check': 'ok',
+        'X-Metrics-Available': services.metrics,
       },
     });
   } catch (error) {
@@ -96,6 +148,7 @@ export async function GET(): Promise<NextResponse<HealthCheckResponse>> {
       services: {
         react: 'error',
         nextjs: 'error',
+        metrics: 'unavailable',
       },
       performance: undefined,
     };
@@ -104,11 +157,13 @@ export async function GET(): Promise<NextResponse<HealthCheckResponse>> {
       status: 500,
       headers: {
         'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'X-Health-Check': 'error',
       },
     });
   }
 }
 
+// Keep your existing POST, PUT, DELETE methods unchanged
 export async function POST(): Promise<NextResponse> {
   return NextResponse.json(
     { message: 'POST method not supported for health check' },

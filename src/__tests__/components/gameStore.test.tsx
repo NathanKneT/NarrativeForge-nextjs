@@ -7,10 +7,10 @@ import { SaveData } from '@/types/story';
 // Mock du SaveManager
 jest.mock('@/lib/saveManager', () => ({
   SaveManager: {
-    saveGame: jest.fn<void, []>().mockResolvedValue('mock-save-id'),
-    getAllSaves: jest.fn<void, []>().mockReturnValue([]),
-    loadSaveById: jest.fn<void, []>().mockReturnValue(null),
-    deleteSave: jest.fn<void, []>().mockReturnValue(true),
+    saveGame: jest.fn().mockResolvedValue('mock-save-id'),
+    getAllSaves: jest.fn().mockReturnValue([]),
+    loadSaveById: jest.fn().mockReturnValue(null),
+    deleteSave: jest.fn().mockReturnValue(true),
   },
 }));
 
