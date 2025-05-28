@@ -70,3 +70,55 @@ body {
 .focus\:ring-asylum-accent:focus {
   --tw-ring-color: var(--asylum-accent);
 }
+
+/* Amélioration des handles React Flow */
+.react-flow__handle {
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+.react-flow__handle:hover {
+  opacity: 1 !important;
+  transform: scale(1.1) !important;
+}
+
+/* Amélioration des lignes de connexion */
+.react-flow__edge-path {
+  stroke-width: 3px !important;
+}
+
+.react-flow__connection-line {
+  stroke-width: 3px !important;
+  stroke: #e94560 !important;
+}
+
+/* Zone de hover plus large pour les handles */
+.react-flow__handle::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: -8px;
+  right: -8px;
+  bottom: -8px;
+  background: transparent;
+  cursor: pointer;
+}
+
+/* Indicateur visuel pendant la connexion */
+.react-flow__handle.connecting {
+  box-shadow: 0 0 0 4px rgba(233, 69, 96, 0.3) !important;
+  animation: pulse 1s infinite !important;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 4px rgba(233, 69, 96, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(233, 69, 96, 0.1);
+  }
+  100% {
+    box-shadow: 0 0 0 4px rgba(233, 69, 96, 0.3);
+  }
+}

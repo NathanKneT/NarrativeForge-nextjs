@@ -34,12 +34,15 @@ import { StoryNodeComponent } from './editor/StoryNodeComponent';
 import { StartNodeComponent } from './editor/StartNodeComponent';
 import { EndNodeComponent } from './editor/EndNodeComponent';
 import { GraphToStoryConverter } from '@/lib/graphToStoryConverter';
+import { ProjectInitModal } from './editor/ProjectInitModal';
+import { SaveNotification, useNotification } from './editor/SaveNotification';
+import { LoadProjectModal } from './editor/LoadProjectModal';
 
 // Types de nœuds personnalisés avec types stricts compatibles React Flow v12
 const nodeTypes = {
-  storyNode: StoryNodeComponent as React.ComponentType<any>,
-  startNode: StartNodeComponent as React.ComponentType<any>,
-  endNode: EndNodeComponent as React.ComponentType<any>,
+  storyNode: StoryNodeComponent,
+  startNode: StartNodeComponent, 
+  endNode: EndNodeComponent,
 } as const;
 
 const defaultEdgeOptions = {
@@ -147,9 +150,13 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
     const [nodes, setNodes] = useNodesState<EditorNode>([]);
     const [edges, setEdges] = useEdgesState<EditorEdge>([]);
     
+    const { notification, showNotification, hideNotification } = useNotification();
+    const [showLoadModal, setShowLoadModal] = useState<boolean>(false);
     const [selectedNode, setSelectedNode] = useState<EditorNode | null>(null);
     const [isNodeEditorOpen, setIsNodeEditorOpen] = useState<boolean>(false);
     const [currentProject, setCurrentProject] = useState<StoryProject | null>(null);
+    const [showInitModal, setShowInitModal] = useState<boolean>(true);
+    const [isProjectInitialized, setIsProjectInitialized] = useState<boolean>(false);
     
     // État pour la modal de choix avec types stricts
     const [choiceModal, setChoiceModal] = useState<{
@@ -162,8 +169,7 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
       connectionParams: null,
     });
 
-    // Variables globales pour stocker les données de l'éditeur
-    const editorDataRef = React.useRef<{
+     const editorDataRef = React.useRef<{
       nodes: EditorNode[];
       edges: EditorEdge[];
       project: StoryProject | null;
@@ -220,6 +226,53 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
       }
     }, [nodes, edges]);
 
+    React.useEffect(() => {
+      // Petit délai pour laisser React Flow se mettre à jour
+      const timeoutId = setTimeout(() => {
+        // Déclencher un re-render des edges en les "touchant"
+        setEdges(currentEdges => [...currentEdges]);
+      }, 100);
+
+      return () => clearTimeout(timeoutId);
+    }, [nodes, setEdges]);
+
+    // Vérifier s'il y a un projet auto-sauvegardé au démarrage
+    React.useEffect(() => {
+      const checkExistingProject = () => {
+        try {
+          const savedProject = localStorage.getItem('asylum-editor-autosave');
+          if (savedProject) {
+            const parsed = JSON.parse(savedProject);
+            if (parsed.nodes && parsed.nodes.length > 0) {
+              // Il y a un projet existant, ne pas montrer la modal et le charger directement
+              const restoredProject: StoryProject = {
+                ...parsed,
+                metadata: {
+                  ...parsed.metadata,
+                  createdAt: new Date(parsed.metadata.createdAt),
+                  updatedAt: new Date(parsed.metadata.updatedAt),
+                }
+              };
+              
+              setCurrentProject(restoredProject);
+              setNodes(parsed.nodes || []);
+              setEdges(parsed.edges || []);
+              setShowInitModal(false);
+              setIsProjectInitialized(true);
+              
+              console.log('📂 Projet auto-sauvegardé restauré:', restoredProject.name);
+              return;
+            }
+          }
+        } catch (error) {
+          console.warn('⚠️ Erreur lors de la vérification du projet existant:', error);
+          localStorage.removeItem('asylum-editor-autosave');
+        }
+      };
+
+      checkExistingProject();
+    }, [setNodes, setEdges]);
+
     // Auto-sauvegarde toutes les 30 secondes
     React.useEffect(() => {
       const interval = setInterval(autoSave, 30000);
@@ -243,9 +296,16 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
     // 🔧 FIX: Gestionnaire de connexion avec modal - Types stricts
     const onConnect: OnConnect = useCallback(
       (params: Connection) => {
+        console.log('🔍 onConnect called with params:', {
+          source: params.source,
+          target: params.target,
+          sourceHandle: params.sourceHandle,
+          targetHandle: params.targetHandle
+        });
+        
         // Validation stricte des paramètres avec type guards
         if (!params.source || !params.target || typeof params.source !== 'string' || typeof params.target !== 'string') {
-          console.warn('Connection invalide: source ou target manquant ou invalide');
+          console.warn('❌ Connection invalide: source ou target manquant ou invalide');
           return;
         }
         
@@ -253,23 +313,38 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
         const targetNode = nodes.find(node => node.id === params.target);
           
         if (!sourceNode || !targetNode) {
-          console.warn('Nœuds source ou target non trouvés');
+          console.warn('❌ Nœuds source ou target non trouvés');
           return;
         }
+
+        console.log('🔍 Connection details:', {
+          sourceNode: {
+            id: sourceNode.id,
+            type: sourceNode.data.nodeType,
+            title: sourceNode.data.storyNode.title,
+            choices: sourceNode.data.storyNode.choices.length
+          },
+          targetNode: {
+            id: targetNode.id,
+            type: targetNode.data.nodeType,
+            title: targetNode.data.storyNode.title
+          },
+          sourceHandle: params.sourceHandle
+        });
 
         // Éviter les auto-connexions
         if (params.source === params.target) {
-          console.warn('Auto-connexion interdite');
+          console.warn('❌ Auto-connexion interdite');
           return;
         }
 
-        // 🔧 FIX: Vérifier que le nœud source n'est pas un nœud de fin
+        // Vérifier que le nœud source n'est pas un nœud de fin
         if (sourceNode.data.nodeType === 'end') {
           alert('❌ Impossible de créer une connexion depuis un nœud de fin !');
           return;
         }
 
-        // 🔧 FIX: Vérifier qu'il n'y a pas déjà une connexion entre ces nœuds
+        // Vérifier qu'il n'y a pas déjà une connexion entre ces nœuds
         const existingConnection = edges.find(
           edge => edge.source === params.source && edge.target === params.target
         );
@@ -277,6 +352,8 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
           alert('❌ Une connexion existe déjà entre ces nœuds !');
           return;
         }
+
+        console.log('✅ Opening choice modal for connection');
 
         // Ouvrir la modal pour saisir le choix
         setChoiceModal({
@@ -293,60 +370,160 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
       const params = choiceModal.connectionParams;
       if (!params || !params.source || !params.target) return;
 
-      // Créer une nouvelle edge avec le texte saisi - Types stricts
-      const newEdge: EditorEdge = {
-        id: `edge-${params.source}-${params.target}-${Date.now()}`,
+      // ✅ FIX: Gérer TOUS les types de sourceHandle
+      const sourceHandle = params.sourceHandle;
+      const isDefaultHandle = sourceHandle?.includes('-default-source');
+      
+      console.log('🔍 Connection analysis:', {
+        sourceHandle: sourceHandle,
+        isDefaultHandle: isDefaultHandle,
         source: params.source,
-        target: params.target,
-        sourceHandle: params.sourceHandle,
-        targetHandle: params.targetHandle,
-        type: 'smoothstep',
-        data: {
-          choice: {
-            id: `choice-${Date.now()}`,
-            text: choiceText,
-            nextNodeId: params.target,
-            conditions: [],
-            consequences: [],
-          }
-        },
-        label: choiceText,
-        labelStyle: { fill: '#ffffff', fontWeight: 600 },
-        labelBgStyle: { fill: '#e94560', fillOpacity: 0.8 },
-      };
+        target: params.target
+      });
 
-      setEdges((eds) => addEdge(newEdge, eds));
-
-      // Mettre à jour le nœud source avec le nouveau choix - Types stricts
-      setNodes((nds) => 
-        nds.map((node) => {
-          if (node.id === params.source) {
-            const newChoice = {
-              id: newEdge.data?.choice?.id ?? `choice-${Date.now()}`,
+      // ✅ FIX: Si c'est un handle par défaut, on le remplace par un choix spécifique
+      if (isDefaultHandle) {
+        // Utiliser l'ID du handle par défaut comme sourceHandle
+        const newEdge: EditorEdge = {
+          id: `edge-${params.source}-${params.target}-${Date.now()}`,
+          source: params.source,
+          target: params.target,
+          sourceHandle: sourceHandle, // ✅ Garder le handle par défaut existant
+          targetHandle: params.targetHandle,
+          type: 'smoothstep',
+          data: {
+            choice: {
+              id: `choice-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
               text: choiceText,
               nextNodeId: params.target,
               conditions: [],
               consequences: [],
-            };
-            
-            return {
-              ...node,
-              data: {
-                ...node.data,
-                storyNode: {
-                  ...node.data.storyNode,
-                  choices: [...node.data.storyNode.choices, newChoice]
-                }
-              }
-            };
-          }
-          return node;
-        })
-      );
+            }
+          },
+          label: choiceText,
+          labelStyle: { fill: '#ffffff', fontWeight: 600 },
+          labelBgStyle: { fill: '#e94560', fillOpacity: 0.8 },
+        };
 
-      if (process.env.NODE_ENV === 'development') {
-        console.log('✅ Connexion créée avec choix:', choiceText);
+        console.log('🔍 Creating edge for default handle:', {
+          edgeId: newEdge.id,
+          sourceHandle: sourceHandle,
+          label: choiceText
+        });
+
+        // Ajouter l'edge
+        setEdges((eds) => addEdge(newEdge, eds));
+
+        // ✅ FIX: Mettre à jour le nœud source - AJOUTER le choix sans changer les handles existants
+        setNodes((nds) => 
+          nds.map((node) => {
+            if (node.id === params.source) {
+              const newChoice = {
+                id: sourceHandle, // ✅ Utiliser l'ID du handle par défaut
+                text: choiceText,
+                nextNodeId: params.target,
+                conditions: [],
+                consequences: [],
+              };
+              
+              return {
+                ...node,
+                data: {
+                  ...node.data,
+                  storyNode: {
+                    ...node.data.storyNode,
+                    choices: [...node.data.storyNode.choices, newChoice]
+                  }
+                }
+              };
+            }
+            return node;
+          })
+        );
+
+        console.log('✅ Connexion créée avec handle par défaut:', {
+          choiceText,
+          sourceHandle: sourceHandle,
+          type: 'default-handle'
+        });
+
+      } else {
+        // ✅ FIX: Handle spécifique - logique normale
+        const uniqueChoiceId = `choice-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        
+        const newEdge: EditorEdge = {
+          id: `edge-${params.source}-${params.target}-${Date.now()}`,
+          source: params.source,
+          target: params.target,
+          sourceHandle: uniqueChoiceId,
+          targetHandle: params.targetHandle,
+          type: 'smoothstep',
+          data: {
+            choice: {
+              id: uniqueChoiceId,
+              text: choiceText,
+              nextNodeId: params.target,
+              conditions: [],
+              consequences: [],
+            }
+          },
+          label: choiceText,
+          labelStyle: { fill: '#ffffff', fontWeight: 600 },
+          labelBgStyle: { fill: '#e94560', fillOpacity: 0.8 },
+        };
+
+        console.log('🔍 Creating edge for specific handle:', {
+          edgeId: newEdge.id,
+          sourceHandle: uniqueChoiceId,
+          label: choiceText
+        });
+
+        setEdges((eds) => addEdge(newEdge, eds));
+
+        setNodes((nds) => 
+          nds.map((node) => {
+            if (node.id === params.source) {
+              const newChoice = {
+                id: uniqueChoiceId,
+                text: choiceText,
+                nextNodeId: params.target,
+                conditions: [],
+                consequences: [],
+              };
+              
+              return {
+                ...node,
+                data: {
+                  ...node.data,
+                  storyNode: {
+                    ...node.data.storyNode,
+                    choices: [...node.data.storyNode.choices, newChoice]
+                  }
+                }
+              };
+            }
+            return node;
+          })
+        );
+
+        console.log('✅ Connexion créée avec handle spécifique:', {
+          choiceText,
+          choiceId: uniqueChoiceId,
+          type: 'specific-handle'
+        });
       }
+
+      // ✅ FIX: Re-render forcé avec délai plus long
+      setTimeout(() => {
+        setEdges(currentEdges => {
+          console.log('🔄 Force re-render edges:', currentEdges.length);
+          return [...currentEdges];
+        });
+        setNodes(currentNodes => {
+          console.log('🔄 Force re-render nodes:', currentNodes.length);
+          return [...currentNodes];
+        });
+      }, 150); // Délai plus long pour React Flow
       
       // Fermer la modal
       setChoiceModal({ isOpen: false, targetNodeTitle: '', connectionParams: null });
@@ -363,6 +540,11 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
       position = { x: 0, y: 0 }
     ): EditorNode | null => {
       // Vérifier qu'il n'y a qu'un seul nœud de début
+      if (!isProjectInitialized) {
+        alert('❌ Veuillez d\'abord créer ou charger un projet !');
+        setShowInitModal(true);
+        return null;
+      }
       if (type === 'start') {
         const existingStartNodes = nodes.filter(node => node.data.nodeType === 'start');
         if (existingStartNodes.length > 0) {
@@ -407,9 +589,56 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
         dragHandle: '.drag-handle',
       };
 
+      // 🔍 DEBUG: Ajoutez ces logs
+      console.log('🔍 Creating node:', {
+        type: type,
+        reactFlowType: newNode.type,
+        nodeType: newNode.data.nodeType,
+        isEndNode: newNode.data.isEndNode
+      });
+
       setNodes((nds) => [...nds, newNode]);
       return newNode;
-    }, [setNodes, nodes]);
+    }, [setNodes, nodes, isProjectInitialized]);
+
+    const handleCreateNewProject = useCallback((projectName: string, description: string) => {
+      const newProject: StoryProject = {
+        id: `project-${Date.now()}`,
+        name: projectName,
+        description: description,
+        nodes: [],
+        edges: [],
+        metadata: {
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          version: '1.0.0',
+        },
+      };
+
+      setCurrentProject(newProject);
+      setNodes([]);
+      setEdges([]);
+      setSelectedNode(null);
+      setIsNodeEditorOpen(false);
+      setShowInitModal(false);
+      setIsProjectInitialized(true);
+
+      console.log('✅ Nouveau projet créé:', projectName);
+
+    setTimeout(() => {
+      // Force la mise à jour immédiate du state avant de créer le nœud
+      setIsProjectInitialized(true);
+    }, 50);
+    }, [createNode, setNodes, setEdges]);
+
+    const handleLoadExistingProject = useCallback(() => {
+      setShowInitModal(false);
+      setShowLoadModal(true);
+    }, []);
+
+    const handleToolbarLoadProject = useCallback(() => {
+      setShowLoadModal(true);
+    }, []);
 
     // 🔧 FIX: Supprimer un nœud avec nettoyage des edges et choix - Types stricts
     const deleteNode = useCallback((nodeId: string): void => {
@@ -567,66 +796,196 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
 
     // Créer un nouveau projet - Types stricts
     const createNewProject = useCallback((): void => {
-      // 🔧 FIX: Confirmation si des données existent
-      if (nodes.length > 0) {
-        const confirm = window.confirm(
-          '⚠️ Créer un nouveau projet effacera le projet actuel. Voulez-vous continuer ?'
-        );
-        if (!confirm) return;
-      }
-
-      const newProject: StoryProject = {
-        id: `project-${Date.now()}`,
-        name: 'Nouvelle Histoire',
-        description: 'Description de votre histoire...',
-        nodes: [],
-        edges: [],
-        metadata: {
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          version: '1.0.0',
-        },
-      };
-
-      setCurrentProject(newProject);
-      setNodes([]);
-      setEdges([]);
-      setSelectedNode(null);
-      setIsNodeEditorOpen(false);
-
-      // Créer le nœud de départ automatiquement
-      setTimeout(() => {
-        createNode('start', { x: 250, y: 50 });
-      }, 100);
-    }, [setNodes, setEdges, createNode, nodes.length]);
+      setShowInitModal(true);
+    }, []);
 
     // Sauvegarder le projet - Types stricts
     const saveProject = useCallback((): void => {
       if (!currentProject) {
-        alert('❌ Aucun projet à sauvegarder !');
+        showNotification('Aucun projet à sauvegarder !', 'error');
         return;
       }
 
-      const updatedProject: StoryProject = {
-        ...currentProject,
-        nodes,
-        edges,
-        metadata: {
-          ...currentProject.metadata,
-          updatedAt: new Date(),
-        },
-      };
+      try {
+        const updatedProject: StoryProject = {
+          ...currentProject,
+          nodes,
+          edges,
+          metadata: {
+            ...currentProject.metadata,
+            updatedAt: new Date(),
+          },
+        };
 
-      setCurrentProject(updatedProject);
-      if (onSave) {
-        onSave(updatedProject);
+        setCurrentProject(updatedProject);
+
+        // ✅ ADD: Sauvegarder dans localStorage avec un ID unique
+        const projectId = currentProject.id.startsWith('asylum-project-') 
+          ? currentProject.id 
+          : `asylum-project-${currentProject.id}`;
+          
+        const serializedProject = {
+          ...updatedProject,
+          metadata: {
+            ...updatedProject.metadata,
+            createdAt: updatedProject.metadata.createdAt.toISOString(),
+            updatedAt: updatedProject.metadata.updatedAt.toISOString(),
+          }
+        };
+        
+        localStorage.setItem(projectId, JSON.stringify(serializedProject));
+
+        if (onSave) {
+          onSave(updatedProject);
+        }
+
+        // ✅ ADD: Afficher notification de succès
+        showNotification(`✅ Projet "${updatedProject.name}" sauvegardé !`, 'success');
+
+        if (process.env.NODE_ENV === 'development') {
+          console.log('💾 Projet sauvegardé:', updatedProject.name);
+        }
+        
+      } catch (error) {
+        console.error('❌ Erreur sauvegarde:', error);
+        showNotification('Erreur lors de la sauvegarde', 'error');
+      }
+    }, [currentProject, nodes, edges, onSave, showNotification]);
+
+    const handleExportProject = useCallback((format: string): void => {
+      if (!currentProject || nodes.length === 0) {
+        showNotification('❌ Aucun projet à exporter !', 'error');
+        return;
       }
 
-      // Notification de succès
-      if (process.env.NODE_ENV === 'development') {
-        console.log('💾 Projet sauvegardé:', updatedProject.name);
+      try {
+        let exportData: any;
+        let fileName: string;
+        let mimeType: string;
+
+        const projectData = {
+          ...currentProject,
+          nodes,
+          edges,
+          metadata: {
+            ...currentProject.metadata,
+            exportedAt: new Date(),
+            exportFormat: format,
+          }
+        };
+
+        switch (format) {
+          case 'asylum-json':
+            // Format spécifique pour votre jeu
+            exportData = {
+              version: "1.0.0",
+              metadata: {
+                name: projectData.name,
+                description: projectData.description,
+                createdAt: projectData.metadata.createdAt.toISOString(),
+                exportedAt: new Date().toISOString(),
+                totalNodes: nodes.length,
+                totalEdges: edges.length,
+              },
+              story: projectData,
+              // Ajouter des métadonnées spécifiques au jeu si nécessaire
+              gameMetadata: {
+                startNodeId: nodes.find(n => n.data.nodeType === 'start')?.id,
+                endNodeIds: nodes.filter(n => n.data.nodeType === 'end').map(n => n.id),
+              }
+            };
+            fileName = `${projectData.name.replace(/[^a-z0-9]/gi, '_')}_asylum.json`;
+            mimeType = 'application/json';
+            break;
+
+          case 'json':
+            // Format JSON standard
+            exportData = projectData;
+            fileName = `${projectData.name.replace(/[^a-z0-9]/gi, '_')}.json`;
+            mimeType = 'application/json';
+            break;
+
+          case 'twine':
+            // Format compatible Twine (Twee notation)
+            const startNode = nodes.find(n => n.data.nodeType === 'start');
+            if (!startNode) {
+              throw new Error('Aucun nœud de début trouvé');
+            }
+
+            let twineContent = `:: Start\n${startNode.data.storyNode.content}\n\n`;
+            
+            // Générer le contenu Twine pour chaque nœud
+            nodes.forEach(node => {
+              if (node.data.nodeType !== 'start') {
+                const title = node.data.storyNode.title.replace(/[^a-zA-Z0-9\s]/g, '');
+                twineContent += `:: ${title}\n`;
+                twineContent += `${node.data.storyNode.content}\n`;
+                
+                // Ajouter les choix
+                node.data.storyNode.choices.forEach(choice => {
+                  const targetNode = nodes.find(n => n.id === choice.nextNodeId);
+                  if (targetNode) {
+                    const targetTitle = targetNode.data.storyNode.title.replace(/[^a-zA-Z0-9\s]/g, '');
+                    twineContent += `[[${choice.text}|${targetTitle}]]\n`;
+                  }
+                });
+                twineContent += '\n';
+              }
+            });
+
+            exportData = twineContent;
+            fileName = `${projectData.name.replace(/[^a-z0-9]/gi, '_')}.twee`;
+            mimeType = 'text/plain';
+            break;
+
+          default:
+            throw new Error(`Format d'export non supporté: ${format}`);
+        }
+
+        // Créer et télécharger le fichier
+        const blob = new Blob([
+          typeof exportData === 'string' ? exportData : JSON.stringify(exportData, null, 2)
+        ], { type: mimeType });
+        
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        // Notification de succès
+        showNotification(`✅ Projet exporté en ${format.toUpperCase()} !`, 'success');
+        
+        console.log(`📦 Export ${format} réussi:`, fileName);
+
+      } catch (error) {
+        console.error('❌ Erreur export:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
+        showNotification(`❌ Erreur export: ${errorMessage}`, 'error');
       }
-    }, [currentProject, nodes, edges, onSave]);
+    }, [currentProject, nodes, edges, showNotification]);
+
+    const handleLoadProject = useCallback((project: StoryProject): void => {
+      try {
+        setCurrentProject(project);
+        setNodes(project.nodes || []);
+        setEdges(project.edges || []);
+        setSelectedNode(null);
+        setIsNodeEditorOpen(false);
+        setIsProjectInitialized(true);
+        
+        showNotification(`✅ Projet "${project.name}" chargé !`, 'success');
+        console.log('📂 Projet chargé:', project.name);
+        
+      } catch (error) {
+        console.error('❌ Erreur chargement:', error);
+        showNotification('Erreur lors du chargement', 'error');
+      }
+    }, [setNodes, setEdges, showNotification]);
+
 
     // 🔧 FIX: FONCTION DE TEST CORRIGÉE avec gestion d'erreurs améliorée
     const testStory = useCallback((): void => {
@@ -787,6 +1146,15 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
       }
     }, []);
 
+    React.useEffect(() => {
+    if (isProjectInitialized && currentProject && nodes.length === 0) {
+      // Vérifier que c'est vraiment un nouveau projet
+      if (currentProject.nodes.length === 0) {
+        createNode('start', { x: 250, y: 100 });
+      }
+    }
+  }, [isProjectInitialized, currentProject, nodes.length, createNode]);
+
     return (
       <div className="h-screen bg-gray-900 flex flex-col">
         {/* Toolbar */}
@@ -794,8 +1162,8 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
           onCreateNode={createNode}
           onNewProject={createNewProject}
           onSaveProject={saveProject}
-          onLoadProject={onLoad || (() => {})} // Valeur par défaut pour éviter undefined
-          onExportProject={onExport || (() => {})} // Valeur par défaut pour éviter undefined
+          onLoadProject={handleToolbarLoadProject}
+          onExportProject={handleExportProject}
           onAutoArrange={autoArrange}
           onTestStory={testStory}
           currentProject={currentProject}
@@ -822,9 +1190,10 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
               selectNodesOnDrag={false}
               multiSelectionKeyCode={null}
               deleteKeyCode={['Delete', 'Backspace']}
-              connectionLineStyle={{ stroke: '#e94560', strokeWidth: 2 }}
+              connectionLineStyle={{ stroke: '#e94560', strokeWidth: 3 }}
               connectionLineType={ConnectionLineType.SmoothStep}
               // 🔧 FIX: Ajout de propriétés pour améliorer l'UX
+              connectionRadius={20}
               snapToGrid={true}
               snapGrid={[15, 15]}
               attributionPosition="bottom-right"
@@ -894,12 +1263,36 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
           )}
         </div>
 
+        {/* ✅ ADD: Modal de chargement de projets */}
+        <LoadProjectModal
+          isOpen={showLoadModal}
+          onClose={() => setShowLoadModal(false)}
+          onLoadProject={handleLoadProject}
+        />
+
+        {/* Modal d'initialisation de projet */}
+        <ProjectInitModal
+          isOpen={showInitModal}
+          onCreateNew={handleCreateNewProject}
+          onLoadExisting={handleLoadExistingProject}
+          allowClose={isProjectInitialized}
+          onClose={isProjectInitialized ? () => setShowInitModal(false) : undefined}
+        />
+
         {/* Modal de choix */}
         <ChoiceModal
           isOpen={choiceModal.isOpen}
           targetNodeTitle={choiceModal.targetNodeTitle}
           onConfirm={handleChoiceConfirm}
           onCancel={handleChoiceCancel}
+        />
+
+        {/* ✅ ADD: Notification de sauvegarde */}
+        <SaveNotification
+          isVisible={notification.isVisible}
+          message={notification.message}
+          type={notification.type}
+          onClose={hideNotification}
         />
 
         {/* 🔧 FIX: Gestion des raccourcis clavier globaux */}
@@ -916,6 +1309,10 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
                   e.preventDefault();
                   createNewProject();
                   break;
+                case 'o': // ✅ ADD: Raccourci pour ouvrir
+                  e.preventDefault();
+                  handleToolbarLoadProject();
+                  break;
                 case 't':
                   e.preventDefault();
                   testStory();
@@ -925,6 +1322,7 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
               }
             } else if (e.key === 'Escape') {
               setIsNodeEditorOpen(false);
+              setShowLoadModal(false); // ✅ ADD: Fermer modal de chargement
             }
           }}
           tabIndex={-1}

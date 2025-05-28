@@ -1,18 +1,19 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import { Handle, Position, type NodeProps } from '@/components/LazyReactFlow'; // ✅ CORRIGÉ: Import de Position directement
+import { Handle, Position, type NodeProps } from '@/components/LazyReactFlow';
 import { FileText, Eye, Edit, Copy, Trash2 } from 'lucide-react';
 import { type EditorNode } from '@/types/editor';
 
 // Types stricts pour les props du composant avec compatibilité React Flow v12
 interface StoryNodeComponentProps extends NodeProps<EditorNode> {
-  // Props additionnelles si nécessaires
+  id?: string; // ✅ Assurer l'accès à l'ID du nœud React Flow
 }
 
 export const StoryNodeComponent: React.FC<StoryNodeComponentProps> = ({ 
   data, 
   selected = false,
+  id // ✅ Destructurer l'ID du nœud React Flow
 }) => {
   const { storyNode } = data;
   
@@ -28,35 +29,45 @@ export const StoryNodeComponent: React.FC<StoryNodeComponentProps> = ({
     return { cleanContent: clean };
   }, [storyNode.content]);
 
-  // Calcul optimisé des positions des handles
+  // ✅ FIX: Calcul optimisé des positions des handles - CORRIGÉ
   const handlePositions = useMemo(() => {
     const choicesCount = storyNode.choices.length;
-    if (choicesCount === 0) return [];
-
-    const nodeWidth = 250;
+    const nodeId = data.id || storyNode.id; // ✅ Utiliser l'ID du nœud React Flow
     
-    // Un seul choix : centrer
-    if (choicesCount === 1) {
-      const firstChoice = storyNode.choices[0];
-      if (!firstChoice) return [];
+    console.log(`🔍 [${storyNode.title}] Calculating handles:`, {
+      choicesCount,
+      choices: storyNode.choices.map(c => ({ id: c.id, text: c.text }))
+    });
+    
+    const existingHandles = [];
+    
+    // Si on a des choix spécifiques, les ajouter
+    if (choicesCount > 0) {
+      const nodeWidth = 250;
+      const handleSpacing = Math.min(60, (nodeWidth - 40) / Math.max(1, choicesCount - 1));
+      const startX = (nodeWidth - (handleSpacing * Math.max(0, choicesCount - 1))) / 2;
       
-      return [{
-        choiceId: firstChoice.id,
-        left: nodeWidth / 2 - 6, // Centré (6px = moitié de la largeur du handle)
-        bottom: -6,
-      }];
+      storyNode.choices.forEach((choice, index) => {
+        existingHandles.push({
+          choiceId: choice.id,
+          left: startX + (index * handleSpacing),
+          bottom: -6,
+        });
+      });
     }
     
-    // Plusieurs choix : répartir uniformément
-    const totalSpacing = nodeWidth - 60; // Marges de sécurité (30px de chaque côté)
-    const spaceBetween = totalSpacing / Math.max(1, choicesCount - 1);
+    // ✅ FIX: TOUJOURS garder un handle par défaut si pas de choix
+    if (choicesCount === 0) {
+      existingHandles.push({
+        choiceId: `${nodeId}-default-source`,
+        left: 125, // Centré
+        bottom: -6,
+      });
+    }
     
-    return storyNode.choices.map((choice, index) => ({
-      choiceId: choice.id,
-      left: 30 + (index * spaceBetween),
-      bottom: -6,
-    }));
-  }, [storyNode.choices]);
+    console.log(`🔍 Final handles for ${storyNode.title}:`, existingHandles);
+    return existingHandles;
+  }, [storyNode.choices, data.id, storyNode.title]);
 
   return (
     <div className={`bg-gray-800 border-2 rounded-lg p-4 min-w-[250px] max-w-[300px] shadow-lg transition-all group relative ${
@@ -64,11 +75,16 @@ export const StoryNodeComponent: React.FC<StoryNodeComponentProps> = ({
         ? 'border-blue-500 shadow-blue-500/25' 
         : 'border-gray-600 hover:border-gray-500'
     }`}>
-      {/* Handle d'entrée */}
+      {/* ✅ FIX: Handle d'entrée plus visible */}
       <Handle
         type="target"
-        position={Position.Top} // ✅ CORRIGÉ: Utilisation de Position.Top
-        className="w-3 h-3 bg-blue-500 border-2 border-white"
+        position={Position.Top}
+        // ✅ FIX: Handle d'entrée plus gros
+        className="w-6 h-6 bg-blue-500 border-3 border-white shadow-lg hover:bg-blue-400 hover:scale-125 transition-all"
+        style={{
+          borderRadius: '50%',
+          boxShadow: '0 0 0 4px rgba(59, 130, 246, 0.2)', // Halo bleu
+        }}
       />
 
       {/* Header - Zone de drag spécifique */}
@@ -161,29 +177,24 @@ export const StoryNodeComponent: React.FC<StoryNodeComponentProps> = ({
         </button>
       </div>
 
-      {/* Handles de sortie positionnés avec précision */}
-      {handlePositions.length > 0 ? (
-        handlePositions.map(({ choiceId, left, bottom }: { choiceId: string; left: number; bottom: number }) => (
-          <Handle
-            key={choiceId}
-            type="source"
-            position={Position.Bottom} // ✅ CORRIGÉ: Utilisation de Position.Bottom
-            id={choiceId}
-            className="w-3 h-3 bg-green-500 border-2 border-white transition-all hover:bg-green-400 hover:scale-110"
-            style={{
-              left: `${left}px`,
-              bottom: `${bottom}px`,
-            }}
-          />
-        ))
-      ) : (
-        // Handle de sortie par défaut si pas de choix
+      {/* ✅ FIX: Handles de sortie positionnés avec précision et UX améliorée */}
+      {handlePositions.map(({ choiceId, left, bottom }) => (
         <Handle
+          key={choiceId}
           type="source"
-          position={Position.Bottom} // ✅ CORRIGÉ: Utilisation de Position.Bottom
-          className="w-3 h-3 bg-green-500 border-2 border-white"
+          position={Position.Bottom}
+          id={choiceId}
+          // ✅ FIX: Handles plus gros et plus visibles
+          className="w-6 h-6 bg-green-500 border-3 border-white transition-all hover:bg-green-400 hover:scale-125 cursor-pointer shadow-lg"
+          style={{
+            left: `${left}px`,
+            bottom: `${bottom}px`,
+            borderRadius: '50%',
+            // ✅ FIX: Zone de clic plus grande
+            boxShadow: '0 0 0 4px rgba(34, 197, 94, 0.2)', // Halo vert
+          }}
         />
-      )}
+      ))}
 
       {/* Debug info pour les choix (en mode développement) */}
       {process.env.NODE_ENV === 'development' && storyNode.choices.length > 0 && (
