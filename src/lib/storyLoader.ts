@@ -143,10 +143,28 @@ export class StoryLoader {
   }
 
   /**
-   * Trouve le nœud de départ dans les données
+   * ✅ FIX: Trouve le nœud de départ dans les données - CORRIGÉ
    */
   private findStartNode(storyData: StoryNode[]): string {
-    // Chercher un nœud qui n'est référencé par aucun choix (nœud racine)
+    console.log('🔍 Recherche du nœud de départ parmi', storyData.length, 'nœuds');
+
+    // ✅ MÉTHODE 1: Chercher le nœud avec ID "1" d'abord (format migré)
+    const nodeOne = storyData.find(node => node.id === '1');
+    if (nodeOne) {
+      console.log('✅ Nœud de départ trouvé: ID "1"');
+      return nodeOne.id;
+    }
+
+    // ✅ MÉTHODE 2: Chercher un nœud avec le tag "début"
+    const taggedStartNode = storyData.find(node => 
+      node.metadata.tags && node.metadata.tags.includes('début')
+    );
+    if (taggedStartNode) {
+      console.log('✅ Nœud de départ trouvé par tag:', taggedStartNode.id);
+      return taggedStartNode.id;
+    }
+
+    // ✅ MÉTHODE 3: Chercher un nœud qui n'est référencé par aucun choix (nœud racine)
     const referencedNodes = new Set<string>();
     
     for (const node of storyData) {
@@ -161,11 +179,12 @@ export class StoryLoader {
     const startNodes = storyData.filter(node => !referencedNodes.has(node.id));
     
     if (startNodes.length === 0) {
-      throw new Error('Aucun nœud de départ trouvé (tous les nœuds sont référencés)');
+      console.warn('⚠️ Aucun nœud racine trouvé, utilisation du premier nœud');
+      return storyData[0]?.id || '';
     }
 
     if (startNodes.length > 1) {
-      console.warn(`Plusieurs nœuds de départ potentiels trouvés: ${startNodes.map(n => n.id).join(', ')}. Utilisation du premier.`);
+      console.warn(`⚠️ Plusieurs nœuds de départ potentiels trouvés: ${startNodes.map(n => n.id).join(', ')}. Utilisation du premier.`);
     }
 
     const startNode = startNodes[0];
@@ -173,6 +192,7 @@ export class StoryLoader {
       throw new Error('Nœud de départ non trouvé');
     }
 
+    console.log('✅ Nœud de départ trouvé par analyse:', startNode.id);
     return startNode.id;
   }
 

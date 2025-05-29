@@ -1,18 +1,19 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import { Handle, PositionEnum as Position, type NodeProps } from '@/components/LazyReactFlow';
+import { Handle, Position, type NodeProps } from '@/components/LazyReactFlow';
 import { Play, Star } from 'lucide-react';
 import { type EditorNode } from '@/types/editor';
 
 // Types stricts pour les props du composant avec compatibilité React Flow v12
 interface StartNodeComponentProps extends NodeProps<EditorNode> {
-  // Props additionnelles si nécessaires
+  id?: string; // ✅ Assurer l'accès à l'ID du nœud React Flow
 }
 
 export const StartNodeComponent: React.FC<StartNodeComponentProps> = ({ 
   data, 
-  selected = false 
+  selected = false,
+  id // ✅ Destructurer l'ID du nœud React Flow
 }) => {
   const { storyNode } = data;
   
@@ -27,28 +28,45 @@ export const StartNodeComponent: React.FC<StartNodeComponentProps> = ({
     return { cleanContent: clean };
   }, [storyNode.content]);
 
-  // Calcul optimisé des positions des handles pour les choix multiples
+  // ✅ FIX: Calcul optimisé des positions des handles - CORRIGÉ
   const handlePositions = useMemo(() => {
     const choicesCount = storyNode.choices.length;
-    if (choicesCount <= 1) return [];
-
-    const nodeWidth = 250;
-    const minSpacing = 25;
-    const maxSpacing = 50;
+    const nodeId = data.id || storyNode.id; // ✅ Utiliser l'ID du nœud React Flow
     
-    const totalAvailableWidth = nodeWidth - (2 * minSpacing);
-    const idealSpacing = Math.min(maxSpacing, totalAvailableWidth / (choicesCount + 1));
-    const actualSpacing = Math.max(minSpacing, idealSpacing);
+    console.log(`🔍 [${storyNode.title}] Calculating handles:`, {
+      choicesCount,
+      choices: storyNode.choices.map(c => ({ id: c.id, text: c.text }))
+    });
     
-    const totalUsedWidth = (choicesCount - 1) * actualSpacing;
-    const startOffset = (nodeWidth - totalUsedWidth) / 2;
+    const existingHandles = [];
     
-    return storyNode.choices.map((choice, index) => ({
-      choiceId: choice.id,
-      left: startOffset + (index * actualSpacing),
-      bottom: -6,
-    }));
-  }, [storyNode.choices]);
+    // Si on a des choix spécifiques, les ajouter
+    if (choicesCount > 0) {
+      const nodeWidth = 250;
+      const handleSpacing = Math.min(60, (nodeWidth - 40) / Math.max(1, choicesCount - 1));
+      const startX = (nodeWidth - (handleSpacing * Math.max(0, choicesCount - 1))) / 2;
+      
+      storyNode.choices.forEach((choice, index) => {
+        existingHandles.push({
+          choiceId: choice.id,
+          left: startX + (index * handleSpacing),
+          bottom: -6,
+        });
+      });
+    }
+    
+    // ✅ FIX: TOUJOURS garder un handle par défaut si pas de choix
+    if (choicesCount === 0) {
+      existingHandles.push({
+        choiceId: `${nodeId}-default-source`,
+        left: 125, // Centré
+        bottom: -6,
+      });
+    }
+    
+    console.log(`🔍 Final handles for ${storyNode.title}:`, existingHandles);
+    return existingHandles;
+  }, [storyNode.choices, data.id, storyNode.title]);
 
   return (
     <div className={`bg-gradient-to-br from-green-700 to-green-800 border-2 rounded-lg p-4 min-w-[250px] max-w-[300px] shadow-lg transition-all relative ${
@@ -89,33 +107,27 @@ export const StartNodeComponent: React.FC<StartNodeComponentProps> = ({
         <span className="text-xs text-green-200">Début de l'histoire</span>
       </div>
 
-      {/* Handles de sortie avec positionnement précis */}
-      {handlePositions.length > 0 ? (
-        // Multiples choix - handles positionnés précisément
-        handlePositions.map(({ choiceId, left, bottom }) => (
-          <Handle
-            key={choiceId}
-            type="source"
-            position={Position.Bottom}
-            id={choiceId}
-            className="w-3 h-3 bg-green-400 border-2 border-white transition-all hover:bg-green-300 hover:scale-110"
-            style={{
-              left: `${left}px`,
-              bottom: `${bottom}px`,
-            }}
-          />
-        ))
-      ) : (
-        // Handle unique par défaut
+      {/* ✅ FIX: Handles de sortie avec positionnement précis et UX améliorée */}
+      {handlePositions.map(({ choiceId, left, bottom }) => (
         <Handle
+          key={choiceId}
           type="source"
           position={Position.Bottom}
-          className="w-4 h-4 bg-green-400 border-2 border-white shadow-lg transition-all hover:bg-green-300 hover:scale-110"
+          id={choiceId}
+          // ✅ FIX: Handles plus gros et plus visibles
+          className="w-6 h-6 bg-green-500 border-3 border-white transition-all hover:bg-green-400 hover:scale-125 cursor-pointer shadow-lg"
+          style={{
+            left: `${left}px`,
+            bottom: `${bottom}px`,
+            borderRadius: '50%',
+            // ✅ FIX: Zone de clic plus grande
+            boxShadow: '0 0 0 4px rgba(34, 197, 94, 0.2)', // Halo vert
+          }}
         />
-      )}
+      ))}
 
       {/* Debug info pour les choix (en mode développement) */}
-      {process.env.NODE_ENV === 'development' && storyNode.choices.length > 1 && (
+      {process.env.NODE_ENV === 'development' && storyNode.choices.length > 0 && (
         <div className="absolute -bottom-8 left-0 text-xs text-green-300 opacity-50">
           {storyNode.choices.length} directions • {handlePositions.length} handles
         </div>
