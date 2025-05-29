@@ -3,7 +3,7 @@ export interface StoryNode {
   title: string;
   content: string;
   choices: Choice[];
-  multimedia?: MediaContent;
+  multimedia: MediaContent;
   metadata: NodeMetadata;
 }
 
@@ -11,8 +11,8 @@ export interface Choice {
   id: string;
   text: string;
   nextNodeId: string;
-  conditions?: Condition[];
-  consequences?: Effect[];
+  conditions: Condition[];
+  consequences: Effect[];
 }
 
 export interface Condition {

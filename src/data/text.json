@@ -180,12 +180,210 @@
     ]
   },
   {
+    "id": 11,
+    "text": "Vous suivez discrètement le garde. Il se dirige vers une section sécurisée de l'hôpital. Les clés vous permettent d'ouvrir plusieurs portes verrouillées. Vous découvrez des cellules où d'autres patients sont retenus prisonniers.",
+    "options": [
+      {
+        "text": "Libérer les autres patients",
+        "nextText": 23
+      },
+      {
+        "text": "Continuer à suivre le garde",
+        "nextText": 25
+      },
+      {
+        "text": "Retourner sur vos pas",
+        "nextText": 6
+      }
+    ]
+  },
+  {
+    "id": 12,
+    "text": "Avec les clés, vous explorez dans la direction opposée. Vous trouvez un bureau abandonné avec un ordinateur encore allumé. Sur l'écran, vous voyez les plans de l'asylum et une liste de tous les patients. Votre nom y figure.",
+    "options": [
+      {
+        "text": "Étudier les plans pour trouver une sortie",
+        "nextText": 23
+      },
+      {
+        "text": "Rechercher des informations sur les autres patients",
+        "nextText": 24
+      },
+      {
+        "text": "Détruire les fichiers informatiques",
+        "nextText": 25
+      }
+    ]
+  },
+  {
+    "id": 13,
+    "text": "Le laboratoire est rempli d'équipements étranges et de bocaux contenant des spécimens inquiétants. Sur une table, vous trouvez des seringues et des flacons étiquetés avec des noms de code. Une porte au fond mène vers une salle d'opération.",
+    "options": [
+      {
+        "text": "Examiner les spécimens",
+        "nextText": 25
+      },
+      {
+        "text": "Entrer dans la salle d'opération",
+        "nextText": 18
+      },
+      {
+        "text": "Prendre une seringue comme arme",
+        "nextText": 23
+      }
+    ]
+  },
+  {
+    "id": 14,
+    "text": "Les salles de traitement révèlent l'horreur des expériences menées ici. Des machines électriques, des appareils de contention, et sur les murs, des photos avant/après des patients. Vous entendez des gémissements venant d'une salle adjacente.",
+    "options": [
+      {
+        "text": "Investiguer les gémissements",
+        "nextText": 11
+      },
+      {
+        "text": "Détruire les machines",
+        "nextText": 25
+      },
+      {
+        "text": "Fuir immédiatement",
+        "nextText": 6
+      }
+    ]
+  },
+  {
+    "id": 15,
+    "text": "Le quartier d'isolement est sinistre. Des cellules capitonnées s'alignent le long d'un couloir sombre. Au bout du couloir, vous apercevez une lumière et ce qui semble être une sortie de secours. Mais des cris proviennent des cellules.",
+    "options": [
+      {
+        "text": "Se diriger vers la sortie",
+        "nextText": 23
+      },
+      {
+        "text": "Vérifier les cellules",
+        "nextText": 11
+      },
+      {
+        "text": "Écouter attentivement les cris",
+        "nextText": 24
+      }
+    ]
+  },
+  {
+    "id": 16,
+    "text": "Vous foulez parmi les dossiers et découvrez votre dossier complet. Vous apprenez que vous êtes ici depuis des mois, que votre mémoire a été effacée plusieurs fois, et que cette 'évasion' fait partie de l'expérience.",
+    "options": [
+      {
+        "text": "Refuser de croire ces informations",
+        "nextText": 23
+      },
+      {
+        "text": "Accepter la réalité et chercher une vraie sortie",
+        "nextText": 24
+      },
+      {
+        "text": "Confronter vos geôliers",
+        "nextText": 25
+      }
+    ]
+  },
+  {
+    "id": 17,
+    "text": "Vous détruisez votre dossier, mais en le déchirant, vous découvrez un message caché à l'intérieur : 'Ils nous observent. La vraie sortie est dans le sous-sol. Signé : Un ami.' Ce message semble authentique.",
+    "options": [
+      {
+        "text": "Aller vers le sous-sol",
+        "nextText": 8
+      },
+      {
+        "text": "Ignorer le message",
+        "nextText": 6
+      },
+      {
+        "text": "Chercher d'autres messages cachés",
+        "nextText": 24
+      }
+    ]
+  },
+  {
     "id": 18,
-    "text": "Votre fuite précipitée alerte les cultistes. Ils se lancent à votre poursuite dans les couloirs sombres de l'asylum. Leurs cris résonnent derrière vous alors que vous courez aveuglément, cherchant désespérément une issue.",
+    "text": "Votre fuite précipitée alerte les cultistes. Ils se lancent à votre poursuite dans les couloirs sombres de l'asylum. Leurs cris résonnent derrière vous alors que vous courez aveuglément, cherchant désespérément une issue. Vous êtes rattrapé.",
     "options": [
       {
         "text": "Recommencer",
         "nextText": -1
+      }
+    ]
+  },
+  {
+    "id": 19,
+    "text": "Vous vous approchez discrètement du rituel. Les cultistes invoquent quelque chose d'ancien et de terrible. Soudain, vous réalisez qu'ils tentent de vous ressusciter... mais vous êtes déjà vivant. Ou le croyiez-vous ?",
+    "options": [
+      {
+        "text": "Interrompre le rituel",
+        "nextText": 25
+      },
+      {
+        "text": "Observer jusqu'au bout",
+        "nextText": 24
+      },
+      {
+        "text": "S'enfuir silencieusement",
+        "nextText": 2
+      }
+    ]
+  },
+  {
+    "id": 20,
+    "text": "Votre cri interrompt le rituel. Les cultistes se retournent vers vous avec des visages déformés par la colère. Leur chef s'avance : 'Tu as tout gâché ! Le processus était presque terminé !' Ils vous entourent.",
+    "options": [
+      {
+        "text": "Négocier avec eux",
+        "nextText": 24
+      },
+      {
+        "text": "Tenter de s'échapper",
+        "nextText": 18
+      },
+      {
+        "text": "Les affronter",
+        "nextText": 25
+      }
+    ]
+  },
+  {
+    "id": 21,
+    "text": "Vous descendez et vous révélez aux cultistes. Ils vous accueillent comme s'ils vous attendaient : 'Enfin, le sujet est prêt. Le processus de renaissance peut commencer.' Vous réalisez que tout ceci était planifié.",
+    "options": [
+      {
+        "text": "Accepter votre sort",
+        "nextText": 25
+      },
+      {
+        "text": "Tenter une dernière évasion",
+        "nextText": 23
+      },
+      {
+        "text": "Demander des explications",
+        "nextText": 24
+      }
+    ]
+  },
+  {
+    "id": 22,
+    "text": "Vous restez caché et écoutez. Le rituel révèle la vérité : vous êtes mort depuis longtemps, et ils tentent de ramener votre âme dans ce corps. L'asylum est un lieu entre les mondes. Vous avez le choix : accepter ou résister.",
+    "options": [
+      {
+        "text": "Accepter la renaissance",
+        "nextText": 24
+      },
+      {
+        "text": "Résister et rester mort",
+        "nextText": 23
+      },
+      {
+        "text": "Chercher une troisième voie",
+        "nextText": 25
       }
     ]
   },
@@ -195,6 +393,20 @@
     "options": [
       {
         "text": "Recommencer",
+        "nextText": -1
+      }
+    ]
+  },
+  {
+    "id": 24,
+    "text": "Vous découvrez la vérité sur l'Asylum : c'est un centre de recherche sur la conscience et la mort. Vous étiez un volontaire qui a accepté de tester la frontière entre vie et mort. L'expérience est terminée, vous pouvez choisir de garder ou d'effacer ces souvenirs.",
+    "options": [
+      {
+        "text": "Garder les souvenirs",
+        "nextText": 23
+      },
+      {
+        "text": "Effacer les souvenirs",
         "nextText": -1
       }
     ]
