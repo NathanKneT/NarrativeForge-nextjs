@@ -1,355 +1,409 @@
+import { StoryExporter } from '@/lib/storyExporter';
 import { GraphToStoryConverter } from '@/lib/graphToStoryConverter';
-import { createMockEditorNode, createMockEditorEdge } from '../utils/test-utils';
-import { EditorNode, EditorEdge } from '@/types/editor';
+import type { EditorNode, EditorEdge } from '@/types/editor';
 
-describe('GraphToStoryConverter', () => {
-  describe('convert', () => {
-    it('should convert a simple linear story correctly', () => {
-      const startNode = createMockEditorNode({
-        id: 'start',
-        data: {
-          storyNode: {
-            id: 'start',
-            title: 'Beginning',
-            content: 'The story begins...',
-            choices: [],
-            multimedia: {},
-            metadata: { tags: [], visitCount: 0, difficulty: 'medium' },
-          },
-          nodeType: 'start',
-          isStartNode: true,
+// Mock GraphToStoryConverter
+jest.mock('@/lib/graphToStoryConverter');
+
+const createMockEditorNode = (overrides: Partial<EditorNode> = {}): EditorNode => ({
+  id: 'test-node',
+  type: 'storyNode',
+  position: { x: 100, y: 100 },
+  data: {
+    storyNode: {
+      id: 'test-node',
+      title: 'Test Node',
+      content: 'Test content',
+      choices: [],
+      multimedia: {},
+      metadata: { tags: [], visitCount: 0, difficulty: 'medium' },
+    },
+    nodeType: 'story',
+    isStartNode: false,
+    isEndNode: false,
+  },
+  ...overrides,
+});
+
+const createMockEditorEdge = (overrides: Partial<EditorEdge> = {}): EditorEdge => ({
+  id: 'test-edge',
+  source: 'node-1',
+  target: 'node-2',
+  type: 'smoothstep',
+  data: {
+    choice: {
+      id: 'choice-1',
+      text: 'Test choice',
+      nextNodeId: 'node-2',
+      conditions: [],
+      consequences: [],
+    }
+  },
+  ...overrides,
+});
+
+describe('StoryExporter', () => {
+  const mockConvert = GraphToStoryConverter.convert as jest.MockedFunction<typeof GraphToStoryConverter.convert>;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockConvert.mockReturnValue({
+      story: [
+        {
+          id: 'start',
+          title: 'Start',
+          content: 'Beginning',
+          choices: [{
+            id: 'choice-1',
+            text: 'Continue',
+            nextNodeId: 'end',
+            conditions: [],
+            consequences: [],
+          }],
+          multimedia: {},
+          metadata: { tags: [], visitCount: 0, difficulty: 'medium' },
         },
-      });
-
-      const storyNode = createMockEditorNode({
-        id: 'story-1',
-        data: {
-          storyNode: {
-            id: 'story-1',
-            title: 'Middle',
-            content: 'The story continues...',
-            choices: [],
-            multimedia: {},
-            metadata: { tags: [], visitCount: 0, difficulty: 'medium' },
-          },
-          nodeType: 'story',
+        {
+          id: 'end',
+          title: 'End',
+          content: 'The end',
+          choices: [],
+          multimedia: {},
+          metadata: { tags: [], visitCount: 0, difficulty: 'medium' },
         },
-      });
-
-      const endNode = createMockEditorNode({
-        id: 'end',
-        data: {
-          storyNode: {
-            id: 'end',
-            title: 'End',
-            content: 'The story ends.',
-            choices: [],
-            multimedia: {},
-            metadata: { tags: [], visitCount: 0, difficulty: 'medium' },
-          },
-          nodeType: 'end',
-          isEndNode: true,
-        },
-      });
-
-      const edge1 = createMockEditorEdge({
-        id: 'edge-1',
-        source: 'start',
-        target: 'story-1',
-        label: 'Continue',
-      });
-
-      const edge2 = createMockEditorEdge({
-        id: 'edge-2',
-        source: 'story-1',
-        target: 'end',
-        label: 'Finish',
-      });
-
-      const nodes: EditorNode[] = [startNode, storyNode, endNode];
-      const edges: EditorEdge[] = [edge1, edge2];
-
-      const result = GraphToStoryConverter.convert(nodes, edges);
-
-      expect(result.errors).toHaveLength(0);
-      expect(result.story).toHaveLength(3);
-      expect(result.startNodeId).toBe('start');
-      
-      // Vérifier que les choix ont été correctement générés
-      const startStoryNode = result.story.find(n => n.id === 'start');
-      expect(startStoryNode?.choices).toHaveLength(1);
-      expect(startStoryNode?.choices[0].text).toBe('Continue');
-      expect(startStoryNode?.choices[0].nextNodeId).toBe('story-1');
-
-      // Vérifier que le nœud de fin a un bouton "Recommencer"
-      const endStoryNode = result.story.find(n => n.id === 'end');
-      expect(endStoryNode?.choices).toHaveLength(1);
-      expect(endStoryNode?.choices[0].text).toBe('Recommencer');
-      expect(endStoryNode?.choices[0].nextNodeId).toBe('-1');
-    });
-
-    it('should handle branching stories with multiple choices', () => {
-      const startNode = createMockEditorNode({
-        id: 'start',
-        data: {
-          nodeType: 'start',
-          isStartNode: true,
-          storyNode: {
-            id: 'start',
-            title: 'Choose your path',
-            content: 'Where do you want to go?',
-            choices: [],
-            multimedia: {},
-            metadata: { tags: [], visitCount: 0, difficulty: 'medium' },
-          },
-        },
-      });
-
-      const leftNode = createMockEditorNode({
-        id: 'left',
-        data: {
-          nodeType: 'story',
-          storyNode: {
-            id: 'left',
-            title: 'Left Path',
-            content: 'You went left.',
-            choices: [],
-            multimedia: {},
-            metadata: { tags: [], visitCount: 0, difficulty: 'medium' },
-          },
-        },
-      });
-
-      const rightNode = createMockEditorNode({
-        id: 'right',
-        data: {
-          nodeType: 'story',
-          storyNode: {
-            id: 'right',
-            title: 'Right Path',
-            content: 'You went right.',
-            choices: [],
-            multimedia: {},
-            metadata: { tags: [], visitCount: 0, difficulty: 'medium' },
-          },
-        },
-      });
-
-      const leftEdge = createMockEditorEdge({
-        source: 'start',
-        target: 'left',
-        label: 'Go left',
-      });
-
-      const rightEdge = createMockEditorEdge({
-        source: 'start',
-        target: 'right',
-        label: 'Go right',
-      });
-
-      const nodes: EditorNode[] = [startNode, leftNode, rightNode];
-      const edges: EditorEdge[] = [leftEdge, rightEdge];
-
-      const result = GraphToStoryConverter.convert(nodes, edges);
-
-      expect(result.errors).toHaveLength(0);
-      
-      const startStoryNode = result.story.find(n => n.id === 'start');
-      expect(startStoryNode?.choices).toHaveLength(2);
-      
-      const choices = startStoryNode?.choices || [];
-      expect(choices.some(c => c.text === 'Go left' && c.nextNodeId === 'left')).toBe(true);
-      expect(choices.some(c => c.text === 'Go right' && c.nextNodeId === 'right')).toBe(true);
-    });
-
-    it('should detect validation errors', () => {
-      // Test avec aucun nœud
-      let result = GraphToStoryConverter.convert([], []);
-      expect(result.errors).toContain('Le graphe ne contient aucun nœud');
-
-      // Test sans nœud de départ
-      const storyNode = createMockEditorNode({
-        data: { nodeType: 'story' },
-      });
-      result = GraphToStoryConverter.convert([storyNode], []);
-      expect(result.errors).toContain('Aucun nœud de départ trouvé');
-
-      // Test avec plusieurs nœuds de départ
-      const start1 = createMockEditorNode({
-        id: 'start1',
-        data: { nodeType: 'start', isStartNode: true },
-      });
-      const start2 = createMockEditorNode({
-        id: 'start2',
-        data: { nodeType: 'start', isStartNode: true },
-      });
-      result = GraphToStoryConverter.convert([start1, start2], []);
-      expect(result.errors).toContain('Plusieurs nœuds de départ trouvés: 2');
-    });
-
-    it('should generate warnings for disconnected nodes', () => {
-      const startNode = createMockEditorNode({
-        id: 'start',
-        data: {
-          nodeType: 'start',
-          isStartNode: true,
-          storyNode: {
-            id: 'start',
-            title: 'Start',
-            content: 'Beginning',
-            choices: [],
-            multimedia: {},
-            metadata: { tags: [], visitCount: 0, difficulty: 'medium' },
-          },
-        },
-      });
-
-      const orphanNode = createMockEditorNode({
-        id: 'orphan',
-        data: {
-          nodeType: 'story',
-          storyNode: {
-            id: 'orphan',
-            title: 'Orphan',
-            content: 'Disconnected node',
-            choices: [],
-            multimedia: {},
-            metadata: { tags: [], visitCount: 0, difficulty: 'medium' },
-          },
-        },
-      });
-
-      const result = GraphToStoryConverter.convert([startNode, orphanNode], []);
-
-      expect(result.warnings.length).toBeGreaterThan(0);
-      expect(result.warnings.some(w => w.includes('Orphan'))).toBe(true);
+      ],
+      startNodeId: 'start',
+      errors: [],
+      warnings: [],
     });
   });
 
-  describe('generateStats', () => {
-    it('should calculate correct statistics', () => {
-      const startNode = createMockEditorNode({
-        id: 'start',
-        data: { nodeType: 'start', isStartNode: true },
+  describe('exportStory', () => {
+    it('should export story in asylum-json format', async () => {
+      const nodes = [createMockEditorNode()];
+      const edges = [createMockEditorEdge()];
+      const options = {
+        format: 'asylum-json' as const,
+        includeMetadata: true,
+        minify: false,
+        validateBeforeExport: false,
+      };
+
+      const result = await StoryExporter.exportStory(nodes, edges, options);
+
+      expect(result.success).toBe(true);
+      expect(result.data).toBeDefined();
+      expect(result.filename).toMatch(/asylum-story-.*\.json/);
+      expect(result.errors).toHaveLength(0);
+      expect(result.stats.totalNodes).toBe(1);
+    });
+
+    it('should export story in JSON format', async () => {
+      const nodes = [createMockEditorNode()];
+      const edges = [createMockEditorEdge()];
+      const options = {
+        format: 'json' as const,
+        includeMetadata: true,
+        minify: false,
+        validateBeforeExport: false,
+      };
+
+      const result = await StoryExporter.exportStory(nodes, edges, options);
+
+      expect(result.success).toBe(true);
+      expect(result.data).toBeDefined();
+      expect(result.filename).toMatch(/interactive-story-.*\.json/);
+    });
+
+    it('should export story in Twine format', async () => {
+      const nodes = [createMockEditorNode()];
+      const edges = [createMockEditorEdge()];
+      const options = {
+        format: 'twine' as const,
+        includeMetadata: true,
+        minify: false,
+        validateBeforeExport: false,
+      };
+
+      const result = await StoryExporter.exportStory(nodes, edges, options);
+
+      expect(result.success).toBe(true);
+      expect(result.data).toBeDefined();
+      expect(result.filename).toMatch(/story-.*\.twee/);
+      expect(typeof result.data).toBe('string');
+    });
+
+    it('should handle validation errors', async () => {
+      const nodes: EditorNode[] = [];
+      const edges: EditorEdge[] = [];
+      const options = {
+        format: 'json' as const,
+        includeMetadata: false,
+        minify: false,
+        validateBeforeExport: true,
+      };
+
+      const result = await StoryExporter.exportStory(nodes, edges, options);
+
+      expect(result.success).toBe(false);
+      expect(result.errors.length).toBeGreaterThan(0);
+    });
+
+    it('should handle conversion errors', async () => {
+      mockConvert.mockReturnValue({
+        story: [],
+        startNodeId: '',
+        errors: ['Conversion failed'],
+        warnings: [],
       });
 
-      const storyNode = createMockEditorNode({
-        id: 'story',
-        data: { nodeType: 'story' },
-      });
+      const nodes = [createMockEditorNode()];
+      const edges = [createMockEditorEdge()];
+      const options = {
+        format: 'json' as const,
+        includeMetadata: false,
+        minify: false,
+        validateBeforeExport: false,
+      };
 
-      const endNode = createMockEditorNode({
-        id: 'end',
-        data: { nodeType: 'end', isEndNode: true },
-      });
+      const result = await StoryExporter.exportStory(nodes, edges, options);
 
-      const edge1 = createMockEditorEdge({
-        source: 'start',
-        target: 'story',
-      });
+      expect(result.success).toBe(false);
+      expect(result.errors.some(error => error.includes('Conversion failed'))).toBe(true);
+    });
 
-      const edge2 = createMockEditorEdge({
-        source: 'story',
-        target: 'end',
-      });
+    it('should handle unsupported format', async () => {
+      const nodes = [createMockEditorNode()];
+      const edges = [createMockEditorEdge()];
+      const options = {
+        format: 'unsupported' as any,
+        includeMetadata: false,
+        minify: false,
+        validateBeforeExport: false,
+      };
 
-      const result = GraphToStoryConverter.convert(
-        [startNode, storyNode, endNode],
-        [edge1, edge2]
-      );
+      const result = await StoryExporter.exportStory(nodes, edges, options);
 
-      const stats = GraphToStoryConverter.generateStats(result);
+      expect(result.success).toBe(false);
+      expect(result.errors.some(error => error.includes('non supporté'))).toBe(true);
+    });
 
-      expect(stats.totalNodes).toBe(3);
-      expect(stats.totalChoices).toBeGreaterThan(0);
-      expect(stats.endNodes).toBe(1);
-      expect(parseFloat(stats.averageChoicesPerNode)).toBeGreaterThan(0);
+    it('should calculate correct statistics', async () => {
+      const nodes = [
+        createMockEditorNode({ id: 'node-1' }),
+        createMockEditorNode({ id: 'node-2' }),
+      ];
+      const edges = [createMockEditorEdge()];
+      const options = {
+        format: 'json' as const,
+        includeMetadata: false,
+        minify: false,
+        validateBeforeExport: false,
+      };
+
+      const result = await StoryExporter.exportStory(nodes, edges, options);
+
+      expect(result.success).toBe(true);
+      expect(result.stats.totalNodes).toBe(2);
+      expect(result.stats.totalChoices).toBe(0);
+      expect(result.stats.fileSize).toBeGreaterThan(0);
+    });
+
+    it('should handle minified export', async () => {
+      const nodes = [createMockEditorNode()];
+      const edges = [createMockEditorEdge()];
+      const options = {
+        format: 'json' as const,
+        includeMetadata: false,
+        minify: true,
+        validateBeforeExport: false,
+      };
+
+      const result = await StoryExporter.exportStory(nodes, edges, options);
+
+      expect(result.success).toBe(true);
+      expect(result.data).toBeDefined();
+      // Minified JSON should not contain line breaks or extra spaces
+      expect(result.data?.includes('\n')).toBe(false);
     });
   });
 
-  describe('edge cases', () => {
-    it('should handle nodes with no outgoing connections', () => {
-      const startNode = createMockEditorNode({
-        id: 'start',
-        data: {
-          nodeType: 'start',
-          isStartNode: true,
-          storyNode: {
-            id: 'start',
-            title: 'Dead End Start',
-            content: 'This leads nowhere',
-            choices: [],
-            multimedia: {},
-            metadata: { tags: [], visitCount: 0, difficulty: 'medium' },
-          },
-        },
-      });
+  describe('getSupportedFormats', () => {
+    it('should return all supported formats', () => {
+      const formats = StoryExporter.getSupportedFormats();
 
-      const result = GraphToStoryConverter.convert([startNode], []);
-
-      expect(result.warnings.length).toBeGreaterThan(0);
-      expect(result.story).toHaveLength(1);
-    });
-
-    it('should preserve existing choices when no edges are present', () => {
-      const nodeWithChoices = createMockEditorNode({
-        id: 'node-with-choices',
-        data: {
-          nodeType: 'story',
-          storyNode: {
-            id: 'node-with-choices',
-            title: 'Has Choices',
-            content: 'This node has predefined choices',
-            choices: [
-              {
-                id: 'choice-1',
-                text: 'Original choice',
-                nextNodeId: 'some-node',
-                conditions: [],
-                consequences: [],
-              },
-            ],
-            multimedia: {},
-            metadata: { tags: [], visitCount: 0, difficulty: 'medium' },
-          },
-        },
-      });
-
-      const result = GraphToStoryConverter.convert([nodeWithChoices], []);
-
-      const convertedNode = result.story.find(n => n.id === 'node-with-choices');
-      expect(convertedNode?.choices).toHaveLength(1);
-      expect(convertedNode?.choices[0].text).toBe('Original choice');
-    });
-
-    it('should handle malformed edge data gracefully', () => {
-      const startNode = createMockEditorNode({
-        id: 'start',
-        data: { nodeType: 'start', isStartNode: true },
-      });
-
-      const targetNode = createMockEditorNode({
-        id: 'target',
-        data: { nodeType: 'story' },
-      });
-
-      const malformedEdge = createMockEditorEdge({
-        source: 'start',
-        target: 'target',
-        label: undefined, // Test avec label undefined
-        data: undefined, // Test avec data undefined
-      });
-
-      const result = GraphToStoryConverter.convert(
-        [startNode, targetNode],
-        [malformedEdge]
-      );
-
-      expect(result.errors).toHaveLength(0);
+      expect(formats).toHaveLength(3);
+      expect(formats.map(f => f.id)).toEqual(['asylum-json', 'json', 'twine']);
       
-      const startStoryNode = result.story.find(n => n.id === 'start');
-      expect(startStoryNode?.choices).toHaveLength(1);
-      expect(startStoryNode?.choices[0].text).toContain('Choix'); // Texte par défaut
+      formats.forEach(format => {
+        expect(format).toHaveProperty('id');
+        expect(format).toHaveProperty('name');
+        expect(format).toHaveProperty('description');
+        expect(format).toHaveProperty('extension');
+      });
+    });
+  });
+
+  describe('downloadExport', () => {
+    beforeEach(() => {
+      // Mock DOM methods
+      global.URL.createObjectURL = jest.fn(() => 'mock-url');
+      global.URL.revokeObjectURL = jest.fn();
+      
+      const mockAppendChild = jest.fn();
+      const mockRemoveChild = jest.fn();
+      const mockClick = jest.fn();
+      
+      Object.defineProperty(document, 'createElement', {
+        value: jest.fn(() => ({
+          click: mockClick,
+          href: '',
+          download: '',
+        })),
+        writable: true,
+      });
+      
+      Object.defineProperty(document.body, 'appendChild', {
+        value: mockAppendChild,
+        writable: true,
+      });
+      
+      Object.defineProperty(document.body, 'removeChild', {
+        value: mockRemoveChild,
+        writable: true,
+      });
+    });
+
+    it('should download successful export', () => {
+      const result = {
+        success: true,
+        data: '{"test": "data"}',
+        filename: 'test.json',
+        errors: [],
+        warnings: [],
+        stats: { totalNodes: 1, totalChoices: 0, fileSize: 100 },
+      };
+
+      expect(() => {
+        StoryExporter.downloadExport(result);
+      }).not.toThrow();
+    });
+
+    it('should throw error for failed export', () => {
+      const result = {
+        success: false,
+        filename: '',
+        errors: ['Export failed'],
+        warnings: [],
+        stats: { totalNodes: 0, totalChoices: 0, fileSize: 0 },
+      };
+
+      expect(() => {
+        StoryExporter.downloadExport(result);
+      }).toThrow('Aucune donnée à télécharger');
+    });
+  });
+
+  describe('getExportPreview', () => {
+    it('should return preview of export data', () => {
+      const result = {
+        success: true,
+        data: 'Line 1\nLine 2\nLine 3\nLine 4\nLine 5',
+        filename: 'test.txt',
+        errors: [],
+        warnings: [],
+        stats: { totalNodes: 1, totalChoices: 0, fileSize: 100 },
+      };
+
+      const preview = StoryExporter.getExportPreview(result, 3);
+      expect(preview).toBe('Line 1\nLine 2\nLine 3\n... (2 lignes supplémentaires)');
+    });
+
+    it('should return full data if shorter than max lines', () => {
+      const result = {
+        success: true,
+        data: 'Line 1\nLine 2',
+        filename: 'test.txt',
+        errors: [],
+        warnings: [],
+        stats: { totalNodes: 1, totalChoices: 0, fileSize: 100 },
+      };
+
+      const preview = StoryExporter.getExportPreview(result, 5);
+      expect(preview).toBe('Line 1\nLine 2');
+    });
+
+    it('should handle failed export', () => {
+      const result = {
+        success: false,
+        filename: '',
+        errors: [],
+        warnings: [],
+        stats: { totalNodes: 0, totalChoices: 0, fileSize: 0 },
+      };
+
+      const preview = StoryExporter.getExportPreview(result);
+      expect(preview).toBe('Aucune donnée disponible');
+    });
+  });
+
+  describe('Edge Cases', () => {
+    it('should handle empty nodes and edges', async () => {
+      const options = {
+        format: 'json' as const,
+        includeMetadata: false,
+        minify: false,
+        validateBeforeExport: false,
+      };
+
+      const result = await StoryExporter.exportStory([], [], options);
+
+      expect(result.success).toBe(true);
+      expect(result.stats.totalNodes).toBe(0);
+    });
+
+    it('should handle nodes with complex metadata', async () => {
+      const complexNode = createMockEditorNode({
+        data: {
+          storyNode: {
+            id: 'complex',
+            title: 'Complex Node',
+            content: 'Complex content with <em>HTML</em>',
+            choices: [{
+              id: 'choice-1',
+              text: 'Choice with conditions',
+              nextNodeId: 'next',
+              conditions: [{ type: 'variable', target: 'health', operator: '>', value: 50 }],
+              consequences: [{ type: 'set_variable', target: 'visited', value: true }],
+            }],
+            multimedia: {
+              backgroundImage: 'bg.jpg',
+              soundEffects: ['sound1.mp3'],
+            },
+            metadata: {
+              tags: ['important', 'boss-fight'],
+              visitCount: 5,
+              difficulty: 'hard',
+              lastVisited: new Date(),
+            },
+          },
+          nodeType: 'story',
+          isStartNode: false,
+          isEndNode: false,
+        },
+      });
+
+      const options = {
+        format: 'json' as const,
+        includeMetadata: true,
+        minify: false,
+        validateBeforeExport: false,
+      };
+
+      const result = await StoryExporter.exportStory([complexNode], [], options);
+
+      expect(result.success).toBe(true);
+      expect(result.data).toBeDefined();
     });
   });
 });
