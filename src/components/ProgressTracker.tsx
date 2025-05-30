@@ -15,7 +15,7 @@ export const ProgressTracker: React.FC<ProgressTrackerProps> = ({
   visitedNodes,
 }) => {
   const [isClient, setIsClient] = useState(false);
-  const progressPercentage = (currentProgress / totalNodes) * 100;
+  const progressPercentage = totalNodes > 0 ? (currentProgress / totalNodes) * 100 : 0;
 
   useEffect(() => {
     setIsClient(true);

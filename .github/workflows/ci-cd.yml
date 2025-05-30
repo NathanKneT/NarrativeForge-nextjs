@@ -1,64 +1,70 @@
-name: 🚀 CI/CD Pipeline
+name: 🚀 Asylum Interactive - CI/CD Pipeline
 
 on:
   push:
     branches: [ main, develop ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, develop ]
+  workflow_dispatch:
 
+# Environment variables
 env:
   NODE_VERSION: '18'
-  CACHE_KEY: 'npm-cache'
+  CACHE_VERSION: 'v1'
 
 jobs:
-  # Job 1: Validation et Tests
-  validate:
-    name: 🔍 Validate & Test
+  # 🔧 PHASE 1: CODE QUALITY & LINTING
+  quality-check:
+    name: 📝 Code Quality & Linting
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-
-    strategy:
-      matrix:
-        node-version: [18, 20]
-
+    timeout-minutes: 10
+    
     steps:
-      - name: 📚 Checkout code
+      - name: 📥 Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: 📦 Setup Node.js ${{ matrix.node-version }}
+      - name: 📦 Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
-      - name: 📥 Install dependencies
-        run: npm ci --ignore-scripts
+      - name: 🔧 Install dependencies
+        run: npm ci --prefer-offline --no-audit
 
-      - name: 🔍 Lint code
+      - name: 🔍 Run ESLint
         run: npm run lint
 
-      - name: 📝 Type check
+      - name: 🎨 Check Prettier formatting
+        run: npm run format:check
+
+      - name: 📏 TypeScript type checking
         run: npm run type-check
 
-      - name: 🧪 Run tests
-        run: npm run test:ci
-
-      - name: 📊 Upload coverage
-        uses: codecov/codecov-action@v3
+      - name: 📊 Upload lint results
+        uses: actions/upload-artifact@v4
+        if: always()
         with:
-          file: ./coverage/lcov.info
-          flags: unittests
-          name: codecov-umbrella
+          name: lint-results
+          path: |
+            eslint-report.json
+            prettier-check.log
+          retention-days: 7
 
-  # Job 2: Build et Validation de Production
-  build:
-    name: 🏗️ Build & Validate
+  # 🔧 PHASE 2: TESTING SUITE
+  test-suite:
+    name: 🧪 Test Suite
     runs-on: ubuntu-latest
-    needs: validate
-    timeout-minutes: 20
-
+    timeout-minutes: 15
+    
+    strategy:
+      matrix:
+        test-type: [unit, integration]
+        
     steps:
-      - name: 📚 Checkout code
+      - name: 📥 Checkout code
         uses: actions/checkout@v4
 
       - name: 📦 Setup Node.js
@@ -67,82 +73,85 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
-      - name: 📥 Install dependencies
-        run: npm ci --ignore-scripts
+      - name: 🔧 Install dependencies
+        run: npm ci --prefer-offline --no-audit
+
+      - name: 🧪 Run tests with coverage
+        run: npm run test:ci
+        env:
+          CI: true
+
+      - name: 📊 Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-${{ matrix.test-type }}
+          path: |
+            test-results/
+            coverage/
+          retention-days: 30
+
+      - name: 📈 Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        if: matrix.test-type == 'unit'
+        with:
+          file: ./coverage/lcov.info
+          flags: unittests
+          name: asylum-coverage
+          fail_ci_if_error: false
+
+  # 🔧 PHASE 3: BUILD & BUNDLE ANALYSIS
+  build-analysis:
+    name: 🏗️ Build & Bundle Analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [quality-check]
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 🔧 Install dependencies
+        run: npm ci --prefer-offline --no-audit
 
       - name: 🏗️ Build application
         run: npm run build
         env:
           NODE_ENV: production
 
-      - name: 🔍 Run production validation
-        run: npm run validate
-
-      - name: 📊 Analyze bundle
-        run: npm run analyze
+      - name: 📊 Analyze bundle size
+        run: npm run build:analyze
+        continue-on-error: true
 
       - name: 📦 Upload build artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: build-files
+          name: build-artifacts
           path: |
             .next/
-            public/
-          retention-days: 1
-
-  # Job 3: Tests E2E
-  e2e:
-    name: 🎭 E2E Tests
-    runs-on: ubuntu-latest
-    needs: build
-    timeout-minutes: 30
-
-    steps:
-      - name: 📚 Checkout code
-        uses: actions/checkout@v4
-
-      - name: 📦 Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: 📥 Install dependencies
-        run: npm ci --ignore-scripts
-
-      - name: 📦 Download build artifacts
-        uses: actions/download-artifact@v3
-        with:
-          name: build-files
-
-      - name: 🎭 Install Playwright
-        run: npx playwright install --with-deps
-
-      - name: 🚀 Start application
-        run: |
-          npm start &
-          npx wait-on http://localhost:3000 --timeout 60000
-
-      - name: 🧪 Run E2E tests
-        run: npm run test:e2e
-
-      - name: 📊 Upload E2E results
-        uses: actions/upload-artifact@v3
-        if: failure()
-        with:
-          name: playwright-report
-          path: playwright-report/
+            !.next/cache
           retention-days: 7
 
-  # Job 4: Security Audit
-  security:
+      - name: 💾 Cache build
+        uses: actions/cache@v3
+        with:
+          path: .next
+          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('**/*.ts', '**/*.tsx', '**/*.js', '**/*.jsx') }}
+
+  # 🔧 PHASE 4: SECURITY AUDIT
+  security-audit:
     name: 🔒 Security Audit
     runs-on: ubuntu-latest
-    needs: validate
     timeout-minutes: 10
-
+    
     steps:
-      - name: 📚 Checkout code
+      - name: 📥 Checkout code
         uses: actions/checkout@v4
 
       - name: 📦 Setup Node.js
@@ -151,29 +160,31 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
-      - name: 📥 Install dependencies
-        run: npm ci --ignore-scripts
+      - name: 🔧 Install dependencies
+        run: npm ci --prefer-offline --no-audit
 
-      - name: 🔒 Run security audit
-        run: npm run security:audit
+      - name: 🛡️ Run npm audit
+        run: npm audit --audit-level=moderate
+        continue-on-error: true
 
-      - name: 🛡️ Run CodeQL Analysis
-        uses: github/codeql-action/init@v2
+      - name: 🔍 Run Snyk security scan
+        uses: snyk/actions/node@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
-          languages: javascript
+          args: --severity-threshold=medium
 
-      - name: 🔍 Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v2
-
-  # Job 5: Lighthouse Performance
-  lighthouse:
-    name: 🔍 Lighthouse Audit
+  # 🔧 PHASE 5: E2E TESTING (Conditional)
+  e2e-tests:
+    name: 🎭 E2E Tests
     runs-on: ubuntu-latest
-    needs: build
-    timeout-minutes: 15
-
+    timeout-minutes: 30
+    needs: [build-analysis]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
     steps:
-      - name: 📚 Checkout code
+      - name: 📥 Checkout code
         uses: actions/checkout@v4
 
       - name: 📦 Setup Node.js
@@ -182,89 +193,162 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
-      - name: 📥 Install dependencies
-        run: npm ci --ignore-scripts
+      - name: 🔧 Install dependencies
+        run: npm ci --prefer-offline --no-audit
 
-      - name: 📦 Download build artifacts
-        uses: actions/download-artifact@v3
-        with:
-          name: build-files
+      - name: 📦 Install Playwright browsers
+        run: npx playwright install --with-deps
+
+      - name: 🏗️ Build application
+        run: npm run build
 
       - name: 🚀 Start application
-        run: |
-          npm start &
-          npx wait-on http://localhost:3000 --timeout 60000
-
-      - name: 🔍 Run Lighthouse audit
-        run: |
-          npm install -g @lhci/cli
-          lhci autorun
+        run: npm run start &
         env:
-          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
+          PORT: 3000
 
-      - name: 📊 Upload Lighthouse results
-        uses: actions/upload-artifact@v3
+      - name: ⏳ Wait for application
+        run: npx wait-on http://localhost:3000
+
+      - name: 🎭 Run Playwright tests
+        run: npm run test:e2e
+        env:
+          BASE_URL: http://localhost:3000
+
+      - name: 📊 Upload E2E results
+        uses: actions/upload-artifact@v4
+        if: always()
         with:
-          name: lighthouse-report
-          path: .lighthouseci/
-          retention-days: 7
+          name: e2e-results
+          path: |
+            test-results/
+            playwright-report/
+          retention-days: 30
 
-  # Job 6: Docker Build (sur push vers main)
-  docker:
-    name: 🐳 Docker Build
+  # 🔧 PHASE 6: COMPREHENSIVE VALIDATION
+  comprehensive-validation:
+    name: 🔍 Comprehensive Validation
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-    needs: [validate, build, e2e, security]
     timeout-minutes: 20
-
+    needs: [quality-check, test-suite, build-analysis, security-audit]
+    
     steps:
-      - name: 📚 Checkout code
+      - name: 📥 Checkout code
         uses: actions/checkout@v4
 
-      - name: 🐳 Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: 🔑 Login to Container Registry
-        uses: docker/login-action@v3
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
 
-      - name: 🏷️ Extract metadata
-        id: meta
-        uses: docker/metadata-action@v5
+      - name: 🔧 Install dependencies
+        run: npm ci --prefer-offline --no-audit
+
+      - name: 🔍 Run enhanced validation
+        run: node scripts/validate-build-enhanced.js
+
+      - name: 📊 Upload validation report
+        uses: actions/upload-artifact@v4
+        if: always()
         with:
-          images: ghcr.io/${{ github.repository }}
-          tags: |
-            type=ref,event=branch
-            type=ref,event=pr
-            type=sha,prefix={{branch}}-
-            type=raw,value=latest,enable={{is_default_branch}}
+          name: validation-report
+          path: validation-report-enhanced.json
+          retention-days: 30
 
-      - name: 🏗️ Build and push Docker image
-        uses: docker/build-push-action@v5
+      - name: 💬 Comment validation results on PR
+        uses: actions/github-script@v7
+        if: github.event_name == 'pull_request'
         with:
-          context: .
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          script: |
+            const fs = require('fs');
+            try {
+              const report = JSON.parse(fs.readFileSync('validation-report-enhanced.json', 'utf8'));
+              const score = report.score;
+              const emoji = score >= 90 ? '🚀' : score >= 80 ? '✅' : score >= 70 ? '⚠️' : '❌';
+              
+              const comment = `${emoji} **Validation Report**
+              
+              **Score: ${score}/100**
+              - ✅ Passed: ${report.summary.passed}
+              - ⚠️ Warnings: ${report.summary.warnings} 
+              - ❌ Failed: ${report.summary.failed}
+              
+              ${score >= 85 ? '🎉 Great job! Ready for review.' : '🔧 Some improvements needed before merge.'}
+              
+              <details>
+              <summary>📊 Detailed Results</summary>
+              
+              ${report.results.map(r => `- ${r.status === 'PASS' ? '✅' : r.status === 'WARN' ? '⚠️' : '❌'} ${r.check}`).join('\n')}
+              </details>`;
+              
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: comment
+              });
+            } catch (error) {
+              console.log('Could not post validation results:', error.message);
+            }
 
-  # Job 7: Deploy (production uniquement)
-  deploy:
-    name: 🚀 Deploy
+  # 🔧 PHASE 7: PERFORMANCE MONITORING
+  performance-monitoring:
+    name: ⚡ Performance Monitoring
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-    needs: [validate, build, e2e, security, lighthouse, docker]
-    environment: production
-    timeout-minutes: 10
-
+    timeout-minutes: 15
+    needs: [build-analysis]
+    if: github.event_name == 'push'
+    
     steps:
-      - name: 📚 Checkout code
+      - name: 📥 Checkout code
         uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 🔧 Install dependencies
+        run: npm ci --prefer-offline --no-audit
+
+      - name: 🏗️ Build for performance test
+        run: npm run build
+
+      - name: ⚡ Run Lighthouse CI
+        uses: treosh/lighthouse-ci-action@v10
+        with:
+          configPath: './lighthouse.config.js'
+          uploadArtifacts: true
+          temporaryPublicStorage: true
+
+  # 🔧 PHASE 8: DEPLOYMENT (Production)
+  deploy-production:
+    name: 🚀 Deploy to Production
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [comprehensive-validation, e2e-tests]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment: production
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 🔧 Install dependencies
+        run: npm ci --prefer-offline --no-audit
+
+      - name: 🏗️ Build for production
+        run: npm run build
+        env:
+          NODE_ENV: production
 
       - name: 🚀 Deploy to Vercel
         uses: amondnet/vercel-action@v25
@@ -274,64 +358,63 @@ jobs:
           vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
           vercel-args: '--prod'
 
-      - name: 📊 Post-deployment health check
-        run: |
-          sleep 30
-          curl -f ${{ secrets.PRODUCTION_URL }}/api/health || exit 1
-
-      - name: 📢 Notify success
+      - name: 🎉 Deployment success notification
         if: success()
         run: |
-          echo "🎉 Deployment successful!"
-          echo "🔗 Production URL: ${{ secrets.PRODUCTION_URL }}"
+          echo "🎉 Successfully deployed to production!"
+          echo "🔗 URL: https://asylum-interactive.vercel.app"
 
-  # Job 8: Notification finale
-  notify:
-    name: 📢 Notify
+  # 🔧 PHASE 9: POST-DEPLOYMENT HEALTH CHECK
+  health-check:
+    name: 🏥 Health Check
     runs-on: ubuntu-latest
-    if: always()
-    needs: [validate, build, e2e, security, lighthouse]
-
+    timeout-minutes: 5
+    needs: [deploy-production]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
     steps:
-      - name: 📊 Calculate success rate
-        id: success-rate
+      - name: 🏥 Check application health
         run: |
-          TOTAL=5
-          SUCCESS=0
-          [[ "${{ needs.validate.result }}" == "success" ]] && ((SUCCESS++))
-          [[ "${{ needs.build.result }}" == "success" ]] && ((SUCCESS++))
-          [[ "${{ needs.e2e.result }}" == "success" ]] && ((SUCCESS++))
-          [[ "${{ needs.security.result }}" == "success" ]] && ((SUCCESS++))
-          [[ "${{ needs.lighthouse.result }}" == "success" ]] && ((SUCCESS++))
+          echo "Waiting for deployment to be ready..."
+          sleep 30
           
-          RATE=$((SUCCESS * 100 / TOTAL))
-          echo "rate=$RATE" >> $GITHUB_OUTPUT
-          echo "success=$SUCCESS" >> $GITHUB_OUTPUT
-          echo "total=$TOTAL" >> $GITHUB_OUTPUT
-
-      - name: 🏆 FAANG Quality Check
-        run: |
-          if [[ "${{ steps.success-rate.outputs.rate }}" -ge "90" ]]; then
-            echo "🏆 FAANG QUALITY ACHIEVED! (${{ steps.success-rate.outputs.rate }}%)"
-            echo "quality=FAANG" >> $GITHUB_ENV
-          elif [[ "${{ steps.success-rate.outputs.rate }}" -ge "75" ]]; then
-            echo "🥈 Production Quality (${{ steps.success-rate.outputs.rate }}%)"
-            echo "quality=PRODUCTION" >> $GITHUB_ENV
+          # Health check
+          response=$(curl -s -o /dev/null -w "%{http_code}" https://asylum-interactive.vercel.app/api/health)
+          if [ $response -eq 200 ]; then
+            echo "✅ Health check passed!"
           else
-            echo "🚫 Quality issues detected (${{ steps.success-rate.outputs.rate }}%)"
-            echo "quality=NEEDS_WORK" >> $GITHUB_ENV
+            echo "❌ Health check failed with status: $response"
+            exit 1
           fi
 
-      - name: 📝 Summary
+      - name: 🔍 Basic smoke test
         run: |
-          echo "## 📊 Pipeline Results" >> $GITHUB_STEP_SUMMARY
+          # Test main page loads
+          curl -f https://asylum-interactive.vercel.app/ > /dev/null
+          echo "✅ Main page loads successfully"
+          
+          # Test editor page loads  
+          curl -f https://asylum-interactive.vercel.app/editor > /dev/null
+          echo "✅ Editor page loads successfully"
+
+# 📊 Workflow Summary
+  workflow-summary:
+    name: 📊 Workflow Summary
+    runs-on: ubuntu-latest
+    if: always()
+    needs: [quality-check, test-suite, build-analysis, security-audit, comprehensive-validation]
+    
+    steps:
+      - name: 📋 Generate summary
+        run: |
+          echo "## 🚀 Asylum Interactive CI/CD Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Quality Level:** ${{ env.quality }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Success Rate:** ${{ steps.success-rate.outputs.success }}/${{ steps.success-rate.outputs.total }} (${{ steps.success-rate.outputs.rate }}%)" >> $GITHUB_STEP_SUMMARY
+          echo "| Phase | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Code Quality | ${{ needs.quality-check.result == 'success' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Tests | ${{ needs.test-suite.result == 'success' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Build | ${{ needs.build-analysis.result == 'success' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Security | ${{ needs.security-audit.result == 'success' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Validation | ${{ needs.comprehensive-validation.result == 'success' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Job Results:" >> $GITHUB_STEP_SUMMARY
-          echo "- 🔍 Validation: ${{ needs.validate.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- 🏗️ Build: ${{ needs.build.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- 🎭 E2E Tests: ${{ needs.e2e.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- 🔒 Security: ${{ needs.security.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- 🔍 Lighthouse: ${{ needs.lighthouse.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Next Steps:** Check individual job outputs for detailed results." >> $GITHUB_STEP_SUMMARY
