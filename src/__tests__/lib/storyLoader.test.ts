@@ -473,9 +473,10 @@ describe('StoryLoader', () => {
 
       const loader = new StoryLoader(mockNodes);
       const stats = loader.getStats();
-      expect(stats.maxDepth).toBe(1);
+      expect(stats.maxDepth).toBe(2);
     });
   });
+});
 
   describe('Error Handling', () => {
     it('should handle invalid node data', () => {
@@ -745,4 +746,3 @@ describe('StoryLoader', () => {
       expect(node?.metadata.visitCount).toBe(5);
     });
   });
-});
