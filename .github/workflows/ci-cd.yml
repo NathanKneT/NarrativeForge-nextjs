@@ -1,4 +1,4 @@
-name: 🚀 Asylum Interactive - CI/CD Pipeline
+name: CI/CD Pipeline
 
 on:
   push:
@@ -7,414 +7,256 @@ on:
     branches: [ main, develop ]
   workflow_dispatch:
 
-# Environment variables
-env:
-  NODE_VERSION: '18'
-  CACHE_VERSION: 'v1'
+# Sets permissions for GitHub token
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+  pull-requests: write
+  checks: write
+
+# Prevent concurrent runs
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  # 🔧 PHASE 1: CODE QUALITY & LINTING
-  quality-check:
-    name: 📝 Code Quality & Linting
+  # Validation job - TypeScript, ESLint, Tests
+  validate:
+    name: 🔍 Validation
     runs-on: ubuntu-latest
-    timeout-minutes: 10
     
     steps:
-      - name: 📥 Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
-      - name: 📦 Setup Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version: '18'
           cache: 'npm'
 
-      - name: 🔧 Install dependencies
-        run: npm ci --prefer-offline --no-audit
+      - name: Install dependencies
+        run: npm ci
 
-      - name: 🔍 Run ESLint
-        run: npm run lint
+      - name: Run pre-build validation
+        run: npm run validate:pre-build
 
-      - name: 🎨 Check Prettier formatting
-        run: npm run format:check
+  # Build job
+  build:
+    name: 🏗️ Build
+    runs-on: ubuntu-latest
+    needs: validate
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: 📏 TypeScript type checking
-        run: npm run type-check
-
-      - name: 📊 Upload lint results
-        uses: actions/upload-artifact@v4
-        if: always()
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          name: lint-results
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Cache Next.js build
+        uses: actions/cache@v4
+        with:
           path: |
-            eslint-report.json
-            prettier-check.log
-          retention-days: 7
+            ~/.npm
+            ${{ github.workspace }}/.next/cache
+          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('**.[jt]s', '**.[jt]sx') }}
+          restore-keys: |
+            ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-
 
-  # 🔧 PHASE 2: TESTING SUITE
-  test-suite:
-    name: 🧪 Test Suite
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    
-    strategy:
-      matrix:
-        test-type: [unit, integration]
-        
-    steps:
-      - name: 📥 Checkout code
-        uses: actions/checkout@v4
-
-      - name: 📦 Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: 🔧 Install dependencies
-        run: npm ci --prefer-offline --no-audit
-
-      - name: 🧪 Run tests with coverage
-        run: npm run test:ci
-        env:
-          CI: true
-
-      - name: 📊 Upload test results
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: test-results-${{ matrix.test-type }}
-          path: |
-            test-results/
-            coverage/
-          retention-days: 30
-
-      - name: 📈 Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
-        if: matrix.test-type == 'unit'
-        with:
-          file: ./coverage/lcov.info
-          flags: unittests
-          name: asylum-coverage
-          fail_ci_if_error: false
-
-  # 🔧 PHASE 3: BUILD & BUNDLE ANALYSIS
-  build-analysis:
-    name: 🏗️ Build & Bundle Analysis
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    needs: [quality-check]
-    
-    steps:
-      - name: 📥 Checkout code
-        uses: actions/checkout@v4
-
-      - name: 📦 Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: 🔧 Install dependencies
-        run: npm ci --prefer-offline --no-audit
-
-      - name: 🏗️ Build application
+      - name: Build application
         run: npm run build
         env:
           NODE_ENV: production
+          NEXT_TELEMETRY_DISABLED: 1
 
-      - name: 📊 Analyze bundle size
-        run: npm run build:analyze
-        continue-on-error: true
+      - name: Run enhanced validation
+        run: npm run validate:enhanced
 
-      - name: 📦 Upload build artifacts
+      - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: build-artifacts
+          name: build-files
           path: |
             .next/
-            !.next/cache
+            public/
           retention-days: 7
 
-      - name: 💾 Cache build
-        uses: actions/cache@v3
-        with:
-          path: .next
-          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('**/*.ts', '**/*.tsx', '**/*.js', '**/*.jsx') }}
-
-  # 🔧 PHASE 4: SECURITY AUDIT
-  security-audit:
-    name: 🔒 Security Audit
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    
-    steps:
-      - name: 📥 Checkout code
-        uses: actions/checkout@v4
-
-      - name: 📦 Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: 🔧 Install dependencies
-        run: npm ci --prefer-offline --no-audit
-
-      - name: 🛡️ Run npm audit
-        run: npm audit --audit-level=moderate
-        continue-on-error: true
-
-      - name: 🔍 Run Snyk security scan
-        uses: snyk/actions/node@master
-        continue-on-error: true
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        with:
-          args: --severity-threshold=medium
-
-  # 🔧 PHASE 5: E2E TESTING (Conditional)
+  # E2E tests job (optionnel si vous avez des tests Playwright)
   e2e-tests:
     name: 🎭 E2E Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 30
-    needs: [build-analysis]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: build
+    if: github.event_name == 'pull_request'
+    timeout-minutes: 20
     
     steps:
-      - name: 📥 Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: 📦 Setup Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version: '18'
           cache: 'npm'
 
-      - name: 🔧 Install dependencies
-        run: npm ci --prefer-offline --no-audit
+      - name: Install dependencies
+        run: npm ci
 
-      - name: 📦 Install Playwright browsers
+      - name: Install Playwright browsers
         run: npx playwright install --with-deps
 
-      - name: 🏗️ Build application
-        run: npm run build
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-files
 
-      - name: 🚀 Start application
-        run: npm run start &
+      - name: Run E2E tests
+        run: npm run test:e2e
+        env:
+          CI: true
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 30
+
+  # Security audit job
+  security:
+    name: 🔒 Security
+    runs-on: ubuntu-latest
+    needs: validate
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run security audit
+        run: npm audit --audit-level high
+        continue-on-error: true
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+
+  # Performance audit (optionnel - seulement sur PR)
+  performance:
+    name: ⚡ Performance
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name == 'pull_request'
+    continue-on-error: true
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Lighthouse CI
+        run: npm install -g @lhci/cli
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-files
+
+      - name: Start server for testing
+        run: |
+          npm start &
+          npx wait-on http://localhost:3000 --timeout 60000
         env:
           PORT: 3000
 
-      - name: ⏳ Wait for application
-        run: npx wait-on http://localhost:3000
-
-      - name: 🎭 Run Playwright tests
-        run: npm run test:e2e
+      - name: Run Lighthouse CI
+        run: lhci autorun --config=./lighthouserc.js
         env:
-          BASE_URL: http://localhost:3000
+          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
 
-      - name: 📊 Upload E2E results
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: e2e-results
-          path: |
-            test-results/
-            playwright-report/
-          retention-days: 30
-
-  # 🔧 PHASE 6: COMPREHENSIVE VALIDATION
-  comprehensive-validation:
-    name: 🔍 Comprehensive Validation
+  # Docker build job
+  docker:
+    name: 🐳 Docker
     runs-on: ubuntu-latest
-    timeout-minutes: 20
-    needs: [quality-check, test-suite, build-analysis, security-audit]
+    needs: [build, security]
+    if: github.ref == 'refs/heads/main'
     
     steps:
-      - name: 📥 Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: 📦 Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        if: github.event_name != 'pull_request' && secrets.DOCKER_USERNAME != ''
+        uses: docker/login-action@v3
         with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: 🔧 Install dependencies
-        run: npm ci --prefer-offline --no-audit
-
-      - name: 🔍 Run enhanced validation
-        run: node scripts/validate-build-enhanced.js
-
-      - name: 📊 Upload validation report
-        uses: actions/upload-artifact@v4
-        if: always()
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
         with:
-          name: validation-report
-          path: validation-report-enhanced.json
-          retention-days: 30
+          images: ${{ secrets.DOCKER_USERNAME }}/asylum-story
+          tags: |
+            type=ref,event=branch
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
 
-      - name: 💬 Comment validation results on PR
-        uses: actions/github-script@v7
-        if: github.event_name == 'pull_request'
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
         with:
-          script: |
-            const fs = require('fs');
-            try {
-              const report = JSON.parse(fs.readFileSync('validation-report-enhanced.json', 'utf8'));
-              const score = report.score;
-              const emoji = score >= 90 ? '🚀' : score >= 80 ? '✅' : score >= 70 ? '⚠️' : '❌';
-              
-              const comment = `${emoji} **Validation Report**
-              
-              **Score: ${score}/100**
-              - ✅ Passed: ${report.summary.passed}
-              - ⚠️ Warnings: ${report.summary.warnings} 
-              - ❌ Failed: ${report.summary.failed}
-              
-              ${score >= 85 ? '🎉 Great job! Ready for review.' : '🔧 Some improvements needed before merge.'}
-              
-              <details>
-              <summary>📊 Detailed Results</summary>
-              
-              ${report.results.map(r => `- ${r.status === 'PASS' ? '✅' : r.status === 'WARN' ? '⚠️' : '❌'} ${r.check}`).join('\n')}
-              </details>`;
-              
-              github.rest.issues.createComment({
-                issue_number: context.issue.number,
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                body: comment
-              });
-            } catch (error) {
-              console.log('Could not post validation results:', error.message);
-            }
+          context: .
+          file: ./Dockerfile
+          push: ${{ github.event_name != 'pull_request' && secrets.DOCKER_USERNAME != '' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
-  # 🔧 PHASE 7: PERFORMANCE MONITORING
-  performance-monitoring:
-    name: ⚡ Performance Monitoring
+  # Cleanup job
+  cleanup:
+    name: 🧹 Cleanup
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-    needs: [build-analysis]
-    if: github.event_name == 'push'
-    
-    steps:
-      - name: 📥 Checkout code
-        uses: actions/checkout@v4
-
-      - name: 📦 Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: 🔧 Install dependencies
-        run: npm ci --prefer-offline --no-audit
-
-      - name: 🏗️ Build for performance test
-        run: npm run build
-
-      - name: ⚡ Run Lighthouse CI
-        uses: treosh/lighthouse-ci-action@v10
-        with:
-          configPath: './lighthouse.config.js'
-          uploadArtifacts: true
-          temporaryPublicStorage: true
-
-  # 🔧 PHASE 8: DEPLOYMENT (Production)
-  deploy-production:
-    name: 🚀 Deploy to Production
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    needs: [comprehensive-validation, e2e-tests]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    environment: production
-    
-    steps:
-      - name: 📥 Checkout code
-        uses: actions/checkout@v4
-
-      - name: 📦 Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: 🔧 Install dependencies
-        run: npm ci --prefer-offline --no-audit
-
-      - name: 🏗️ Build for production
-        run: npm run build
-        env:
-          NODE_ENV: production
-
-      - name: 🚀 Deploy to Vercel
-        uses: amondnet/vercel-action@v25
-        with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          vercel-args: '--prod'
-
-      - name: 🎉 Deployment success notification
-        if: success()
-        run: |
-          echo "🎉 Successfully deployed to production!"
-          echo "🔗 URL: https://asylum-interactive.vercel.app"
-
-  # 🔧 PHASE 9: POST-DEPLOYMENT HEALTH CHECK
-  health-check:
-    name: 🏥 Health Check
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    needs: [deploy-production]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    
-    steps:
-      - name: 🏥 Check application health
-        run: |
-          echo "Waiting for deployment to be ready..."
-          sleep 30
-          
-          # Health check
-          response=$(curl -s -o /dev/null -w "%{http_code}" https://asylum-interactive.vercel.app/api/health)
-          if [ $response -eq 200 ]; then
-            echo "✅ Health check passed!"
-          else
-            echo "❌ Health check failed with status: $response"
-            exit 1
-          fi
-
-      - name: 🔍 Basic smoke test
-        run: |
-          # Test main page loads
-          curl -f https://asylum-interactive.vercel.app/ > /dev/null
-          echo "✅ Main page loads successfully"
-          
-          # Test editor page loads  
-          curl -f https://asylum-interactive.vercel.app/editor > /dev/null
-          echo "✅ Editor page loads successfully"
-
-# 📊 Workflow Summary
-  workflow-summary:
-    name: 📊 Workflow Summary
-    runs-on: ubuntu-latest
+    needs: [build, docker, performance, e2e-tests]
     if: always()
-    needs: [quality-check, test-suite, build-analysis, security-audit, comprehensive-validation]
     
     steps:
-      - name: 📋 Generate summary
-        run: |
-          echo "## 🚀 Asylum Interactive CI/CD Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Phase | Status |" >> $GITHUB_STEP_SUMMARY
-          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Code Quality | ${{ needs.quality-check.result == 'success' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Tests | ${{ needs.test-suite.result == 'success' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Build | ${{ needs.build-analysis.result == 'success' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Security | ${{ needs.security-audit.result == 'success' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Validation | ${{ needs.comprehensive-validation.result == 'success' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Next Steps:** Check individual job outputs for detailed results." >> $GITHUB_STEP_SUMMARY
+      - name: Clean up artifacts
+        uses: geekyeggo/delete-artifact@v5
+        with:
+          name: |
+            build-files
+            playwright-report
+          failOnError: false

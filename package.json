@@ -17,12 +17,27 @@
     "test:coverage": "jest --coverage",
     "test:ci": "jest --ci --coverage --watchAll=false --passWithNoTests --reporters=default --silent",
     "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:debug": "playwright test --debug",
+    
     "validate": "node scripts/validate-build.js",
-    "validate:enhanced": "node scripts/validate-build-enhanced.js",
     "validate:pre-build": "npm run lint && npm run type-check && npm run test:ci",
+    
+    "analyze": "cross-env ANALYZE=true npm run build",
+    "lighthouse": "lhci autorun --config=./lighthouserc.js",
+    "perf:audit": "npm run lighthouse",
+    
     "clean": "rimraf .next out dist coverage test-results",
+    "clean:all": "rimraf .next out dist coverage test-results node_modules/.cache",
+    
     "deps:update": "ncu -u",
-    "deps:check": "ncu"
+    "deps:check": "ncu",
+    
+    "docker:build": "docker build -t asylum-story .",
+    "docker:run": "docker run -p 3000:3000 asylum-story",
+    "docker:health": "docker run -p 3000:3000 --health-cmd='node healthcheck.js' --health-interval=30s --health-timeout=10s --health-retries=3 asylum-story",
+    
+    "build:production": "npm run validate:pre-build && npm run build && npm run validate"
   },
   "dependencies": {
     "@types/node": "^20",
@@ -63,7 +78,9 @@
     "prettier-plugin-tailwindcss": "^0.5.7",
     "rimraf": "^5.0.5",
     "tailwindcss": "^3.4.17",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "@lhci/cli": "^0.12.0",
+    "wait-on": "^7.2.0"
   },
   "engines": {
     "node": ">=18.17.0",
