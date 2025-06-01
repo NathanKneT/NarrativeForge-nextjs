@@ -19,24 +19,18 @@
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:debug": "playwright test --debug",
-    
     "validate": "node scripts/validate-build.js",
     "validate:pre-build": "npm run lint && npm run type-check && npm run test:ci",
-    
     "analyze": "cross-env ANALYZE=true npm run build",
     "lighthouse": "lhci autorun --config=./lighthouserc.js",
     "perf:audit": "npm run lighthouse",
-    
     "clean": "rimraf .next out dist coverage test-results",
     "clean:all": "rimraf .next out dist coverage test-results node_modules/.cache",
-    
     "deps:update": "ncu -u",
     "deps:check": "ncu",
-    
     "docker:build": "docker build -t asylum-story .",
     "docker:run": "docker run -p 3000:3000 asylum-story",
     "docker:health": "docker run -p 3000:3000 --health-cmd='node healthcheck.js' --health-interval=30s --health-timeout=10s --health-retries=3 asylum-story",
-    
     "build:production": "npm run validate:pre-build && npm run build && npm run validate"
   },
   "dependencies": {
