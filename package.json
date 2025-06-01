@@ -8,10 +8,11 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint --max-warnings 999",
-    "lint:strict": "next lint --max-warnings 0", 
+    "lint:strict": "next lint --max-warnings 0",
     "lint:fix": "next lint --fix",
     "lint:ci": "next lint --format compact --max-warnings 999",
-    "type-check": "tsc --noEmit",
+    "type-check": "./node_modules/.bin/tsc --noEmit",
+    "type-check:safe": "npx tsc --noEmit || ./node_modules/.bin/tsc --noEmit || (npm install typescript@latest --save-dev && ./node_modules/.bin/tsc --noEmit)",
     "format": "prettier --write \"src/**/*.{js,jsx,ts,tsx,json,css,md}\"",
     "format:check": "prettier --check \"src/**/*.{js,jsx,ts,tsx,json,css,md}\"",
     "test": "jest",
@@ -22,8 +23,8 @@
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:debug": "playwright test --debug",
     "validate": "node scripts/validate-build.js",
-    "validate:pre-build": "npm run type-check && npm run lint:ci && npm run test:ci",
-    "validate:pre-build:strict": "npm run type-check && npm run lint:strict && npm run test:ci",
+    "validate:pre-build": "npm run type-check:safe && npm run lint && npm run test:ci",
+    "validate:pre-build:strict": "npm run type-check:safe && npm run lint:strict && npm run test:ci",
     "analyze": "cross-env ANALYZE=true npm run build",
     "lighthouse": "lhci autorun --config=./lighthouserc.js",
     "perf:audit": "npm run lighthouse",
@@ -34,10 +35,11 @@
     "docker:build": "docker build -t asylum-story .",
     "docker:run": "docker run -p 3000:3000 asylum-story",
     "docker:health": "docker run -p 3000:3000 --health-cmd='node healthcheck.js' --health-interval=30s --health-timeout=10s --health-retries=3 asylum-story",
-    "build:production": "npm run validate:pre-build && npm run build && npm run validate"
+    "build:production": "npm run validate:pre-build && npm run build && npm run validate",
+    "ensure:typescript": "npm list typescript > /dev/null 2>&1 || npm install typescript@latest --save-dev",
+    "postinstall": "npm run ensure:typescript"
   },
   "dependencies": {
-    "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "@xyflow/react": "^12.0.4",
@@ -50,6 +52,7 @@
     "zustand": "^4.4.7"
   },
   "devDependencies": {
+    "@lhci/cli": "^0.12.0",
     "@next/bundle-analyzer": "^14.2.29",
     "@playwright/test": "^1.40.0",
     "@swc/jest": "^0.2.38",
@@ -57,6 +60,7 @@
     "@testing-library/react": "^14.1.2",
     "@testing-library/user-event": "^14.5.1",
     "@types/jest": "^29.5.8",
+    "@types/node": "^22.15.29",
     "@typescript-eslint/eslint-plugin": "^6.21.0",
     "@typescript-eslint/parser": "^6.21.0",
     "autoprefixer": "^10.4.21",
@@ -75,8 +79,7 @@
     "prettier-plugin-tailwindcss": "^0.5.7",
     "rimraf": "^5.0.5",
     "tailwindcss": "^3.4.17",
-    "typescript": "^5.3.3",
-    "@lhci/cli": "^0.12.0",
+    "typescript": "^5.8.3",
     "wait-on": "^7.2.0"
   },
   "engines": {
