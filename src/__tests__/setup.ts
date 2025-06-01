@@ -35,17 +35,29 @@ beforeEach(() => {
 // Mock IntersectionObserver
 global.IntersectionObserver = class IntersectionObserver {
   constructor() {}
-  observe() { return null; }
-  disconnect() { return null; }
-  unobserve() { return null; }
+  observe() {
+    return null;
+  }
+  disconnect() {
+    return null;
+  }
+  unobserve() {
+    return null;
+  }
 } as any;
 
 // Mock ResizeObserver
 global.ResizeObserver = class ResizeObserver {
   constructor() {}
-  observe() { return null; }
-  disconnect() { return null; }
-  unobserve() { return null; }
+  observe() {
+    return null;
+  }
+  disconnect() {
+    return null;
+  }
+  unobserve() {
+    return null;
+  }
 } as any;
 
 // Mock performance

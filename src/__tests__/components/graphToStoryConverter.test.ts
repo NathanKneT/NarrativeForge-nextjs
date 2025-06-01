@@ -5,7 +5,9 @@ import type { EditorNode, EditorEdge } from '@/types/editor';
 // Mock GraphToStoryConverter
 jest.mock('@/lib/graphToStoryConverter');
 
-const createMockEditorNode = (overrides: Partial<EditorNode> = {}): EditorNode => ({
+const createMockEditorNode = (
+  overrides: Partial<EditorNode> = {}
+): EditorNode => ({
   id: 'test-node',
   type: 'storyNode',
   position: { x: 100, y: 100 },
@@ -25,7 +27,9 @@ const createMockEditorNode = (overrides: Partial<EditorNode> = {}): EditorNode =
   ...overrides,
 });
 
-const createMockEditorEdge = (overrides: Partial<EditorEdge> = {}): EditorEdge => ({
+const createMockEditorEdge = (
+  overrides: Partial<EditorEdge> = {}
+): EditorEdge => ({
   id: 'test-edge',
   source: 'node-1',
   target: 'node-2',
@@ -37,13 +41,15 @@ const createMockEditorEdge = (overrides: Partial<EditorEdge> = {}): EditorEdge =
       nextNodeId: 'node-2',
       conditions: [],
       consequences: [],
-    }
+    },
   },
   ...overrides,
 });
 
 describe('StoryExporter', () => {
-  const mockConvert = GraphToStoryConverter.convert as jest.MockedFunction<typeof GraphToStoryConverter.convert>;
+  const mockConvert = GraphToStoryConverter.convert as jest.MockedFunction<
+    typeof GraphToStoryConverter.convert
+  >;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -53,13 +59,15 @@ describe('StoryExporter', () => {
           id: 'start',
           title: 'Start',
           content: 'Beginning',
-          choices: [{
-            id: 'choice-1',
-            text: 'Continue',
-            nextNodeId: 'end',
-            conditions: [],
-            consequences: [],
-          }],
+          choices: [
+            {
+              id: 'choice-1',
+              text: 'Continue',
+              nextNodeId: 'end',
+              conditions: [],
+              consequences: [],
+            },
+          ],
           multimedia: {},
           metadata: { tags: [], visitCount: 0, difficulty: 'medium' },
         },
@@ -169,7 +177,9 @@ describe('StoryExporter', () => {
       const result = await StoryExporter.exportStory(nodes, edges, options);
 
       expect(result.success).toBe(false);
-      expect(result.errors.some(error => error.includes('Conversion failed'))).toBe(true);
+      expect(
+        result.errors.some((error) => error.includes('Conversion failed'))
+      ).toBe(true);
     });
 
     it('should handle unsupported format', async () => {
@@ -185,7 +195,9 @@ describe('StoryExporter', () => {
       const result = await StoryExporter.exportStory(nodes, edges, options);
 
       expect(result.success).toBe(false);
-      expect(result.errors.some(error => error.includes('non supporté'))).toBe(true);
+      expect(
+        result.errors.some((error) => error.includes('non supporté'))
+      ).toBe(true);
     });
 
     it('should calculate correct statistics', async () => {
@@ -233,9 +245,13 @@ describe('StoryExporter', () => {
       const formats = StoryExporter.getSupportedFormats();
 
       expect(formats).toHaveLength(3);
-      expect(formats.map(f => f.id)).toEqual(['asylum-json', 'json', 'twine']);
-      
-      formats.forEach(format => {
+      expect(formats.map((f) => f.id)).toEqual([
+        'asylum-json',
+        'json',
+        'twine',
+      ]);
+
+      formats.forEach((format) => {
         expect(format).toHaveProperty('id');
         expect(format).toHaveProperty('name');
         expect(format).toHaveProperty('description');
@@ -249,11 +265,11 @@ describe('StoryExporter', () => {
       // Mock DOM methods
       global.URL.createObjectURL = jest.fn(() => 'mock-url');
       global.URL.revokeObjectURL = jest.fn();
-      
+
       const mockAppendChild = jest.fn();
       const mockRemoveChild = jest.fn();
       const mockClick = jest.fn();
-      
+
       Object.defineProperty(document, 'createElement', {
         value: jest.fn(() => ({
           click: mockClick,
@@ -262,12 +278,12 @@ describe('StoryExporter', () => {
         })),
         writable: true,
       });
-      
+
       Object.defineProperty(document.body, 'appendChild', {
         value: mockAppendChild,
         writable: true,
       });
-      
+
       Object.defineProperty(document.body, 'removeChild', {
         value: mockRemoveChild,
         writable: true,
@@ -316,7 +332,9 @@ describe('StoryExporter', () => {
       };
 
       const preview = StoryExporter.getExportPreview(result, 3);
-      expect(preview).toBe('Line 1\nLine 2\nLine 3\n... (2 lignes supplémentaires)');
+      expect(preview).toBe(
+        'Line 1\nLine 2\nLine 3\n... (2 lignes supplémentaires)'
+      );
     });
 
     it('should return full data if shorter than max lines', () => {
@@ -369,13 +387,24 @@ describe('StoryExporter', () => {
             id: 'complex',
             title: 'Complex Node',
             content: 'Complex content with <em>HTML</em>',
-            choices: [{
-              id: 'choice-1',
-              text: 'Choice with conditions',
-              nextNodeId: 'next',
-              conditions: [{ type: 'variable', target: 'health', operator: '>', value: 50 }],
-              consequences: [{ type: 'set_variable', target: 'visited', value: true }],
-            }],
+            choices: [
+              {
+                id: 'choice-1',
+                text: 'Choice with conditions',
+                nextNodeId: 'next',
+                conditions: [
+                  {
+                    type: 'variable',
+                    target: 'health',
+                    operator: '>',
+                    value: 50,
+                  },
+                ],
+                consequences: [
+                  { type: 'set_variable', target: 'visited', value: true },
+                ],
+              },
+            ],
             multimedia: {
               backgroundImage: 'bg.jpg',
               soundEffects: ['sound1.mp3'],
@@ -400,7 +429,11 @@ describe('StoryExporter', () => {
         validateBeforeExport: false,
       };
 
-      const result = await StoryExporter.exportStory([complexNode], [], options);
+      const result = await StoryExporter.exportStory(
+        [complexNode],
+        [],
+        options
+      );
 
       expect(result.success).toBe(true);
       expect(result.data).toBeDefined();

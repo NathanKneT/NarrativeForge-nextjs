@@ -1,8 +1,8 @@
-import type { Metadata, Viewport } from 'next'
-import { Inter } from 'next/font/google'
-import './globals.css'
+import type { Metadata, Viewport } from 'next';
+import { Inter } from 'next/font/google';
+import './globals.css';
 
-const inter = Inter({ subsets: ['latin'] })
+const inter = Inter({ subsets: ['latin'] });
 
 // 🔧 FIX: Séparer viewport de metadata (Next.js 14+ requirement)
 export const viewport: Viewport = {
@@ -14,16 +14,19 @@ export const viewport: Viewport = {
     { media: '(prefers-color-scheme: light)', color: '#ffffff' },
     { media: '(prefers-color-scheme: dark)', color: '#1a1a2e' },
   ],
-}
+};
 
 // 🔧 FIX: Définir metadataBase pour résoudre les warnings OG/Twitter
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'),
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+  ),
   title: {
     default: 'Asylum Interactive Story',
     template: '%s | Asylum Interactive Story',
   },
-  description: 'An immersive interactive storytelling platform with visual node-based editor. Create and experience branching narratives with professional-grade tools.',
+  description:
+    'An immersive interactive storytelling platform with visual node-based editor. Create and experience branching narratives with professional-grade tools.',
   keywords: [
     'interactive story',
     'visual novel',
@@ -32,7 +35,7 @@ export const metadata: Metadata = {
     'node editor',
     'narrative design',
     'asylum',
-    'visual storytelling'
+    'visual storytelling',
   ],
   authors: [{ name: 'Nathan RIHET' }],
   creator: 'Nathan RIHET',
@@ -53,7 +56,8 @@ export const metadata: Metadata = {
     locale: 'en_US',
     url: '/',
     title: 'Asylum Interactive Story Platform',
-    description: 'Create and experience immersive interactive stories with our professional visual editor.',
+    description:
+      'Create and experience immersive interactive stories with our professional visual editor.',
     siteName: 'Asylum Interactive Story',
     images: [
       {
@@ -88,12 +92,12 @@ export const metadata: Metadata = {
     canonical: '/',
   },
   category: 'entertainment',
-}
+};
 
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
@@ -119,5 +123,5 @@ export default function RootLayout({
         />
       </body>
     </html>
-  )
+  );
 }

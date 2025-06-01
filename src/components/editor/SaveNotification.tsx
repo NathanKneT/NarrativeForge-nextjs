@@ -19,7 +19,7 @@ export const SaveNotification: React.FC<SaveNotificationProps> = ({
   type = 'success',
   onClose,
   autoClose = true,
-  duration = 3000
+  duration = 3000,
 }) => {
   useEffect(() => {
     if (isVisible && autoClose) {
@@ -60,26 +60,26 @@ export const SaveNotification: React.FC<SaveNotificationProps> = ({
           initial={{ opacity: 0, y: -50, scale: 0.9 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: -50, scale: 0.9 }}
-          transition={{ type: "spring", damping: 20, stiffness: 300 }}
-          className={`fixed top-4 right-4 z-50 ${getColors()} border-2 rounded-lg p-4 shadow-lg max-w-sm`}
+          transition={{ type: 'spring', damping: 20, stiffness: 300 }}
+          className={`fixed right-4 top-4 z-50 ${getColors()} max-w-sm rounded-lg border-2 p-4 shadow-lg`}
         >
           <div className="flex items-center gap-3">
             {getIcon()}
             <div className="flex-1">
-              <p className="text-white font-medium">{message}</p>
+              <p className="font-medium text-white">{message}</p>
             </div>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-white transition-colors"
+              className="text-gray-400 transition-colors hover:text-white"
             >
               <X size={16} />
             </button>
           </div>
-          
+
           {/* Barre de progression pour l'auto-close */}
           {autoClose && (
             <motion.div
-              className="absolute bottom-0 left-0 h-1 bg-white bg-opacity-30 rounded-b-lg"
+              className="absolute bottom-0 left-0 h-1 rounded-b-lg bg-white bg-opacity-30"
               initial={{ width: '100%' }}
               animate={{ width: '0%' }}
               transition={{ duration: duration / 1000, ease: 'linear' }}
@@ -100,27 +100,30 @@ export const useNotification = () => {
   }>({
     isVisible: false,
     message: '',
-    type: 'success'
+    type: 'success',
   });
 
-  const showNotification = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
+  const showNotification = (
+    message: string,
+    type: 'success' | 'error' | 'info' = 'success'
+  ) => {
     setNotification({
       isVisible: true,
       message,
-      type
+      type,
     });
   };
 
   const hideNotification = () => {
-    setNotification(prev => ({
+    setNotification((prev) => ({
       ...prev,
-      isVisible: false
+      isVisible: false,
     }));
   };
 
   return {
     notification,
     showNotification,
-    hideNotification
+    hideNotification,
   };
 };

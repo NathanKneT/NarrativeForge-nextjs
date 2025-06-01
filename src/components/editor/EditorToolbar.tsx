@@ -2,12 +2,12 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { 
-  Plus, 
-  Save, 
-  FolderOpen, 
-  Download, 
-  Play, 
+import {
+  Plus,
+  Save,
+  FolderOpen,
+  Download,
+  Play,
   Settings,
   FileText,
   Circle,
@@ -18,7 +18,10 @@ import {
 import { StoryProject } from '@/types/editor';
 
 interface EditorToolbarProps {
-  onCreateNode: (type: 'start' | 'story' | 'end', position?: { x: number; y: number }) => void;
+  onCreateNode: (
+    type: 'start' | 'story' | 'end',
+    position?: { x: number; y: number }
+  ) => void;
   onNewProject: () => void;
   onSaveProject: () => void;
   onLoadProject?: () => void;
@@ -49,74 +52,100 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
   // Validation pour le test
   const validateStoryForTest = () => {
     const errors: string[] = [];
-    
+
     // Vérifier qu'il y a au moins un nœud de début
-    const startNodes = nodes.filter(node => node.data?.nodeType === 'start');
+    const startNodes = nodes.filter((node) => node.data?.nodeType === 'start');
     if (startNodes.length === 0) {
       errors.push('Il faut au moins un nœud de début');
     }
     if (startNodes.length > 1) {
-      errors.push('Il ne peut y avoir qu\'un seul nœud de début');
+      errors.push("Il ne peut y avoir qu'un seul nœud de début");
     }
-    
+
     // Vérifier qu'il y a au moins un nœud de fin
-    const endNodes = nodes.filter(node => node.data?.nodeType === 'end');
+    const endNodes = nodes.filter((node) => node.data?.nodeType === 'end');
     if (endNodes.length === 0) {
       errors.push('Il faut au moins un nœud de fin');
     }
-    
+
     // Vérifier que tous les nœuds (sauf fin) ont des connexions sortantes
-    nodes.forEach(node => {
+    nodes.forEach((node) => {
       if (node.data?.nodeType !== 'end') {
-        const hasOutgoingConnection = edges.some(edge => edge.source === node.id);
+        const hasOutgoingConnection = edges.some(
+          (edge) => edge.source === node.id
+        );
         if (!hasOutgoingConnection) {
-          errors.push(`Le nœud "${node.data?.storyNode?.title || node.id}" n'a pas de connexion sortante`);
+          errors.push(
+            `Le nœud "${node.data?.storyNode?.title || node.id}" n'a pas de connexion sortante`
+          );
         }
       }
     });
-    
+
     // Vérifier que tous les nœuds (sauf début) ont des connexions entrantes
-    nodes.forEach(node => {
+    nodes.forEach((node) => {
       if (node.data?.nodeType !== 'start') {
-        const hasIncomingConnection = edges.some(edge => edge.target === node.id);
+        const hasIncomingConnection = edges.some(
+          (edge) => edge.target === node.id
+        );
         if (!hasIncomingConnection) {
-          errors.push(`Le nœud "${node.data?.storyNode?.title || node.id}" n'est pas accessible`);
+          errors.push(
+            `Le nœud "${node.data?.storyNode?.title || node.id}" n'est pas accessible`
+          );
         }
       }
     });
-    
+
     return errors;
   };
 
   const handleTestStory = () => {
     const errors = validateStoryForTest();
-    
+
     if (errors.length > 0) {
       // Afficher les erreurs
-      const errorMessage = "Impossible de tester l'histoire :\n\n" + errors.join('\n');
+      const errorMessage =
+        "Impossible de tester l'histoire :\n\n" + errors.join('\n');
       alert(errorMessage);
       return;
     }
-    
+
     // Si pas d'erreurs, lancer le test
     onTestStory();
   };
 
   const nodeTypes = [
-    { type: 'start' as const, label: 'Début', icon: Circle, color: 'text-green-400' },
-    { type: 'story' as const, label: 'Scène', icon: FileText, color: 'text-blue-400' },
+    {
+      type: 'start' as const,
+      label: 'Début',
+      icon: Circle,
+      color: 'text-green-400',
+    },
+    {
+      type: 'story' as const,
+      label: 'Scène',
+      icon: FileText,
+      color: 'text-blue-400',
+    },
     { type: 'end' as const, label: 'Fin', icon: Square, color: 'text-red-400' },
   ];
 
   const exportFormats = [
-    { format: 'asylum-json', label: 'Asylum JSON', description: 'Compatible avec votre jeu' },
+    {
+      format: 'asylum-json',
+      label: 'Asylum JSON',
+      description: 'Compatible avec votre jeu',
+    },
     { format: 'json', label: 'JSON Standard', description: 'Format générique' },
     { format: 'twine', label: 'Twine', description: 'Compatible Twine' },
   ];
 
   const handleCreateNode = (type: 'start' | 'story' | 'end') => {
     // Créer le nœud au centre de la vue
-    onCreateNode(type, { x: Math.random() * 300 + 200, y: Math.random() * 200 + 100 });
+    onCreateNode(type, {
+      x: Math.random() * 300 + 200,
+      y: Math.random() * 200 + 100,
+    });
     setShowNodeMenu(false);
   };
 
@@ -126,14 +155,14 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
   };
 
   return (
-    <div className="bg-gray-800 border-b border-gray-700 p-4">
+    <div className="border-b border-gray-700 bg-gray-800 p-4">
       <div className="flex items-center justify-between">
         {/* Left Section - Navigation + Project Actions */}
         <div className="flex items-center gap-4">
           {/* Navigation Home */}
           <Link
             href="/"
-            className="px-3 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors flex items-center gap-2"
+            className="flex items-center gap-2 rounded-lg bg-gray-600 px-3 py-2 text-white transition-colors hover:bg-gray-700"
             title="Retour au jeu"
           >
             <Home size={16} />
@@ -156,7 +185,7 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
           <div className="flex items-center gap-2">
             <button
               onClick={onNewProject}
-              className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center gap-2"
+              className="flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-white transition-colors hover:bg-blue-700"
               title="Nouveau projet"
             >
               <Plus size={16} />
@@ -165,7 +194,7 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
 
             <button
               onClick={onSaveProject}
-              className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors flex items-center gap-2"
+              className="flex items-center gap-2 rounded-lg bg-green-600 px-3 py-2 text-white transition-colors hover:bg-green-700"
               title="Sauvegarder"
             >
               <Save size={16} />
@@ -174,7 +203,7 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
 
             <button
               onClick={onLoadProject}
-              className="px-3 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors flex items-center gap-2"
+              className="flex items-center gap-2 rounded-lg bg-gray-600 px-3 py-2 text-white transition-colors hover:bg-gray-700"
               title="Charger"
             >
               <FolderOpen size={16} />
@@ -188,27 +217,27 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
           <div className="relative">
             <button
               onClick={() => setShowNodeMenu(!showNodeMenu)}
-              className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors flex items-center gap-2"
+              className="flex items-center gap-2 rounded-lg bg-purple-600 px-4 py-2 text-white transition-colors hover:bg-purple-700"
             >
               <Plus size={16} />
               Ajouter Nœud
             </button>
 
             {showNodeMenu && (
-              <div className="absolute top-full left-0 mt-2 bg-gray-700 rounded-lg shadow-xl p-2 min-w-[200px] z-10">
+              <div className="absolute left-0 top-full z-10 mt-2 min-w-[200px] rounded-lg bg-gray-700 p-2 shadow-xl">
                 {nodeTypes.map(({ type, label, icon: Icon, color }) => (
                   <button
                     key={type}
                     onClick={() => handleCreateNode(type)}
-                    className="w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-gray-600 rounded transition-colors text-white"
+                    className="flex w-full items-center gap-3 rounded px-3 py-2 text-left text-white transition-colors hover:bg-gray-600"
                   >
                     <Icon size={18} className={color} />
                     <div>
                       <div className="font-medium">{label}</div>
                       <div className="text-xs text-gray-400">
-                        {type === 'start' && 'Point de départ de l\'histoire'}
+                        {type === 'start' && "Point de départ de l'histoire"}
                         {type === 'story' && 'Scène narrative avec choix'}
-                        {type === 'end' && 'Fin de l\'histoire'}
+                        {type === 'end' && "Fin de l'histoire"}
                       </div>
                     </div>
                   </button>
@@ -219,7 +248,7 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
 
           <button
             onClick={onAutoArrange}
-            className="px-3 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors flex items-center gap-2"
+            className="flex items-center gap-2 rounded-lg bg-gray-600 px-3 py-2 text-white transition-colors hover:bg-gray-700"
             title="Auto-arrangement"
           >
             <Shuffle size={16} />
@@ -232,19 +261,19 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
           <div className="relative">
             <button
               onClick={() => setShowExportMenu(!showExportMenu)}
-              className="px-3 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg transition-colors flex items-center gap-2"
+              className="flex items-center gap-2 rounded-lg bg-orange-600 px-3 py-2 text-white transition-colors hover:bg-orange-700"
             >
               <Download size={16} />
               Exporter
             </button>
 
             {showExportMenu && (
-              <div className="absolute top-full right-0 mt-2 bg-gray-700 rounded-lg shadow-xl p-2 min-w-[250px] z-10">
+              <div className="absolute right-0 top-full z-10 mt-2 min-w-[250px] rounded-lg bg-gray-700 p-2 shadow-xl">
                 {exportFormats.map(({ format, label, description }) => (
                   <button
                     key={format}
                     onClick={() => handleExport(format)}
-                    className="w-full flex flex-col items-start px-3 py-2 text-left hover:bg-gray-600 rounded transition-colors text-white"
+                    className="flex w-full flex-col items-start rounded px-3 py-2 text-left text-white transition-colors hover:bg-gray-600"
                   >
                     <div className="font-medium">{label}</div>
                     <div className="text-xs text-gray-400">{description}</div>
@@ -258,7 +287,7 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
 
           <button
             onClick={handleTestStory}
-            className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors flex items-center gap-2"
+            className="flex items-center gap-2 rounded-lg bg-green-600 px-3 py-2 text-white transition-colors hover:bg-green-700"
             title="Tester l'histoire"
           >
             <Play size={16} />
@@ -266,7 +295,7 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
           </button>
 
           <button
-            className="px-3 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors flex items-center gap-2"
+            className="flex items-center gap-2 rounded-lg bg-gray-600 px-3 py-2 text-white transition-colors hover:bg-gray-700"
             title="Paramètres"
           >
             <Settings size={16} />
@@ -277,8 +306,12 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
       {/* Quick Stats */}
       {currentProject && (
         <div className="mt-3 flex items-center gap-6 text-sm text-gray-400">
-          <span>Créé: {currentProject.metadata.createdAt.toLocaleDateString()}</span>
-          <span>Modifié: {currentProject.metadata.updatedAt.toLocaleDateString()}</span>
+          <span>
+            Créé: {currentProject.metadata.createdAt.toLocaleDateString()}
+          </span>
+          <span>
+            Modifié: {currentProject.metadata.updatedAt.toLocaleDateString()}
+          </span>
           <span>Version: {currentProject.metadata.version}</span>
         </div>
       )}

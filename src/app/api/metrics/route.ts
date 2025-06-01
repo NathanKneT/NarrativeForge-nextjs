@@ -25,7 +25,7 @@ const MAX_STORED_REPORTS = 1000; // Limit memory usage
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     const report: PerformanceReport = await request.json();
-    
+
     // Validate the report structure
     if (!isValidPerformanceReport(report)) {
       return NextResponse.json(
@@ -36,7 +36,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     // Store the report (in production, save to database)
     metricsStore.push(report);
-    
+
     // Limit memory usage by removing old reports
     if (metricsStore.length > MAX_STORED_REPORTS) {
       metricsStore.splice(0, metricsStore.length - MAX_STORED_REPORTS);
@@ -44,9 +44,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     // Log important metrics in development
     if (process.env.NODE_ENV === 'development') {
-      report.metrics.forEach(metric => {
+      report.metrics.forEach((metric) => {
         if (metric.rating === 'poor') {
-          console.warn(`[METRICS] Poor ${metric.name}: ${metric.value}ms on ${metric.url}`);
+          console.warn(
+            `[METRICS] Poor ${metric.name}: ${metric.value}ms on ${metric.url}`
+          );
         }
       });
     }
@@ -57,8 +59,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // 3. Alert on poor performance
     // 4. Generate aggregated reports
 
-    return NextResponse.json({ success: true, received: report.metrics.length });
-    
+    return NextResponse.json({
+      success: true,
+      received: report.metrics.length,
+    });
   } catch (error) {
     console.error('[METRICS] Error processing performance report:', error);
     return NextResponse.json(
@@ -72,14 +76,17 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
     const url = new URL(request.url);
     const sessionId = url.searchParams.get('sessionId');
-    const limit = Math.min(parseInt(url.searchParams.get('limit') || '100'), 1000);
+    const limit = Math.min(
+      parseInt(url.searchParams.get('limit') || '100'),
+      1000
+    );
     const format = url.searchParams.get('format') || 'json';
 
     let reports = [...metricsStore];
 
     // Filter by session if requested
     if (sessionId) {
-      reports = reports.filter(report => report.sessionId === sessionId);
+      reports = reports.filter((report) => report.sessionId === sessionId);
     }
 
     // Sort by timestamp (newest first)
@@ -98,7 +105,6 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       total: reports.length,
       timestamp: Date.now(),
     });
-
   } catch (error) {
     console.error('[METRICS] Error retrieving performance data:', error);
     return NextResponse.json(
@@ -123,7 +129,7 @@ function isValidPerformanceReport(report: any): report is PerformanceReport {
 function isValidMetric(metric: any): metric is WebVitalsMetric {
   const validNames = ['CLS', 'FID', 'FCP', 'LCP', 'TTFB'];
   const validRatings = ['good', 'needs-improvement', 'poor'];
-  
+
   return (
     metric &&
     typeof metric === 'object' &&
@@ -138,31 +144,34 @@ function isValidMetric(metric: any): metric is WebVitalsMetric {
 
 // Generate metrics summary
 function generateMetricsSummary(reports: PerformanceReport[]) {
-  const allMetrics = reports.flatMap(report => report.metrics);
+  const allMetrics = reports.flatMap((report) => report.metrics);
   const summary: Record<string, any> = {
     totalReports: reports.length,
     totalMetrics: allMetrics.length,
     timeRange: {
-      start: Math.min(...reports.map(r => r.timestamp)),
-      end: Math.max(...reports.map(r => r.timestamp)),
+      start: Math.min(...reports.map((r) => r.timestamp)),
+      end: Math.max(...reports.map((r) => r.timestamp)),
     },
     metrics: {},
   };
 
   // Group metrics by name
-  const metricsByName = allMetrics.reduce((acc, metric) => {
-    if (!acc[metric.name]) {
-      acc[metric.name] = [];
-    }
-    acc[metric.name].push(metric);
-    return acc;
-  }, {} as Record<string, WebVitalsMetric[]>);
+  const metricsByName = allMetrics.reduce(
+    (acc, metric) => {
+      if (!acc[metric.name]) {
+        acc[metric.name] = [];
+      }
+      acc[metric.name].push(metric);
+      return acc;
+    },
+    {} as Record<string, WebVitalsMetric[]>
+  );
 
   // Calculate statistics for each metric
   Object.entries(metricsByName).forEach(([name, metrics]) => {
-    const values = metrics.map(m => m.value);
-    const ratings = metrics.map(m => m.rating);
-    
+    const values = metrics.map((m) => m.value);
+    const ratings = metrics.map((m) => m.rating);
+
     summary.metrics[name] = {
       count: metrics.length,
       average: values.reduce((a, b) => a + b, 0) / values.length,
@@ -172,14 +181,25 @@ function generateMetricsSummary(reports: PerformanceReport[]) {
       min: Math.min(...values),
       max: Math.max(...values),
       ratings: {
-        good: ratings.filter(r => r === 'good').length,
-        'needs-improvement': ratings.filter(r => r === 'needs-improvement').length,
-        poor: ratings.filter(r => r === 'poor').length,
+        good: ratings.filter((r) => r === 'good').length,
+        'needs-improvement': ratings.filter((r) => r === 'needs-improvement')
+          .length,
+        poor: ratings.filter((r) => r === 'poor').length,
       },
       ratingPercentages: {
-        good: (ratings.filter(r => r === 'good').length / ratings.length * 100).toFixed(1),
-        'needs-improvement': (ratings.filter(r => r === 'needs-improvement').length / ratings.length * 100).toFixed(1),
-        poor: (ratings.filter(r => r === 'poor').length / ratings.length * 100).toFixed(1),
+        good: (
+          (ratings.filter((r) => r === 'good').length / ratings.length) *
+          100
+        ).toFixed(1),
+        'needs-improvement': (
+          (ratings.filter((r) => r === 'needs-improvement').length /
+            ratings.length) *
+          100
+        ).toFixed(1),
+        poor: (
+          (ratings.filter((r) => r === 'poor').length / ratings.length) *
+          100
+        ).toFixed(1),
       },
     };
   });
@@ -191,8 +211,8 @@ function generateMetricsSummary(reports: PerformanceReport[]) {
 function getMedian(values: number[]): number {
   const sorted = [...values].sort((a, b) => a - b);
   const mid = Math.floor(sorted.length / 2);
-  return sorted.length % 2 === 0 
-    ? (sorted[mid - 1] + sorted[mid]) / 2 
+  return sorted.length % 2 === 0
+    ? (sorted[mid - 1] + sorted[mid]) / 2
     : sorted[mid];
 }
 
@@ -204,7 +224,7 @@ function getPercentile(values: number[], percentile: number): number {
 
 // Health check for metrics endpoint
 export async function HEAD(): Promise<NextResponse> {
-  return new NextResponse(null, { 
+  return new NextResponse(null, {
     status: 200,
     headers: {
       'Cache-Control': 'no-cache',

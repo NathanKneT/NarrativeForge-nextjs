@@ -34,10 +34,12 @@ const validatePersistedState = (state: any): boolean => {
   if (!state?.gameState) return true; // État vide = valide
 
   const gameState = state.gameState;
-  
+
   // Vérifier que les propriétés essentielles existent
   if (!gameState.currentNodeId || typeof gameState.currentNodeId !== 'string') {
-    console.warn('🧹 État persisté invalide: currentNodeId manquant ou invalide');
+    console.warn(
+      '🧹 État persisté invalide: currentNodeId manquant ou invalide'
+    );
     return false;
   }
 
@@ -61,20 +63,22 @@ const serializeState = (state: any) => {
       ...state,
       state: {
         ...state.state,
-        gameState: state.state.gameState ? {
-          ...state.state.gameState,
-          visitedNodes: Array.from(state.state.gameState.visitedNodes),
-          startTime: state.state.gameState.startTime.toISOString(),
-        } : null,
+        gameState: state.state.gameState
+          ? {
+              ...state.state.gameState,
+              visitedNodes: Array.from(state.state.gameState.visitedNodes),
+              startTime: state.state.gameState.startTime.toISOString(),
+            }
+          : null,
       },
     };
-    
-    console.log('💾 Sérialisation de l\'état:', {
+
+    console.log("💾 Sérialisation de l'état:", {
       hasGameState: !!serialized.state.gameState,
       currentNodeId: serialized.state.gameState?.currentNodeId,
-      visitedNodes: serialized.state.gameState?.visitedNodes?.length || 0
+      visitedNodes: serialized.state.gameState?.visitedNodes?.length || 0,
     });
-    
+
     return JSON.stringify(serialized);
   } catch (error) {
     console.error('❌ Erreur de sérialisation:', error);
@@ -86,26 +90,26 @@ const serializeState = (state: any) => {
 const deserializeState = (str: string) => {
   try {
     const parsed = JSON.parse(str);
-    
+
     // Valider l'état avant de le restaurer
     if (!validatePersistedState(parsed)) {
       console.warn('🧹 État persisté corrompu, réinitialisation...');
       return { state: { gameState: null } };
     }
-    
+
     if (parsed.state?.gameState) {
       parsed.state.gameState = {
         ...parsed.state.gameState,
         visitedNodes: new Set(parsed.state.gameState.visitedNodes || []),
         startTime: new Date(parsed.state.gameState.startTime),
       };
-      
+
       console.log('📂 Désérialisation réussie:', {
         currentNodeId: parsed.state.gameState.currentNodeId,
-        visitedNodes: parsed.state.gameState.visitedNodes.size
+        visitedNodes: parsed.state.gameState.visitedNodes.size,
       });
     }
-    
+
     return parsed;
   } catch (error) {
     console.error('❌ Erreur de désérialisation:', error);
@@ -125,7 +129,7 @@ export const useGameStore = create<GameStore>()(
       // Initialiser le jeu
       initializeGame: (startNodeId: string) => {
         console.log('🎮 Initialisation du jeu avec nœud:', startNodeId);
-        
+
         const newGameState: GameState = {
           currentNodeId: startNodeId,
           visitedNodes: new Set([startNodeId]),
@@ -208,14 +212,14 @@ export const useGameStore = create<GameStore>()(
 
       // ✅ NEW: Nettoyer un état corrompu
       clearCorruptedState: () => {
-        console.log('🧹 Nettoyage de l\'état corrompu');
+        console.log("🧹 Nettoyage de l'état corrompu");
         set({
           gameState: null,
           currentNode: null,
           error: null,
           isLoading: false,
         });
-        
+
         // Nettoyer le localStorage
         try {
           localStorage.removeItem('asylum-game-storage');
@@ -238,7 +242,8 @@ export const useGameStore = create<GameStore>()(
           set({ isLoading: false, error: null });
           console.log('💾 Jeu sauvegardé:', saveId);
         } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : 'Erreur de sauvegarde';
+          const errorMessage =
+            error instanceof Error ? error.message : 'Erreur de sauvegarde';
           set({ isLoading: false, error: errorMessage });
           throw error;
         }
@@ -255,7 +260,8 @@ export const useGameStore = create<GameStore>()(
           });
           console.log('📂 Jeu chargé:', saveData.name);
         } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : 'Erreur de chargement';
+          const errorMessage =
+            error instanceof Error ? error.message : 'Erreur de chargement';
           set({ error: errorMessage });
           throw error;
         }
@@ -310,7 +316,7 @@ export const useGameStore = create<GameStore>()(
           try {
             const item = localStorage.getItem(name);
             if (!item) return null;
-            
+
             const parsed = deserializeState(item);
             return parsed;
           } catch (error) {
@@ -323,7 +329,7 @@ export const useGameStore = create<GameStore>()(
             const serialized = serializeState(value);
             localStorage.setItem(name, serialized);
           } catch (error) {
-            console.error('❌ Erreur d\'écriture du storage:', error);
+            console.error("❌ Erreur d'écriture du storage:", error);
           }
         },
         removeItem: (name: string) => {
@@ -343,13 +349,13 @@ export const useGameStore = create<GameStore>()(
       // ✅ FIX: Migration pour nettoyer les anciens états
       migrate: (persistedState: any, version: number) => {
         console.log('🔄 Migration du store depuis version', version);
-        
+
         if (version === 0) {
           // Nettoyer les anciens états corrompus
           console.log('🧹 Migration v0→v1: nettoyage des anciens états');
           return { gameState: null };
         }
-        
+
         return persistedState;
       },
     }

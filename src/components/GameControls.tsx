@@ -1,7 +1,14 @@
 'use client';
 
 import React from 'react';
-import { Save, RotateCcw, Settings, Volume2, VolumeX, FolderOpen } from 'lucide-react';
+import {
+  Save,
+  RotateCcw,
+  Settings,
+  Volume2,
+  VolumeX,
+  FolderOpen,
+} from 'lucide-react';
 
 interface GameControlsProps {
   onSave: () => void;
@@ -25,21 +32,21 @@ export const GameControls: React.FC<GameControlsProps> = ({
     { icon: FolderOpen, label: 'Charger', action: onLoad }, // Maintenant utilisé
     { icon: RotateCcw, label: 'Recommencer', action: onRestart },
     { icon: Settings, label: 'Paramètres', action: onSettings },
-    { 
-      icon: isMuted ? VolumeX : Volume2, 
-      label: isMuted ? 'Activer le son' : 'Couper le son', 
-      action: onToggleMute 
+    {
+      icon: isMuted ? VolumeX : Volume2,
+      label: isMuted ? 'Activer le son' : 'Couper le son',
+      action: onToggleMute,
     },
   ];
 
   return (
-    <div className="flex gap-2 justify-center mb-6">
+    <div className="mb-6 flex justify-center gap-2">
       {controls.map(({ icon: Icon, label, action }) => (
         <button
           key={label}
           onClick={action}
-          className="p-3 bg-asylum-medium hover:bg-asylum-accent 
-                   text-white rounded-lg transition-colors duration-200
+          className="rounded-lg bg-asylum-medium p-3 
+                   text-white transition-colors duration-200 hover:bg-asylum-accent
                    focus:outline-none focus:ring-2 focus:ring-asylum-accent"
           title={label}
         >

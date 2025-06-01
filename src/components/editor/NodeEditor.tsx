@@ -2,7 +2,17 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Save, Trash2, Copy, Plus, Minus, Eye, Code, LucideIcon } from 'lucide-react';
+import {
+  X,
+  Save,
+  Trash2,
+  Copy,
+  Plus,
+  Minus,
+  Eye,
+  Code,
+  LucideIcon,
+} from 'lucide-react';
 import { EditorNode } from '@/types/editor';
 import { StoryNode, Choice } from '@/types/story';
 
@@ -22,7 +32,9 @@ export const NodeEditor: React.FC<NodeEditorProps> = ({
   onDuplicate,
 }) => {
   const [editedNode, setEditedNode] = useState<StoryNode>(node.data.storyNode);
-  const [activeTab, setActiveTab] = useState<'content' | 'choices' | 'metadata'>('content');
+  const [activeTab, setActiveTab] = useState<
+    'content' | 'choices' | 'metadata'
+  >('content');
   const [previewMode, setPreviewMode] = useState(false);
 
   useEffect(() => {
@@ -34,7 +46,7 @@ export const NodeEditor: React.FC<NodeEditorProps> = ({
   };
 
   const updateNode = (updates: Partial<StoryNode>) => {
-    setEditedNode(prev => ({ ...prev, ...updates }));
+    setEditedNode((prev) => ({ ...prev, ...updates }));
   };
 
   const addChoice = () => {
@@ -47,7 +59,7 @@ export const NodeEditor: React.FC<NodeEditorProps> = ({
     };
 
     updateNode({
-      choices: [...editedNode.choices, newChoice]
+      choices: [...editedNode.choices, newChoice],
     });
   };
 
@@ -68,8 +80,8 @@ export const NodeEditor: React.FC<NodeEditorProps> = ({
       updateNode({
         metadata: {
           ...editedNode.metadata,
-          tags: [...editedNode.metadata.tags, tag.trim()]
-        }
+          tags: [...editedNode.metadata.tags, tag.trim()],
+        },
       });
     }
   };
@@ -78,12 +90,16 @@ export const NodeEditor: React.FC<NodeEditorProps> = ({
     updateNode({
       metadata: {
         ...editedNode.metadata,
-        tags: editedNode.metadata.tags.filter(tag => tag !== tagToRemove)
-      }
+        tags: editedNode.metadata.tags.filter((tag) => tag !== tagToRemove),
+      },
     });
   };
 
-const tabs: Array<{ id: 'content' | 'choices' | 'metadata', label: string, icon: LucideIcon }> = [
+  const tabs: Array<{
+    id: 'content' | 'choices' | 'metadata';
+    label: string;
+    icon: LucideIcon;
+  }> = [
     { id: 'content', label: 'Contenu', icon: Code },
     { id: 'choices', label: 'Choix', icon: Plus },
     { id: 'metadata', label: 'Métadonnées', icon: Eye },
@@ -96,29 +112,31 @@ const tabs: Array<{ id: 'content' | 'choices' | 'metadata', label: string, icon:
         animate={{ x: 0 }}
         exit={{ x: '100%' }}
         transition={{ type: 'spring', damping: 20 }}
-        className="fixed right-0 top-0 h-full w-96 bg-gray-800 border-l border-gray-700 shadow-xl z-50 flex flex-col"
+        className="fixed right-0 top-0 z-50 flex h-full w-96 flex-col border-l border-gray-700 bg-gray-800 shadow-xl"
       >
         {/* Header */}
-        <div className="p-4 border-b border-gray-700">
-          <div className="flex items-center justify-between mb-3">
+        <div className="border-b border-gray-700 p-4">
+          <div className="mb-3 flex items-center justify-between">
             <h2 className="text-lg font-bold text-white">Éditer le nœud</h2>
             <button
               onClick={onClose}
-              className="p-2 text-gray-400 hover:text-white transition-colors"
+              className="p-2 text-gray-400 transition-colors hover:text-white"
             >
               <X size={20} />
             </button>
           </div>
 
           {/* Node type indicator */}
-          <div className="flex items-center gap-2 mb-3">
-            <span className={`px-2 py-1 rounded text-xs font-medium ${
-              node.data.nodeType === 'start' 
-                ? 'bg-green-600 text-white'
-                : node.data.nodeType === 'end'
-                ? 'bg-red-600 text-white'
-                : 'bg-blue-600 text-white'
-            }`}>
+          <div className="mb-3 flex items-center gap-2">
+            <span
+              className={`rounded px-2 py-1 text-xs font-medium ${
+                node.data.nodeType === 'start'
+                  ? 'bg-green-600 text-white'
+                  : node.data.nodeType === 'end'
+                    ? 'bg-red-600 text-white'
+                    : 'bg-blue-600 text-white'
+              }`}
+            >
               {node.data.nodeType === 'start' && 'DÉBUT'}
               {node.data.nodeType === 'end' && 'FIN'}
               {node.data.nodeType === 'story' && 'SCÈNE'}
@@ -130,14 +148,14 @@ const tabs: Array<{ id: 'content' | 'choices' | 'metadata', label: string, icon:
           <div className="flex gap-2">
             <button
               onClick={handleSave}
-              className="flex-1 px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded transition-colors flex items-center justify-center gap-2"
+              className="flex flex-1 items-center justify-center gap-2 rounded bg-green-600 px-3 py-2 text-white transition-colors hover:bg-green-700"
             >
               <Save size={16} />
               Sauvegarder
             </button>
             <button
               onClick={onDuplicate}
-              className="px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded transition-colors"
+              className="rounded bg-purple-600 px-3 py-2 text-white transition-colors hover:bg-purple-700"
               title="Dupliquer"
             >
               <Copy size={16} />
@@ -148,7 +166,7 @@ const tabs: Array<{ id: 'content' | 'choices' | 'metadata', label: string, icon:
                   onDelete();
                 }
               }}
-              className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded transition-colors"
+              className="rounded bg-red-600 px-3 py-2 text-white transition-colors hover:bg-red-700"
               title="Supprimer"
             >
               <Trash2 size={16} />
@@ -162,9 +180,9 @@ const tabs: Array<{ id: 'content' | 'choices' | 'metadata', label: string, icon:
             <button
               key={id}
               onClick={() => setActiveTab(id)}
-              className={`flex-1 px-4 py-3 text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
+              className={`flex flex-1 items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition-colors ${
                 activeTab === id
-                  ? 'text-blue-400 border-b-2 border-blue-400 bg-gray-700'
+                  ? 'border-b-2 border-blue-400 bg-gray-700 text-blue-400'
                   : 'text-gray-400 hover:text-white'
               }`}
             >
@@ -180,42 +198,42 @@ const tabs: Array<{ id: 'content' | 'choices' | 'metadata', label: string, icon:
             <div className="space-y-4">
               {/* Title */}
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="mb-2 block text-sm font-medium text-gray-300">
                   Titre
                 </label>
                 <input
                   type="text"
                   value={editedNode.title}
                   onChange={(e) => updateNode({ title: e.target.value })}
-                  className="w-full px-3 py-2 bg-gray-700 text-white rounded border border-gray-600 focus:border-blue-500 focus:outline-none"
+                  className="w-full rounded border border-gray-600 bg-gray-700 px-3 py-2 text-white focus:border-blue-500 focus:outline-none"
                 />
               </div>
 
               {/* Content */}
               <div>
-                <div className="flex items-center justify-between mb-2">
+                <div className="mb-2 flex items-center justify-between">
                   <label className="text-sm font-medium text-gray-300">
                     Contenu
                   </label>
                   <button
                     onClick={() => setPreviewMode(!previewMode)}
-                    className="px-2 py-1 bg-gray-600 hover:bg-gray-500 text-white text-xs rounded transition-colors flex items-center gap-1"
+                    className="flex items-center gap-1 rounded bg-gray-600 px-2 py-1 text-xs text-white transition-colors hover:bg-gray-500"
                   >
                     <Eye size={12} />
                     {previewMode ? 'Éditer' : 'Aperçu'}
                   </button>
                 </div>
-                
+
                 {previewMode ? (
-                  <div 
-                    className="w-full min-h-[200px] p-3 bg-gray-700 text-white rounded border border-gray-600 prose prose-invert prose-sm max-w-none"
+                  <div
+                    className="prose prose-invert prose-sm min-h-[200px] w-full max-w-none rounded border border-gray-600 bg-gray-700 p-3 text-white"
                     dangerouslySetInnerHTML={{ __html: editedNode.content }}
                   />
                 ) : (
                   <textarea
                     value={editedNode.content}
                     onChange={(e) => updateNode({ content: e.target.value })}
-                    className="w-full min-h-[200px] px-3 py-2 bg-gray-700 text-white rounded border border-gray-600 focus:border-blue-500 focus:outline-none resize-y"
+                    className="min-h-[200px] w-full resize-y rounded border border-gray-600 bg-gray-700 px-3 py-2 text-white focus:border-blue-500 focus:outline-none"
                     placeholder="Contenu du nœud... (HTML supporté)"
                   />
                 )}
@@ -231,7 +249,7 @@ const tabs: Array<{ id: 'content' | 'choices' | 'metadata', label: string, icon:
                 </h3>
                 <button
                   onClick={addChoice}
-                  className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded transition-colors flex items-center gap-1"
+                  className="flex items-center gap-1 rounded bg-blue-600 px-3 py-1 text-sm text-white transition-colors hover:bg-blue-700"
                 >
                   <Plus size={14} />
                   Ajouter
@@ -239,40 +257,51 @@ const tabs: Array<{ id: 'content' | 'choices' | 'metadata', label: string, icon:
               </div>
 
               {editedNode.choices.length === 0 ? (
-                <div className="text-center text-gray-400 py-8">
+                <div className="py-8 text-center text-gray-400">
                   <Plus size={32} className="mx-auto mb-2 opacity-50" />
                   <p>Aucun choix défini</p>
-                  <p className="text-xs">Les nœuds de fin nont généralement pas de choix</p>
+                  <p className="text-xs">
+                    Les nœuds de fin nont généralement pas de choix
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-3">
                   {editedNode.choices.map((choice, index) => (
-                    <div key={choice.id} className="p-3 bg-gray-700 rounded border border-gray-600">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs text-gray-400">Choix {index + 1}</span>
+                    <div
+                      key={choice.id}
+                      className="rounded border border-gray-600 bg-gray-700 p-3"
+                    >
+                      <div className="mb-2 flex items-center justify-between">
+                        <span className="text-xs text-gray-400">
+                          Choix {index + 1}
+                        </span>
                         <button
                           onClick={() => removeChoice(index)}
-                          className="p-1 text-red-400 hover:text-red-300 transition-colors"
+                          className="p-1 text-red-400 transition-colors hover:text-red-300"
                           title="Supprimer le choix"
                         >
                           <Minus size={14} />
                         </button>
                       </div>
-                      
+
                       <input
                         type="text"
                         value={choice.text}
-                        onChange={(e) => updateChoice(index, { text: e.target.value })}
+                        onChange={(e) =>
+                          updateChoice(index, { text: e.target.value })
+                        }
                         placeholder="Texte du choix"
-                        className="w-full px-2 py-1 bg-gray-600 text-white rounded border border-gray-500 focus:border-blue-500 focus:outline-none text-sm mb-2"
+                        className="mb-2 w-full rounded border border-gray-500 bg-gray-600 px-2 py-1 text-sm text-white focus:border-blue-500 focus:outline-none"
                       />
-                      
+
                       <input
                         type="text"
                         value={choice.nextNodeId}
-                        onChange={(e) => updateChoice(index, { nextNodeId: e.target.value })}
+                        onChange={(e) =>
+                          updateChoice(index, { nextNodeId: e.target.value })
+                        }
                         placeholder="ID du nœud suivant"
-                        className="w-full px-2 py-1 bg-gray-600 text-white rounded border border-gray-500 focus:border-blue-500 focus:outline-none text-sm"
+                        className="w-full rounded border border-gray-500 bg-gray-600 px-2 py-1 text-sm text-white focus:border-blue-500 focus:outline-none"
                       />
                     </div>
                   ))}
@@ -285,18 +314,23 @@ const tabs: Array<{ id: 'content' | 'choices' | 'metadata', label: string, icon:
             <div className="space-y-4">
               {/* Difficulty */}
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="mb-2 block text-sm font-medium text-gray-300">
                   Difficulté
                 </label>
                 <select
                   value={editedNode.metadata.difficulty || 'medium'}
-                  onChange={(e) => updateNode({
-                    metadata: {
-                      ...editedNode.metadata,
-                      difficulty: e.target.value as 'easy' | 'medium' | 'hard'
-                    }
-                  })}
-                  className="w-full px-3 py-2 bg-gray-700 text-white rounded border border-gray-600 focus:border-blue-500 focus:outline-none"
+                  onChange={(e) =>
+                    updateNode({
+                      metadata: {
+                        ...editedNode.metadata,
+                        difficulty: e.target.value as
+                          | 'easy'
+                          | 'medium'
+                          | 'hard',
+                      },
+                    })
+                  }
+                  className="w-full rounded border border-gray-600 bg-gray-700 px-3 py-2 text-white focus:border-blue-500 focus:outline-none"
                 >
                   <option value="easy">Facile</option>
                   <option value="medium">Moyen</option>
@@ -306,14 +340,14 @@ const tabs: Array<{ id: 'content' | 'choices' | 'metadata', label: string, icon:
 
               {/* Tags */}
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="mb-2 block text-sm font-medium text-gray-300">
                   Tags
                 </label>
-                <div className="flex flex-wrap gap-2 mb-2">
+                <div className="mb-2 flex flex-wrap gap-2">
                   {editedNode.metadata.tags.map((tag, index) => (
                     <span
                       key={index}
-                      className="px-2 py-1 bg-purple-600 text-white text-xs rounded flex items-center gap-1"
+                      className="flex items-center gap-1 rounded bg-purple-600 px-2 py-1 text-xs text-white"
                     >
                       {tag}
                       <button
@@ -328,7 +362,7 @@ const tabs: Array<{ id: 'content' | 'choices' | 'metadata', label: string, icon:
                 <input
                   type="text"
                   placeholder="Ajouter un tag (Entrée pour confirmer)"
-                  className="w-full px-3 py-2 bg-gray-700 text-white rounded border border-gray-600 focus:border-blue-500 focus:outline-none"
+                  className="w-full rounded border border-gray-600 bg-gray-700 px-3 py-2 text-white focus:border-blue-500 focus:outline-none"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                       addTag(e.currentTarget.value);
@@ -340,19 +374,21 @@ const tabs: Array<{ id: 'content' | 'choices' | 'metadata', label: string, icon:
 
               {/* Visit Count */}
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="mb-2 block text-sm font-medium text-gray-300">
                   Nombre de visites
                 </label>
                 <input
                   type="number"
                   value={editedNode.metadata.visitCount}
-                  onChange={(e) => updateNode({
-                    metadata: {
-                      ...editedNode.metadata,
-                      visitCount: parseInt(e.target.value) || 0
-                    }
-                  })}
-                  className="w-full px-3 py-2 bg-gray-700 text-white rounded border border-gray-600 focus:border-blue-500 focus:outline-none"
+                  onChange={(e) =>
+                    updateNode({
+                      metadata: {
+                        ...editedNode.metadata,
+                        visitCount: parseInt(e.target.value) || 0,
+                      },
+                    })
+                  }
+                  className="w-full rounded border border-gray-600 bg-gray-700 px-3 py-2 text-white focus:border-blue-500 focus:outline-none"
                   min="0"
                 />
               </div>

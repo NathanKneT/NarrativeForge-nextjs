@@ -9,9 +9,9 @@ interface StoryViewerProps {
   onChoiceSelect: (choiceId: string) => void;
 }
 
-export const StoryViewer: React.FC<StoryViewerProps> = ({ 
-  node, 
-  onChoiceSelect 
+export const StoryViewer: React.FC<StoryViewerProps> = ({
+  node,
+  onChoiceSelect,
 }) => {
   const [isClient, setIsClient] = useState(false);
 
@@ -22,12 +22,12 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
   if (!isClient) {
     // Version simplifiée pour le SSR
     return (
-      <div className="max-w-4xl mx-auto p-6 bg-gray-800 rounded-lg shadow-xl">
-        <h1 className="text-3xl font-bold text-white mb-6 text-center">
+      <div className="mx-auto max-w-4xl rounded-lg bg-gray-800 p-6 shadow-xl">
+        <h1 className="mb-6 text-center text-3xl font-bold text-white">
           {node.title}
         </h1>
-        <div 
-          className="prose prose-lg prose-invert max-w-none mb-8"
+        <div
+          className="prose prose-lg prose-invert mb-8 max-w-none"
           dangerouslySetInnerHTML={{ __html: node.content }}
         />
         <div className="space-y-4">
@@ -35,9 +35,9 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
             <button
               key={choice.id}
               onClick={() => onChoiceSelect(choice.id)}
-              className="w-full p-4 text-left bg-gray-700 hover:bg-red-500 
-                       text-white rounded-lg transition-all duration-200 
-                       border border-gray-600 hover:border-red-500
+              className="w-full rounded-lg border border-gray-600 bg-gray-700 
+                       p-4 text-left text-white transition-all 
+                       duration-200 hover:border-red-500 hover:bg-red-500
                        focus:outline-none focus:ring-2 focus:ring-red-500"
             >
               <span className="font-medium">{choice.text}</span>
@@ -53,14 +53,14 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="max-w-4xl mx-auto p-6 bg-gray-800 rounded-lg shadow-xl"
+      className="mx-auto max-w-4xl rounded-lg bg-gray-800 p-6 shadow-xl"
     >
       {/* Titre de la scène */}
       <motion.h1
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.2 }}
-        className="text-3xl font-bold text-white mb-6 text-center"
+        className="mb-6 text-center text-3xl font-bold text-white"
       >
         {node.title}
       </motion.h1>
@@ -70,7 +70,7 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.4 }}
-        className="prose prose-lg prose-invert max-w-none mb-8"
+        className="prose prose-lg prose-invert mb-8 max-w-none"
         dangerouslySetInnerHTML={{ __html: node.content }}
       />
 
@@ -90,9 +90,9 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
             whileHover={{ scale: 1.02, backgroundColor: '#e94560' }}
             whileTap={{ scale: 0.98 }}
             onClick={() => onChoiceSelect(choice.id)}
-            className="w-full p-4 text-left bg-gray-700 hover:bg-red-500 
-                     text-white rounded-lg transition-all duration-200 
-                     border border-gray-600 hover:border-red-500
+            className="w-full rounded-lg border border-gray-600 bg-gray-700 
+                     p-4 text-left text-white transition-all 
+                     duration-200 hover:border-red-500 hover:bg-red-500
                      focus:outline-none focus:ring-2 focus:ring-red-500"
           >
             <span className="font-medium">{choice.text}</span>

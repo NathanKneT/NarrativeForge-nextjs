@@ -5,7 +5,7 @@ import type { SaveData, GameState } from '@/types/story';
 // Mock localStorage avec une implémentation complète
 const createMockLocalStorage = () => {
   let store: Record<string, string> = {};
-  
+
   return {
     getItem: jest.fn((key: string) => store[key] || null),
     setItem: jest.fn((key: string, value: string) => {
@@ -81,8 +81,9 @@ describe('SaveManager', () => {
       const originalWindow = global.window;
       delete (global as any).window;
 
-      await expect(SaveManager.saveGame('Test', mockGameState))
-        .rejects.toThrow('localStorage not available on server');
+      await expect(SaveManager.saveGame('Test', mockGameState)).rejects.toThrow(
+        'localStorage not available on server'
+      );
 
       global.window = originalWindow;
     });
@@ -165,7 +166,7 @@ describe('SaveManager', () => {
 
     it('should return null for corrupted save data', () => {
       mockLocalStorage.setItem('asylum-save-corrupted', 'invalid json');
-      
+
       const save = SaveManager.loadSaveById('corrupted');
       expect(save).toBeNull();
     });
@@ -231,18 +232,19 @@ describe('SaveManager', () => {
       // Créer d'abord une vraie sauvegarde, puis l'exporter
       await SaveManager.saveGame('Test Save', validGameState);
       const exported = SaveManager.exportSaves();
-      
+
       // Vider le storage
       mockLocalStorage.clear();
-      
+
       // Importer les données exportées
       const importedCount = await SaveManager.importSaves(exported);
       expect(importedCount).toBeGreaterThanOrEqual(0);
     });
 
     it('should reject invalid JSON', async () => {
-      await expect(SaveManager.importSaves('invalid json'))
-        .rejects.toThrow('Format de fichier invalide');
+      await expect(SaveManager.importSaves('invalid json')).rejects.toThrow(
+        'Format de fichier invalide'
+      );
     });
 
     it('should skip invalid save data', async () => {
@@ -250,7 +252,9 @@ describe('SaveManager', () => {
         { id: 'invalid', name: 'Invalid Save' }, // Missing gameState
       ];
 
-      const importedCount = await SaveManager.importSaves(JSON.stringify(invalidSaves));
+      const importedCount = await SaveManager.importSaves(
+        JSON.stringify(invalidSaves)
+      );
       expect(importedCount).toBe(0);
     });
   });
@@ -283,10 +287,18 @@ describe('SaveManager', () => {
       // Mock localStorage pour lever des erreurs
       Object.defineProperty(window, 'localStorage', {
         value: {
-          getItem: () => { throw new Error('Storage error'); },
-          setItem: () => { throw new Error('Storage error'); },
-          removeItem: () => { throw new Error('Storage error'); },
-          clear: () => { throw new Error('Storage error'); },
+          getItem: () => {
+            throw new Error('Storage error');
+          },
+          setItem: () => {
+            throw new Error('Storage error');
+          },
+          removeItem: () => {
+            throw new Error('Storage error');
+          },
+          clear: () => {
+            throw new Error('Storage error');
+          },
           length: 0,
           key: () => null,
         },
@@ -337,18 +349,18 @@ describe('SaveManager', () => {
 
       // Créer plusieurs sauvegardes avec dates différentes
       await SaveManager.saveGame('Oldest Save', mockGameState);
-      await new Promise(resolve => setTimeout(resolve, 10)); // Petit délai
+      await new Promise((resolve) => setTimeout(resolve, 10)); // Petit délai
       await SaveManager.saveGame('Middle Save', mockGameState);
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 10));
       await SaveManager.saveGame('Newest Save', mockGameState);
 
       const stats = SaveManager.getSaveStats();
-      
+
       expect(stats.totalSaves).toBeGreaterThanOrEqual(3);
       expect(stats.totalSizeKB).toBeGreaterThan(0);
       expect(stats.newestSave).toBeDefined();
       expect(stats.oldestSave).toBeDefined();
-      
+
       // La plus récente doit être plus récente que la plus ancienne
       if (stats.newestSave && stats.oldestSave) {
         expect(new Date(stats.newestSave).getTime()).toBeGreaterThanOrEqual(
@@ -365,12 +377,12 @@ describe('SaveManager', () => {
           'node_with_underscores',
           'node.with.dots',
           'node with spaces',
-          'node-🎮-emoji'
+          'node-🎮-emoji',
         ]),
         choices: {
-          'start': 'choice-éàü',
+          start: 'choice-éàü',
           'middle-🎮': 'choice-with-emoji',
-          'node with spaces': 'another choice'
+          'node with spaces': 'another choice',
         },
         startTime: new Date('2024-01-01T12:00:00.000Z'),
         playTime: 123456,
@@ -378,35 +390,48 @@ describe('SaveManager', () => {
           health: 100,
           mana: 50,
           inventory_size: 10,
-          'special-var-éàü': 'special-value'
+          'special-var-éàü': 'special-value',
         },
         inventory: [
           'sword-🗡️',
           'potion-éàü',
           'item with spaces',
-          'item_with_underscores'
+          'item_with_underscores',
         ],
       };
 
-      const saveId = await SaveManager.saveGame('Complex Save', complexGameState);
+      const saveId = await SaveManager.saveGame(
+        'Complex Save',
+        complexGameState
+      );
       expect(saveId).toBeDefined();
 
       const loadedSave = SaveManager.loadSaveById(saveId);
       expect(loadedSave).not.toBeNull();
-      
+
       if (loadedSave) {
-        expect(loadedSave.gameState.currentNodeId).toBe(complexGameState.currentNodeId);
-        expect(loadedSave.gameState.visitedNodes).toEqual(complexGameState.visitedNodes);
+        expect(loadedSave.gameState.currentNodeId).toBe(
+          complexGameState.currentNodeId
+        );
+        expect(loadedSave.gameState.visitedNodes).toEqual(
+          complexGameState.visitedNodes
+        );
         expect(loadedSave.gameState.choices).toEqual(complexGameState.choices);
-        expect(loadedSave.gameState.variables).toEqual(complexGameState.variables);
-        expect(loadedSave.gameState.inventory).toEqual(complexGameState.inventory);
+        expect(loadedSave.gameState.variables).toEqual(
+          complexGameState.variables
+        );
+        expect(loadedSave.gameState.inventory).toEqual(
+          complexGameState.inventory
+        );
       }
     });
 
     it('should handle large save data', async () => {
       const largeGameState = {
         currentNodeId: 'large-state',
-        visitedNodes: new Set(Array.from({ length: 1000 }, (_, i) => `node-${i}`)),
+        visitedNodes: new Set(
+          Array.from({ length: 1000 }, (_, i) => `node-${i}`)
+        ),
         choices: Object.fromEntries(
           Array.from({ length: 500 }, (_, i) => [`node-${i}`, `choice-${i}`])
         ),
@@ -457,10 +482,14 @@ describe('SaveManager', () => {
         const saves = SaveManager.getAllSaves();
         expect(saves.length).toBeGreaterThanOrEqual(1);
 
-        const testSave = saves.find(s => s.name.includes('Export Test'));
+        const testSave = saves.find((s) => s.name.includes('Export Test'));
         if (testSave) {
-          expect(testSave.gameState.currentNodeId).toBe(originalGameState.currentNodeId);
-          expect(testSave.gameState.visitedNodes).toEqual(originalGameState.visitedNodes);
+          expect(testSave.gameState.currentNodeId).toBe(
+            originalGameState.currentNodeId
+          );
+          expect(testSave.gameState.visitedNodes).toEqual(
+            originalGameState.visitedNodes
+          );
         }
       }
     });
@@ -490,11 +519,12 @@ describe('SaveManager', () => {
       for (const name of edgeCaseNames) {
         const saveId = await SaveManager.saveGame(name, mockGameState);
         expect(saveId).toBeDefined();
-        
+
         const loadedSave = SaveManager.loadSaveById(saveId);
         expect(loadedSave).not.toBeNull();
         // FIX: Le nom sera soit le nom fourni (trimé) soit le nom par défaut
-        const expectedName = name.trim() || `Sauvegarde ${new Date().toLocaleDateString()}`;
+        const expectedName =
+          name.trim() || `Sauvegarde ${new Date().toLocaleDateString()}`;
         expect(loadedSave?.name).toBeTruthy();
       }
     });
@@ -511,21 +541,21 @@ describe('SaveManager', () => {
       };
 
       // Sauvegardes simultanées
-      const savePromises = Array.from({ length: 10 }, (_, i) => 
+      const savePromises = Array.from({ length: 10 }, (_, i) =>
         SaveManager.saveGame(`Concurrent Save ${i}`, mockGameState)
       );
 
       const saveIds = await Promise.all(savePromises);
-      
+
       // Toutes les sauvegardes devraient avoir réussi
       expect(saveIds).toHaveLength(10);
-      saveIds.forEach(id => expect(id).toBeDefined());
+      saveIds.forEach((id) => expect(id).toBeDefined());
 
       // Toutes devraient être chargeable
-      const loadPromises = saveIds.map(id => SaveManager.loadSaveById(id));
+      const loadPromises = saveIds.map((id) => SaveManager.loadSaveById(id));
       const loadedSaves = loadPromises;
-      
-      loadedSaves.forEach(save => expect(save).not.toBeNull());
+
+      loadedSaves.forEach((save) => expect(save).not.toBeNull());
     });
   });
 });

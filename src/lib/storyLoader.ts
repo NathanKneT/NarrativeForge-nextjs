@@ -36,11 +36,13 @@ export class StoryLoader {
    */
   private loadStoryData(storyData: StoryNode[]): void {
     this.nodes.clear();
-    
+
     // Valider et indexer chaque nœud
     for (const node of storyData) {
       if (!node.id || typeof node.id !== 'string') {
-        throw new Error(`Nœud invalide: ID manquant ou invalide pour le nœud ${JSON.stringify(node)}`);
+        throw new Error(
+          `Nœud invalide: ID manquant ou invalide pour le nœud ${JSON.stringify(node)}`
+        );
       }
       this.nodes.set(node.id, node);
     }
@@ -58,7 +60,7 @@ export class StoryLoader {
 
     // Vérifier qu'il y a des nœuds
     if (this.nodes.size === 0) {
-      errors.push('Aucun nœud trouvé dans l\'histoire');
+      errors.push("Aucun nœud trouvé dans l'histoire");
       return { isValid: false, errors, warnings };
     }
 
@@ -95,8 +97,14 @@ export class StoryLoader {
           warnings.push(`Nœud "${nodeId}": choix sans texte`);
         }
 
-        if (choice.nextNodeId && choice.nextNodeId !== '-1' && !this.nodes.has(choice.nextNodeId)) {
-          errors.push(`Nœud "${nodeId}": choix pointe vers un nœud inexistant "${choice.nextNodeId}"`);
+        if (
+          choice.nextNodeId &&
+          choice.nextNodeId !== '-1' &&
+          !this.nodes.has(choice.nextNodeId)
+        ) {
+          errors.push(
+            `Nœud "${nodeId}": choix pointe vers un nœud inexistant "${choice.nextNodeId}"`
+          );
         }
       }
     }
@@ -112,7 +120,7 @@ export class StoryLoader {
     return {
       isValid: errors.length === 0,
       errors,
-      warnings
+      warnings,
     };
   }
 
@@ -129,10 +137,14 @@ export class StoryLoader {
 
       visited.add(currentId);
       const node = this.nodes.get(currentId);
-      
+
       if (node) {
         for (const choice of node.choices) {
-          if (choice.nextNodeId && choice.nextNodeId !== '-1' && !visited.has(choice.nextNodeId)) {
+          if (
+            choice.nextNodeId &&
+            choice.nextNodeId !== '-1' &&
+            !visited.has(choice.nextNodeId)
+          ) {
             toVisit.push(choice.nextNodeId);
           }
         }
@@ -146,18 +158,22 @@ export class StoryLoader {
    * ✅ FIX: Trouve le nœud de départ dans les données - CORRIGÉ
    */
   private findStartNode(storyData: StoryNode[]): string {
-    console.log('🔍 Recherche du nœud de départ parmi', storyData.length, 'nœuds');
+    console.log(
+      '🔍 Recherche du nœud de départ parmi',
+      storyData.length,
+      'nœuds'
+    );
 
     // ✅ MÉTHODE 1: Chercher le nœud avec ID "1" d'abord (format migré)
-    const nodeOne = storyData.find(node => node.id === '1');
+    const nodeOne = storyData.find((node) => node.id === '1');
     if (nodeOne) {
       console.log('✅ Nœud de départ trouvé: ID "1"');
       return nodeOne.id;
     }
 
     // ✅ MÉTHODE 2: Chercher un nœud avec le tag "début"
-    const taggedStartNode = storyData.find(node => 
-      node.metadata.tags && node.metadata.tags.includes('début')
+    const taggedStartNode = storyData.find(
+      (node) => node.metadata.tags && node.metadata.tags.includes('début')
     );
     if (taggedStartNode) {
       console.log('✅ Nœud de départ trouvé par tag:', taggedStartNode.id);
@@ -166,7 +182,7 @@ export class StoryLoader {
 
     // ✅ MÉTHODE 3: Chercher un nœud qui n'est référencé par aucun choix (nœud racine)
     const referencedNodes = new Set<string>();
-    
+
     for (const node of storyData) {
       for (const choice of node.choices) {
         if (choice.nextNodeId && choice.nextNodeId !== '-1') {
@@ -176,15 +192,19 @@ export class StoryLoader {
     }
 
     // Le nœud de départ n'est référencé par aucun choix
-    const startNodes = storyData.filter(node => !referencedNodes.has(node.id));
-    
+    const startNodes = storyData.filter(
+      (node) => !referencedNodes.has(node.id)
+    );
+
     if (startNodes.length === 0) {
       console.warn('⚠️ Aucun nœud racine trouvé, utilisation du premier nœud');
       return storyData[0]?.id || '';
     }
 
     if (startNodes.length > 1) {
-      console.warn(`⚠️ Plusieurs nœuds de départ potentiels trouvés: ${startNodes.map(n => n.id).join(', ')}. Utilisation du premier.`);
+      console.warn(
+        `⚠️ Plusieurs nœuds de départ potentiels trouvés: ${startNodes.map((n) => n.id).join(', ')}. Utilisation du premier.`
+      );
     }
 
     const startNode = startNodes[0];
@@ -231,7 +251,7 @@ export class StoryLoader {
     const currentNode = this.getNode(currentNodeId);
     if (!currentNode) return null;
 
-    const choice = currentNode.choices.find(c => c.id === choiceId);
+    const choice = currentNode.choices.find((c) => c.id === choiceId);
     if (!choice || choice.nextNodeId === '-1') return null;
 
     return this.getNode(choice.nextNodeId);
@@ -247,7 +267,10 @@ export class StoryLoader {
     maxDepth: number;
   } {
     const nodes = this.getAllNodes();
-    const totalChoices = nodes.reduce((sum, node) => sum + node.choices.length, 0);
+    const totalChoices = nodes.reduce(
+      (sum, node) => sum + node.choices.length,
+      0
+    );
 
     return {
       totalNodes: nodes.length,
@@ -262,18 +285,18 @@ export class StoryLoader {
    */
   private calculateMaxDepth(): number {
     const visited = new Set<string>();
-    
+
     const traverse = (nodeId: string, depth: number): number => {
       if (visited.has(nodeId) || nodeId === '-1') return depth;
-      
+
       visited.add(nodeId);
       const node = this.nodes.get(nodeId);
-      
+
       if (!node || node.choices.length === 0) {
         visited.delete(nodeId);
         return depth;
       }
-      
+
       let maxChildDepth = depth;
       for (const choice of node.choices) {
         if (choice.nextNodeId && choice.nextNodeId !== '-1') {
@@ -281,11 +304,11 @@ export class StoryLoader {
           maxChildDepth = Math.max(maxChildDepth, childDepth);
         }
       }
-      
+
       visited.delete(nodeId); // Permettre la réutilisation pour différents chemins
       return maxChildDepth;
     };
-    
+
     return traverse(this.startNodeId, 0);
   }
 

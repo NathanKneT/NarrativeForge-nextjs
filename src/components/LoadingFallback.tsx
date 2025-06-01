@@ -2,9 +2,9 @@ import React from 'react';
 
 export const LoadingFallback: React.FC = () => {
   return (
-    <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-      <div className="text-white text-xl animate-pulse flex items-center gap-3">
-        <div className="w-6 h-6 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
+    <div className="flex min-h-screen items-center justify-center bg-gray-900">
+      <div className="flex animate-pulse items-center gap-3 text-xl text-white">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-red-500 border-t-transparent"></div>
         Chargement...
       </div>
     </div>

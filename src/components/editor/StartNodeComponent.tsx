@@ -7,24 +7,25 @@ import { type EditorNode } from '@/types/editor';
 
 // Types stricts pour les props du composant avec compatibilité React Flow v12
 interface StartNodeComponentProps extends NodeProps<EditorNode> {
-  id?: string; // ✅ Assurer l'accès à l'ID du nœud React Flow
+  id: string; // ✅ Assurer l'accès à l'ID du nœud React Flow
 }
 
-export const StartNodeComponent: React.FC<StartNodeComponentProps> = ({ 
-  data, 
+export const StartNodeComponent: React.FC<StartNodeComponentProps> = ({
+  data,
   selected = false,
-  id // ✅ Destructurer l'ID du nœud React Flow
+  id, // ✅ Destructurer l'ID du nœud React Flow
 }) => {
   const { storyNode } = data;
-  
+
   // Optimisation: mémoriser le contenu tronqué
   const { cleanContent } = useMemo(() => {
-    const truncated = storyNode.content.length > 80 
-      ? storyNode.content.substring(0, 80) + '...'
-      : storyNode.content;
-    
+    const truncated =
+      storyNode.content.length > 80
+        ? storyNode.content.substring(0, 80) + '...'
+        : storyNode.content;
+
     const clean = truncated.replace(/<[^>]*>/g, '');
-    
+
     return { cleanContent: clean };
   }, [storyNode.content]);
 
@@ -32,29 +33,33 @@ export const StartNodeComponent: React.FC<StartNodeComponentProps> = ({
   const handlePositions = useMemo(() => {
     const choicesCount = storyNode.choices.length;
     const nodeId = data.id || storyNode.id; // ✅ Utiliser l'ID du nœud React Flow
-    
+
     console.log(`🔍 [${storyNode.title}] Calculating handles:`, {
       choicesCount,
-      choices: storyNode.choices.map(c => ({ id: c.id, text: c.text }))
+      choices: storyNode.choices.map((c) => ({ id: c.id, text: c.text })),
     });
-    
+
     const existingHandles = [];
-    
+
     // Si on a des choix spécifiques, les ajouter
     if (choicesCount > 0) {
       const nodeWidth = 250;
-      const handleSpacing = Math.min(60, (nodeWidth - 40) / Math.max(1, choicesCount - 1));
-      const startX = (nodeWidth - (handleSpacing * Math.max(0, choicesCount - 1))) / 2;
-      
+      const handleSpacing = Math.min(
+        60,
+        (nodeWidth - 40) / Math.max(1, choicesCount - 1)
+      );
+      const startX =
+        (nodeWidth - handleSpacing * Math.max(0, choicesCount - 1)) / 2;
+
       storyNode.choices.forEach((choice, index) => {
         existingHandles.push({
           choiceId: choice.id,
-          left: startX + (index * handleSpacing),
+          left: startX + index * handleSpacing,
           bottom: -6,
         });
       });
     }
-    
+
     // ✅ FIX: TOUJOURS garder un handle par défaut si pas de choix
     if (choicesCount === 0) {
       existingHandles.push({
@@ -63,47 +68,52 @@ export const StartNodeComponent: React.FC<StartNodeComponentProps> = ({
         bottom: -6,
       });
     }
-    
+
     console.log(`🔍 Final handles for ${storyNode.title}:`, existingHandles);
     return existingHandles;
   }, [storyNode.choices, data.id, storyNode.title]);
 
   return (
-    <div className={`bg-gradient-to-br from-green-700 to-green-800 border-2 rounded-lg p-4 min-w-[250px] max-w-[300px] shadow-lg transition-all relative ${
-      selected 
-        ? 'border-green-400 shadow-green-400/25' 
-        : 'border-green-600 hover:border-green-500'
-    }`}>
+    <div
+      className={`relative min-w-[250px] max-w-[300px] rounded-lg border-2 bg-gradient-to-br from-green-700 to-green-800 p-4 shadow-lg transition-all ${
+        selected
+          ? 'border-green-400 shadow-green-400/25'
+          : 'border-green-600 hover:border-green-500'
+      }`}
+    >
       {/* Header avec icône spéciale */}
-      <div className="flex items-center gap-2 mb-3">
-        <div className="drag-handle cursor-move p-1 hover:bg-green-600 rounded flex items-center gap-2 flex-1">
+      <div className="mb-3 flex items-center gap-2">
+        <div className="drag-handle flex flex-1 cursor-move items-center gap-2 rounded p-1 hover:bg-green-600">
           <div className="relative">
-            <Play size={18} className="text-green-300 flex-shrink-0" />
-            <Star size={10} className="text-yellow-400 absolute -top-1 -right-1" />
+            <Play size={18} className="flex-shrink-0 text-green-300" />
+            <Star
+              size={10}
+              className="absolute -right-1 -top-1 text-yellow-400"
+            />
           </div>
-          <h3 className="font-bold text-white truncate flex-1">
+          <h3 className="flex-1 truncate font-bold text-white">
             {storyNode.title}
           </h3>
         </div>
-        <span className="px-2 py-1 bg-green-600 text-white text-xs rounded font-medium">
+        <span className="rounded bg-green-600 px-2 py-1 text-xs font-medium text-white">
           DÉBUT
         </span>
       </div>
 
       {/* Content Preview */}
-      <div className="text-sm text-green-100 mb-3 leading-relaxed">
+      <div className="mb-3 text-sm leading-relaxed text-green-100">
         {cleanContent}
       </div>
 
       {/* Start Node Info */}
-      <div className="flex items-center justify-between text-xs text-green-200 mb-3">
+      <div className="mb-3 flex items-center justify-between text-xs text-green-200">
         <span>Point de départ</span>
         <span>{storyNode.choices.length} direction(s)</span>
       </div>
 
       {/* Special indicator */}
-      <div className="flex items-center gap-2 mb-2">
-        <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+      <div className="mb-2 flex items-center gap-2">
+        <div className="h-2 w-2 animate-pulse rounded-full bg-green-400"></div>
         <span className="text-xs text-green-200">Début de l'histoire</span>
       </div>
 
@@ -115,7 +125,7 @@ export const StartNodeComponent: React.FC<StartNodeComponentProps> = ({
           position={Position.Bottom}
           id={choiceId}
           // ✅ FIX: Handles plus gros et plus visibles
-          className="w-6 h-6 bg-green-500 border-3 border-white transition-all hover:bg-green-400 hover:scale-125 cursor-pointer shadow-lg"
+          className="border-3 h-6 w-6 cursor-pointer border-white bg-green-500 shadow-lg transition-all hover:scale-125 hover:bg-green-400"
           style={{
             left: `${left}px`,
             bottom: `${bottom}px`,
@@ -127,11 +137,13 @@ export const StartNodeComponent: React.FC<StartNodeComponentProps> = ({
       ))}
 
       {/* Debug info pour les choix (en mode développement) */}
-      {process.env.NODE_ENV === 'development' && storyNode.choices.length > 0 && (
-        <div className="absolute -bottom-8 left-0 text-xs text-green-300 opacity-50">
-          {storyNode.choices.length} directions • {handlePositions.length} handles
-        </div>
-      )}
+      {process.env.NODE_ENV === 'development' &&
+        storyNode.choices.length > 0 && (
+          <div className="absolute -bottom-8 left-0 text-xs text-green-300 opacity-50">
+            {storyNode.choices.length} directions • {handlePositions.length}{' '}
+            handles
+          </div>
+        )}
     </div>
   );
 };

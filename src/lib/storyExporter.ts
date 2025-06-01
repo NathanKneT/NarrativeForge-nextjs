@@ -26,8 +26,8 @@ export class StoryExporter {
    * Exporte une histoire dans le format spécifié
    */
   static async exportStory(
-    nodes: EditorNode[], 
-    edges: EditorEdge[], 
+    nodes: EditorNode[],
+    edges: EditorEdge[],
     options: ExportOptions
   ): Promise<ExportResult> {
     const errors: string[] = [];
@@ -39,14 +39,14 @@ export class StoryExporter {
         const validation = this.validateStoryForExport(nodes, edges);
         errors.push(...validation.errors);
         warnings.push(...validation.warnings);
-        
+
         if (validation.errors.length > 0) {
           return {
             success: false,
             filename: '',
             errors,
             warnings,
-            stats: { totalNodes: 0, totalChoices: 0, fileSize: 0 }
+            stats: { totalNodes: 0, totalChoices: 0, fileSize: 0 },
           };
         }
       }
@@ -81,8 +81,11 @@ export class StoryExporter {
       // Statistiques
       const stats = {
         totalNodes: nodes.length,
-        totalChoices: nodes.reduce((sum, node) => sum + node.data.storyNode.choices.length, 0),
-        fileSize: new Blob([exportData]).size
+        totalChoices: nodes.reduce(
+          (sum, node) => sum + node.data.storyNode.choices.length,
+          0
+        ),
+        fileSize: new Blob([exportData]).size,
       };
 
       return {
@@ -91,9 +94,8 @@ export class StoryExporter {
         filename,
         errors,
         warnings,
-        stats
+        stats,
       };
-
     } catch (error) {
       errors.push(`Erreur d'export: ${error}`);
       return {
@@ -101,7 +103,7 @@ export class StoryExporter {
         filename: '',
         errors,
         warnings,
-        stats: { totalNodes: 0, totalChoices: 0, fileSize: 0 }
+        stats: { totalNodes: 0, totalChoices: 0, fileSize: 0 },
       };
     }
   }
@@ -110,41 +112,48 @@ export class StoryExporter {
    * Export au format Asylum (compatible avec le jeu)
    */
   private static exportToAsylumFormat(
-    nodes: EditorNode[], 
-    edges: EditorEdge[], 
+    nodes: EditorNode[],
+    edges: EditorEdge[],
     options: ExportOptions
   ) {
     // Convertir le graphe React Flow vers le format StoryNode
     const conversionResult = GraphToStoryConverter.convert(nodes, edges);
-    
+
     if (conversionResult.errors.length > 0) {
-      throw new Error(`Erreurs de conversion: ${conversionResult.errors.join(', ')}`);
+      throw new Error(
+        `Erreurs de conversion: ${conversionResult.errors.join(', ')}`
+      );
     }
 
     // Format Asylum : tableau d'objets avec id numérique
     const asylumNodes = conversionResult.story.map((node, index) => ({
       id: parseInt(node.id) || index + 1, // Assurer des IDs numériques
       text: node.content,
-      options: node.choices.map(choice => ({
+      options: node.choices.map((choice) => ({
         text: choice.text,
-        nextText: parseInt(choice.nextNodeId) || -1
-      }))
+        nextText: parseInt(choice.nextNodeId) || -1,
+      })),
     }));
 
     // Métadonnées optionnelles
-    const exportData = options.includeMetadata ? {
-      metadata: {
-        title: "Histoire Interactive",
-        description: "Exportée depuis l'éditeur Asylum",
-        version: "1.0.0",
-        exportedAt: new Date().toISOString(),
-        totalNodes: asylumNodes.length,
-        totalChoices: asylumNodes.reduce((sum, node) => sum + node.options.length, 0)
-      },
-      story: asylumNodes
-    } : asylumNodes;
+    const exportData = options.includeMetadata
+      ? {
+          metadata: {
+            title: 'Histoire Interactive',
+            description: "Exportée depuis l'éditeur Asylum",
+            version: '1.0.0',
+            exportedAt: new Date().toISOString(),
+            totalNodes: asylumNodes.length,
+            totalChoices: asylumNodes.reduce(
+              (sum, node) => sum + node.options.length,
+              0
+            ),
+          },
+          story: asylumNodes,
+        }
+      : asylumNodes;
 
-    const jsonString = options.minify 
+    const jsonString = options.minify
       ? JSON.stringify(exportData)
       : JSON.stringify(exportData, null, 2);
 
@@ -158,29 +167,31 @@ export class StoryExporter {
    * Export au format JSON générique
    */
   private static exportToGenericJSON(
-    nodes: EditorNode[], 
-    edges: EditorEdge[], 
+    nodes: EditorNode[],
+    edges: EditorEdge[],
     options: ExportOptions
   ) {
     const conversionResult = GraphToStoryConverter.convert(nodes, edges);
-    
+
     const exportData = {
-      format: "generic-interactive-story",
-      version: "1.0",
-      metadata: options.includeMetadata ? {
-        title: "Histoire Interactive",
-        author: "Asylum Editor",
-        createdAt: new Date().toISOString(),
-        totalNodes: conversionResult.story.length,
-        startNodeId: conversionResult.startNodeId
-      } : undefined,
+      format: 'generic-interactive-story',
+      version: '1.0',
+      metadata: options.includeMetadata
+        ? {
+            title: 'Histoire Interactive',
+            author: 'Asylum Editor',
+            createdAt: new Date().toISOString(),
+            totalNodes: conversionResult.story.length,
+            startNodeId: conversionResult.startNodeId,
+          }
+        : undefined,
       story: {
         startNodeId: conversionResult.startNodeId,
-        nodes: conversionResult.story
-      }
+        nodes: conversionResult.story,
+      },
     };
 
-    const jsonString = options.minify 
+    const jsonString = options.minify
       ? JSON.stringify(exportData)
       : JSON.stringify(exportData, null, 2);
 
@@ -194,14 +205,14 @@ export class StoryExporter {
    * Export au format Twine (format Twee)
    */
   private static exportToTwineFormat(
-    nodes: EditorNode[], 
-    edges: EditorEdge[], 
+    nodes: EditorNode[],
+    edges: EditorEdge[],
     options: ExportOptions
   ) {
     const conversionResult = GraphToStoryConverter.convert(nodes, edges);
-    
+
     let tweeContent = '';
-    
+
     // En-tête Twine
     if (options.includeMetadata) {
       tweeContent += `:: Start\n`;
@@ -211,11 +222,14 @@ export class StoryExporter {
     }
 
     // Conversion de chaque nœud
-    conversionResult.story.forEach(node => {
+    conversionResult.story.forEach((node) => {
       // Titre du passage
-      const tags = node.metadata.tags.length > 0 ? ` [${node.metadata.tags.join(' ')}]` : '';
+      const tags =
+        node.metadata.tags.length > 0
+          ? ` [${node.metadata.tags.join(' ')}]`
+          : '';
       tweeContent += `:: ${node.title || node.id}${tags}\n`;
-      
+
       // Contenu (nettoyer le HTML basique)
       const cleanContent = node.content
         .replace(/<br\s*\/?>/gi, '\n')
@@ -223,20 +237,22 @@ export class StoryExporter {
         .replace(/<\/p>/gi, '\n')
         .replace(/<[^>]*>/g, '') // Supprimer les autres tags HTML
         .trim();
-      
+
       tweeContent += cleanContent + '\n\n';
-      
+
       // Choix/liens
-      node.choices.forEach(choice => {
+      node.choices.forEach((choice) => {
         if (choice.nextNodeId === '-1') {
           tweeContent += `[[${choice.text}|Start]]\n`;
         } else {
-          const targetNode = conversionResult.story.find(n => n.id === choice.nextNodeId);
+          const targetNode = conversionResult.story.find(
+            (n) => n.id === choice.nextNodeId
+          );
           const targetTitle = targetNode?.title || choice.nextNodeId;
           tweeContent += `[[${choice.text}|${targetTitle}]]\n`;
         }
       });
-      
+
       tweeContent += '\n';
     });
 
@@ -249,7 +265,10 @@ export class StoryExporter {
   /**
    * Validation spécifique pour l'export
    */
-  private static validateStoryForExport(nodes: EditorNode[], edges: EditorEdge[]) {
+  private static validateStoryForExport(
+    nodes: EditorNode[],
+    edges: EditorEdge[]
+  ) {
     const errors: string[] = [];
     const warnings: string[] = [];
 
@@ -259,7 +278,7 @@ export class StoryExporter {
       return { errors, warnings };
     }
 
-    const startNodes = nodes.filter(n => n.data.nodeType === 'start');
+    const startNodes = nodes.filter((n) => n.data.nodeType === 'start');
     if (startNodes.length === 0) {
       errors.push('Aucun nœud de départ trouvé');
     }
@@ -268,20 +287,22 @@ export class StoryExporter {
     }
 
     // Vérifier les nœuds orphelins
-    nodes.forEach(node => {
+    nodes.forEach((node) => {
       if (node.data.nodeType !== 'end') {
-        const hasOutgoingEdges = edges.some(edge => edge.source === node.id);
+        const hasOutgoingEdges = edges.some((edge) => edge.source === node.id);
         if (!hasOutgoingEdges && node.data.storyNode.choices.length === 0) {
-          warnings.push(`Le nœud "${node.data.storyNode.title}" n'a pas de suite`);
+          warnings.push(
+            `Le nœud "${node.data.storyNode.title}" n'a pas de suite`
+          );
         }
       }
     });
 
     // Vérifier les références manquantes
-    edges.forEach(edge => {
-      const sourceExists = nodes.some(n => n.id === edge.source);
-      const targetExists = nodes.some(n => n.id === edge.target);
-      
+    edges.forEach((edge) => {
+      const sourceExists = nodes.some((n) => n.id === edge.source);
+      const targetExists = nodes.some((n) => n.id === edge.target);
+
       if (!sourceExists) {
         errors.push(`Connexion avec source manquante: ${edge.source}`);
       }
@@ -301,20 +322,22 @@ export class StoryExporter {
       throw new Error('Aucune donnée à télécharger');
     }
 
-    const blob = new Blob([result.data], { 
-      type: result.filename.endsWith('.json') ? 'application/json' : 'text/plain' 
+    const blob = new Blob([result.data], {
+      type: result.filename.endsWith('.json')
+        ? 'application/json'
+        : 'text/plain',
     });
-    
+
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
     link.download = result.filename;
-    
+
     // Déclencher le téléchargement
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    
+
     // Nettoyer
     URL.revokeObjectURL(url);
   }
@@ -329,11 +352,13 @@ export class StoryExporter {
 
     const lines = result.data.split('\n');
     const preview = lines.slice(0, maxLines).join('\n');
-    
+
     if (lines.length > maxLines) {
-      return preview + `\n... (${lines.length - maxLines} lignes supplémentaires)`;
+      return (
+        preview + `\n... (${lines.length - maxLines} lignes supplémentaires)`
+      );
     }
-    
+
     return preview;
   }
 
@@ -351,20 +376,20 @@ export class StoryExporter {
         id: 'asylum-json',
         name: 'Asylum JSON',
         description: 'Format natif compatible avec le jeu Asylum',
-        extension: '.json'
+        extension: '.json',
       },
       {
         id: 'json',
         name: 'JSON Générique',
         description: 'Format JSON standard pour interopérabilité',
-        extension: '.json'
+        extension: '.json',
       },
       {
         id: 'twine',
         name: 'Twine (Twee)',
         description: 'Format Twee compatible avec Twine',
-        extension: '.twee'
-      }
+        extension: '.twee',
+      },
     ];
   }
 }

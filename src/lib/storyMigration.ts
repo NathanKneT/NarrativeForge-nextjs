@@ -23,8 +23,9 @@ export function migrateStoryData(oldData: OldStoryNode[]): StoryNode[] {
     // Traiter les options
     oldNode.options.forEach((option, index) => {
       // ✅ FIX: Gérer le cas où nextText est -1 (redémarrage)
-      const nextNodeId = option.nextText === -1 ? '-1' : option.nextText.toString();
-      
+      const nextNodeId =
+        option.nextText === -1 ? '-1' : option.nextText.toString();
+
       choices.push({
         id: `choice_${oldNode.id}_${index}`,
         text: option.text,
@@ -52,15 +53,17 @@ export function migrateStoryData(oldData: OldStoryNode[]): StoryNode[] {
   });
 
   // ✅ FIX: Validation que le nœud "1" existe
-  const startNode = nodes.find(n => n.id === '1');
+  const startNode = nodes.find((n) => n.id === '1');
   if (!startNode) {
-    console.warn('⚠️ Aucun nœud avec ID "1" trouvé, le premier nœud sera considéré comme le début');
+    console.warn(
+      '⚠️ Aucun nœud avec ID "1" trouvé, le premier nœud sera considéré comme le début'
+    );
   }
 
   console.log('📊 Migration terminée:', {
     nodesTotal: nodes.length,
     startNodeId: startNode?.id || nodes[0]?.id || 'unknown',
-    nodesWithChoices: nodes.filter(n => n.choices.length > 0).length
+    nodesWithChoices: nodes.filter((n) => n.choices.length > 0).length,
   });
 
   return nodes;

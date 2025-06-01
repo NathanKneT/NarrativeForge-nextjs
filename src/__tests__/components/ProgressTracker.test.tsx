@@ -12,7 +12,9 @@ jest.mock('framer-motion', () => ({
 
 describe('ProgressTracker', () => {
   it('renders progress information correctly', async () => {
-    render(<ProgressTracker currentProgress={5} totalNodes={10} visitedNodes={5} />);
+    render(
+      <ProgressTracker currentProgress={5} totalNodes={10} visitedNodes={5} />
+    );
 
     // Attendre l'hydration côté client
     await waitFor(() => {
@@ -23,7 +25,9 @@ describe('ProgressTracker', () => {
   });
 
   it('calculates percentage correctly', async () => {
-    render(<ProgressTracker currentProgress={3} totalNodes={12} visitedNodes={3} />);
+    render(
+      <ProgressTracker currentProgress={3} totalNodes={12} visitedNodes={3} />
+    );
 
     await waitFor(() => {
       expect(screen.getByText('25%')).toBeInTheDocument();
@@ -31,7 +35,9 @@ describe('ProgressTracker', () => {
   });
 
   it('handles zero total nodes', async () => {
-    render(<ProgressTracker currentProgress={0} totalNodes={0} visitedNodes={0} />);
+    render(
+      <ProgressTracker currentProgress={0} totalNodes={0} visitedNodes={0} />
+    );
 
     // Attendre l'hydration et vérifier que 0% s'affiche
     await waitFor(() => {
@@ -41,7 +47,9 @@ describe('ProgressTracker', () => {
   });
 
   it('handles complete progress', async () => {
-    render(<ProgressTracker currentProgress={10} totalNodes={10} visitedNodes={10} />);
+    render(
+      <ProgressTracker currentProgress={10} totalNodes={10} visitedNodes={10} />
+    );
 
     await waitFor(() => {
       expect(screen.getByText('100%')).toBeInTheDocument();
@@ -50,7 +58,9 @@ describe('ProgressTracker', () => {
   });
 
   it('rounds percentage to nearest integer', async () => {
-    render(<ProgressTracker currentProgress={1} totalNodes={3} visitedNodes={1} />);
+    render(
+      <ProgressTracker currentProgress={1} totalNodes={3} visitedNodes={1} />
+    );
 
     await waitFor(() => {
       expect(screen.getByText('33%')).toBeInTheDocument();
@@ -65,10 +75,10 @@ describe('ProgressTracker', () => {
 
     // Vérifier que le composant s'affiche
     expect(screen.getByText('Progression')).toBeInTheDocument();
-    
+
     // Vérifier la structure CSS de base
     expect(container.firstChild).toHaveClass('bg-gray-700');
-    
+
     // Vérifier qu'il y a un pourcentage affiché (peu importe la valeur initiale)
     expect(container.querySelector('.text-red-400')).toBeInTheDocument();
   });

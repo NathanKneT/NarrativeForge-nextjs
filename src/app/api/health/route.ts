@@ -15,14 +15,16 @@ interface HealthCheckResponse {
     nextjs: 'loaded' | 'missing' | 'error';
     metrics: 'available' | 'unavailable'; // ✅ NEW: Metrics service check
   };
-  performance?: {
-    memory: {
-      used: number;
-      total: number;
-      free: number;
-    };
-    cpu?: number;
-  } | undefined;
+  performance?:
+    | {
+        memory: {
+          used: number;
+          total: number;
+          free: number;
+        };
+        cpu?: number;
+      }
+    | undefined;
   // ✅ NEW: Quick performance summary from metrics endpoint
   recentMetrics?: {
     totalReports: number;
@@ -41,10 +43,13 @@ async function checkServices() {
 
   // ✅ NEW: Check if metrics endpoint is available
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/metrics`, {
-      method: 'HEAD',
-      headers: { 'Cache-Control': 'no-cache' },
-    });
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/metrics`,
+      {
+        method: 'HEAD',
+        headers: { 'Cache-Control': 'no-cache' },
+      }
+    );
     services.metrics = response.ok ? 'available' : 'unavailable';
   } catch {
     services.metrics = 'unavailable';
@@ -66,28 +71,37 @@ function getPerformanceMetrics(): HealthCheckResponse['performance'] {
         memory: {
           used: Math.round(memUsage.heapUsed / 1024 / 1024), // MB
           total: Math.round(memUsage.heapTotal / 1024 / 1024), // MB
-          free: Math.round((memUsage.heapTotal - memUsage.heapUsed) / 1024 / 1024), // MB
+          free: Math.round(
+            (memUsage.heapTotal - memUsage.heapUsed) / 1024 / 1024
+          ), // MB
         },
       };
     }
   } catch (error) {
-    console.warn('Impossible d\'obtenir les métriques de performance:', error);
+    console.warn("Impossible d'obtenir les métriques de performance:", error);
   }
-  
+
   return undefined;
 }
 
 // ✅ NEW: Get recent metrics summary
-async function getRecentMetricsSummary(): Promise<HealthCheckResponse['recentMetrics']> {
+async function getRecentMetricsSummary(): Promise<
+  HealthCheckResponse['recentMetrics']
+> {
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/metrics?format=summary&limit=10`, {
-      headers: { 'Cache-Control': 'no-cache' },
-    });
-    
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/metrics?format=summary&limit=10`,
+      {
+        headers: { 'Cache-Control': 'no-cache' },
+      }
+    );
+
     if (!response.ok) return undefined;
-    
+
     const data = await response.json();
-    const metricsArr = Object.values(data.metrics || {}) as Array<{ ratings?: { poor?: number } }>;
+    const metricsArr = Object.values(data.metrics || {}) as Array<{
+      ratings?: { poor?: number };
+    }>;
     const criticalIssues: number = metricsArr.reduce((count, metric) => {
       return count + (metric.ratings?.poor || 0);
     }, 0);
@@ -105,13 +119,13 @@ async function getRecentMetricsSummary(): Promise<HealthCheckResponse['recentMet
 export async function GET(): Promise<NextResponse<HealthCheckResponse>> {
   try {
     const startTime = process.hrtime.bigint();
-    
+
     const [services, performance, recentMetrics] = await Promise.all([
       checkServices(),
       Promise.resolve(getPerformanceMetrics()),
       getRecentMetricsSummary(),
     ]);
-    
+
     const response: HealthCheckResponse = {
       status: 'ok',
       timestamp: new Date().toISOString(),
@@ -138,7 +152,7 @@ export async function GET(): Promise<NextResponse<HealthCheckResponse>> {
     });
   } catch (error) {
     console.error('Health check error:', error);
-    
+
     const errorResponse: HealthCheckResponse = {
       status: 'error',
       timestamp: new Date().toISOString(),

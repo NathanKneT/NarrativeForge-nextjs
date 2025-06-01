@@ -7,18 +7,42 @@ import { createMockStoryNode } from '../utils/test-utils';
 // Mock framer-motion - supprime toutes les props d'animation
 jest.mock('framer-motion', () => ({
   motion: {
-    div: ({ children, whileHover, whileTap, initial, animate, exit, ...props }: any) => (
-      <div {...props}>{children}</div>
-    ),
-    h1: ({ children, whileHover, whileTap, initial, animate, exit, ...props }: any) => (
-      <h1 {...props}>{children}</h1>
-    ),
-    button: ({ children, whileHover, whileTap, initial, animate, exit, ...props }: any) => (
-      <button {...props}>{children}</button>
-    ),
-    p: ({ children, whileHover, whileTap, initial, animate, exit, ...props }: any) => (
-      <p {...props}>{children}</p>
-    ),
+    div: ({
+      children,
+      whileHover,
+      whileTap,
+      initial,
+      animate,
+      exit,
+      ...props
+    }: any) => <div {...props}>{children}</div>,
+    h1: ({
+      children,
+      whileHover,
+      whileTap,
+      initial,
+      animate,
+      exit,
+      ...props
+    }: any) => <h1 {...props}>{children}</h1>,
+    button: ({
+      children,
+      whileHover,
+      whileTap,
+      initial,
+      animate,
+      exit,
+      ...props
+    }: any) => <button {...props}>{children}</button>,
+    p: ({
+      children,
+      whileHover,
+      whileTap,
+      initial,
+      animate,
+      exit,
+      ...props
+    }: any) => <p {...props}>{children}</p>,
   },
   AnimatePresence: ({ children }: { children: React.ReactNode }) => (
     <>{children}</>
@@ -43,7 +67,9 @@ describe('StoryViewer', () => {
     // ✅ FIX: Attendre l'hydration côté client
     await waitFor(() => {
       expect(screen.getByText('Test Story Title')).toBeInTheDocument();
-      expect(screen.getByText('This is the story content.')).toBeInTheDocument();
+      expect(
+        screen.getByText('This is the story content.')
+      ).toBeInTheDocument();
     });
   });
 
@@ -94,7 +120,7 @@ describe('StoryViewer', () => {
           consequences: [],
         },
         {
-          id: 'choice-2', 
+          id: 'choice-2',
           text: 'Go right',
           nextNodeId: 'node-3',
           conditions: [],

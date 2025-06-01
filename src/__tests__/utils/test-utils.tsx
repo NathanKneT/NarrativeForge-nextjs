@@ -11,11 +11,7 @@ interface TestProvidersProps {
 
 // Wrapper avec tous les providers nécessaires pour les tests
 const TestProviders: React.FC<TestProvidersProps> = ({ children }) => {
-  return (
-    <ReactFlowProvider>
-      {children}
-    </ReactFlowProvider>
-  );
+  return <ReactFlowProvider>{children}</ReactFlowProvider>;
 };
 
 // Fonction de rendu personnalisée avec providers
@@ -29,7 +25,9 @@ const customRender = (
 /**
  * Crée un StoryNode de test avec des valeurs par défaut
  */
-export function createMockStoryNode(overrides: Partial<StoryNode> = {}): StoryNode {
+export function createMockStoryNode(
+  overrides: Partial<StoryNode> = {}
+): StoryNode {
   return {
     id: 'test-node-1',
     title: 'Test Node',
@@ -62,9 +60,11 @@ export function createMockChoice(overrides: Partial<Choice> = {}): Choice {
 /**
  * Crée un EditorNode de test avec des valeurs par défaut
  */
-export function createMockEditorNode(overrides: Partial<EditorNode> = {}): EditorNode {
+export function createMockEditorNode(
+  overrides: Partial<EditorNode> = {}
+): EditorNode {
   const defaultStoryNode = createMockStoryNode();
-  
+
   return {
     id: 'editor-node-1',
     type: 'storyNode',
@@ -82,9 +82,11 @@ export function createMockEditorNode(overrides: Partial<EditorNode> = {}): Edito
 /**
  * Crée un EditorEdge de test avec des valeurs par défaut
  */
-export function createMockEditorEdge(overrides: Partial<EditorEdge> = {}): EditorEdge {
+export function createMockEditorEdge(
+  overrides: Partial<EditorEdge> = {}
+): EditorEdge {
   const defaultChoice = createMockChoice();
-  
+
   return {
     id: 'editor-edge-1',
     source: 'node-1',
@@ -100,7 +102,9 @@ export function createMockEditorEdge(overrides: Partial<EditorEdge> = {}): Edito
 /**
  * Crée un StoryProject de test avec des valeurs par défaut
  */
-export function createMockStoryProject(overrides: Partial<StoryProject> = {}): StoryProject {
+export function createMockStoryProject(
+  overrides: Partial<StoryProject> = {}
+): StoryProject {
   return {
     id: 'test-project-1',
     name: 'Test Project',
@@ -131,7 +135,7 @@ export function createMockStoryFlow(): {
     data: {
       storyNode: createMockStoryNode({
         id: 'start-node',
-        title: 'Début de l\'histoire',
+        title: "Début de l'histoire",
         content: 'Vous vous réveillez dans une forêt mystérieuse...',
         choices: [
           createMockChoice({
@@ -311,7 +315,7 @@ export function createMockLocalStorage(): Storage {
       delete store[key];
     },
     clear: (): void => {
-      Object.keys(store).forEach(key => delete store[key]);
+      Object.keys(store).forEach((key) => delete store[key]);
     },
     key: (index: number): string | null => {
       const keys = Object.keys(store);
@@ -330,15 +334,18 @@ export function mockNotificationAPI(): void {
   // Mock Notification constructor
   (global as any).Notification = class MockNotification {
     static permission: NotificationPermission = 'granted';
-    
+
     static requestPermission(): Promise<NotificationPermission> {
       return Promise.resolve('granted');
     }
-    
-    constructor(public title: string, public options?: NotificationOptions) {
+
+    constructor(
+      public title: string,
+      public options?: NotificationOptions
+    ) {
       // Mock notification
     }
-    
+
     close(): void {
       // Mock close
     }
@@ -348,7 +355,9 @@ export function mockNotificationAPI(): void {
 /**
  * Utilitaires pour les tests d'accessibilité
  */
-export function createAccessibilityTestWrapper(component: ReactElement): ReactElement {
+export function createAccessibilityTestWrapper(
+  component: ReactElement
+): ReactElement {
   return (
     <div role="application" aria-label="Story Editor Test">
       {component}
@@ -399,19 +408,27 @@ expect.extend({
     }
 
     const node = received as any;
-    
+
     const hasValidId = typeof node.id === 'string' && node.id.length > 0;
-    const hasValidTitle = typeof node.title === 'string' && node.title.length > 0;
+    const hasValidTitle =
+      typeof node.title === 'string' && node.title.length > 0;
     const hasValidContent = typeof node.content === 'string';
     const hasValidChoices = Array.isArray(node.choices);
-    const hasValidMetadata = typeof node.metadata === 'object' && node.metadata !== null;
+    const hasValidMetadata =
+      typeof node.metadata === 'object' && node.metadata !== null;
 
-    const isValid = hasValidId && hasValidTitle && hasValidContent && hasValidChoices && hasValidMetadata;
+    const isValid =
+      hasValidId &&
+      hasValidTitle &&
+      hasValidContent &&
+      hasValidChoices &&
+      hasValidMetadata;
 
     return {
-      message: () => isValid 
-        ? `Expected ${JSON.stringify(received)} not to be a valid StoryNode`
-        : `Expected ${JSON.stringify(received)} to be a valid StoryNode with id, title, content, choices array, and metadata`,
+      message: () =>
+        isValid
+          ? `Expected ${JSON.stringify(received)} not to be a valid StoryNode`
+          : `Expected ${JSON.stringify(received)} to be a valid StoryNode with id, title, content, choices array, and metadata`,
       pass: isValid,
     };
   },
@@ -425,19 +442,26 @@ expect.extend({
     }
 
     const choice = received as any;
-    
+
     const hasValidId = typeof choice.id === 'string' && choice.id.length > 0;
-    const hasValidText = typeof choice.text === 'string' && choice.text.length > 0;
+    const hasValidText =
+      typeof choice.text === 'string' && choice.text.length > 0;
     const hasValidNextNodeId = typeof choice.nextNodeId === 'string';
     const hasValidConditions = Array.isArray(choice.conditions);
     const hasValidConsequences = Array.isArray(choice.consequences);
 
-    const isValid = hasValidId && hasValidText && hasValidNextNodeId && hasValidConditions && hasValidConsequences;
+    const isValid =
+      hasValidId &&
+      hasValidText &&
+      hasValidNextNodeId &&
+      hasValidConditions &&
+      hasValidConsequences;
 
     return {
-      message: () => isValid
-        ? `Expected ${JSON.stringify(received)} not to be a valid Choice`
-        : `Expected ${JSON.stringify(received)} to be a valid Choice with id, text, nextNodeId, conditions array, and consequences array`,
+      message: () =>
+        isValid
+          ? `Expected ${JSON.stringify(received)} not to be a valid Choice`
+          : `Expected ${JSON.stringify(received)} to be a valid Choice with id, text, nextNodeId, conditions array, and consequences array`,
       pass: isValid,
     };
   },
@@ -451,21 +475,29 @@ expect.extend({
     }
 
     const node = received as any;
-    
+
     const hasValidId = typeof node.id === 'string' && node.id.length > 0;
     const hasValidType = typeof node.type === 'string';
-    const hasValidPosition = typeof node.position === 'object' && 
-                           typeof node.position.x === 'number' && 
-                           typeof node.position.y === 'number';
+    const hasValidPosition =
+      typeof node.position === 'object' &&
+      typeof node.position.x === 'number' &&
+      typeof node.position.y === 'number';
     const hasValidData = typeof node.data === 'object' && node.data !== null;
-    const hasValidStoryNode = node.data.storyNode && typeof node.data.storyNode === 'object';
+    const hasValidStoryNode =
+      node.data.storyNode && typeof node.data.storyNode === 'object';
 
-    const isValid = hasValidId && hasValidType && hasValidPosition && hasValidData && hasValidStoryNode;
+    const isValid =
+      hasValidId &&
+      hasValidType &&
+      hasValidPosition &&
+      hasValidData &&
+      hasValidStoryNode;
 
     return {
-      message: () => isValid
-        ? `Expected ${JSON.stringify(received)} not to be a valid EditorNode`
-        : `Expected ${JSON.stringify(received)} to be a valid EditorNode with id, type, position, and data.storyNode`,
+      message: () =>
+        isValid
+          ? `Expected ${JSON.stringify(received)} not to be a valid EditorNode`
+          : `Expected ${JSON.stringify(received)} to be a valid EditorNode with id, type, position, and data.storyNode`,
       pass: isValid,
     };
   },
@@ -475,7 +507,7 @@ expect.extend({
  * Utilitaires pour les tests d'intégration
  */
 export function waitForReactFlow(): Promise<void> {
-  return new Promise(resolve => {
+  return new Promise((resolve) => {
     // Attendre que React Flow soit initialisé
     setTimeout(resolve, 100);
   });
@@ -489,7 +521,10 @@ export function expectTypeError<T>(fn: () => T): void {
     fn();
     throw new Error('Expected function to throw a type error');
   } catch (error) {
-    if (error instanceof Error && error.message.includes('Expected function to throw')) {
+    if (
+      error instanceof Error &&
+      error.message.includes('Expected function to throw')
+    ) {
       throw error;
     }
     // C'est l'erreur attendue

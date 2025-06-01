@@ -2,7 +2,9 @@ import { StoryLoader } from '@/lib/storyLoader';
 import type { StoryNode } from '@/types/story';
 
 // Helper to create mock story nodes
-const createMockStoryNode = (overrides: Partial<StoryNode> = {}): StoryNode => ({
+const createMockStoryNode = (
+  overrides: Partial<StoryNode> = {}
+): StoryNode => ({
   id: 'test-node-1',
   title: 'Test Node',
   content: 'Test content',
@@ -31,7 +33,10 @@ describe('StoryLoader', () => {
 
     it('should initialize with story data', () => {
       const mockNodes: StoryNode[] = [
-        createMockStoryNode({ id: 'start', metadata: { tags: ['début'], visitCount: 0, difficulty: 'medium' } }),
+        createMockStoryNode({
+          id: 'start',
+          metadata: { tags: ['début'], visitCount: 0, difficulty: 'medium' },
+        }),
         createMockStoryNode({ id: 'node-2' }),
       ];
 
@@ -55,9 +60,9 @@ describe('StoryLoader', () => {
     it('should find start node by "début" tag', () => {
       const mockNodes: StoryNode[] = [
         createMockStoryNode({ id: 'node-1' }),
-        createMockStoryNode({ 
-          id: 'start-node', 
-          metadata: { tags: ['début'], visitCount: 0, difficulty: 'medium' } 
+        createMockStoryNode({
+          id: 'start-node',
+          metadata: { tags: ['début'], visitCount: 0, difficulty: 'medium' },
         }),
       ];
 
@@ -165,13 +170,13 @@ describe('StoryLoader', () => {
     it('should get all nodes', () => {
       const nodes = storyLoader.getAllNodes();
       expect(nodes).toHaveLength(3);
-      expect(nodes.map(n => n.id)).toEqual(['start', 'middle', 'end']);
+      expect(nodes.map((n) => n.id)).toEqual(['start', 'middle', 'end']);
     });
 
     it('should return immutable node list', () => {
       const nodes1 = storyLoader.getAllNodes();
       const nodes2 = storyLoader.getAllNodes();
-      
+
       expect(nodes1).toEqual(nodes2);
       expect(nodes1).not.toBe(nodes2); // Different references
     });
@@ -230,35 +235,33 @@ describe('StoryLoader', () => {
     it('should validate empty story', () => {
       const result = storyLoader.validateStory();
       expect(result.isValid).toBe(false);
-      expect(result.errors).toContain('Aucun nœud trouvé dans l\'histoire');
+      expect(result.errors).toContain("Aucun nœud trouvé dans l'histoire");
     });
 
     it('should validate story without start node', () => {
-      const mockNodes: StoryNode[] = [
-        createMockStoryNode({ id: 'node-1' }),
-      ];
+      const mockNodes: StoryNode[] = [createMockStoryNode({ id: 'node-1' })];
       const loader = new StoryLoader(mockNodes);
-      
+
       // Force empty start node ID for testing
       (loader as any).startNodeId = '';
-      
+
       const result = loader.validateStory();
       expect(result.isValid).toBe(false);
       expect(result.errors).toContain('Aucun nœud de départ trouvé');
     });
 
     it('should validate missing start node reference', () => {
-      const mockNodes: StoryNode[] = [
-        createMockStoryNode({ id: 'node-1' }),
-      ];
+      const mockNodes: StoryNode[] = [createMockStoryNode({ id: 'node-1' })];
       const loader = new StoryLoader(mockNodes);
-      
+
       // Force invalid start node ID
       (loader as any).startNodeId = 'missing-start';
-      
+
       const result = loader.validateStory();
       expect(result.isValid).toBe(false);
-      expect(result.errors).toContain('Nœud de départ "missing-start" introuvable');
+      expect(result.errors).toContain(
+        'Nœud de départ "missing-start" introuvable'
+      );
     });
 
     it('should validate node structure', () => {
@@ -292,7 +295,7 @@ describe('StoryLoader', () => {
 
       const loader = new StoryLoader(invalidNodes);
       const result = loader.validateStory();
-      
+
       expect(result.isValid).toBe(false);
       expect(result.errors.length).toBeGreaterThan(0);
     });
@@ -315,9 +318,11 @@ describe('StoryLoader', () => {
 
       const loader = new StoryLoader(mockNodes);
       const result = loader.validateStory();
-      
+
       expect(result.isValid).toBe(false);
-      expect(result.errors.some(error => error.includes('missing-node'))).toBe(true);
+      expect(
+        result.errors.some((error) => error.includes('missing-node'))
+      ).toBe(true);
     });
 
     it('should detect orphaned nodes', () => {
@@ -328,8 +333,10 @@ describe('StoryLoader', () => {
 
       const loader = new StoryLoader(mockNodes);
       const result = loader.validateStory();
-      
-      expect(result.warnings.some(warning => warning.includes('orphan'))).toBe(true);
+
+      expect(
+        result.warnings.some((warning) => warning.includes('orphan'))
+      ).toBe(true);
     });
 
     it('should validate choice structure', () => {
@@ -350,8 +357,10 @@ describe('StoryLoader', () => {
 
       const loader = new StoryLoader(mockNodes);
       const result = loader.validateStory();
-      
-      expect(result.warnings.some(warning => warning.includes('choix sans texte'))).toBe(true);
+
+      expect(
+        result.warnings.some((warning) => warning.includes('choix sans texte'))
+      ).toBe(true);
     });
   });
 
@@ -402,7 +411,7 @@ describe('StoryLoader', () => {
 
       const loader = new StoryLoader(mockNodes);
       const stats = loader.getStats();
-      
+
       expect(stats.totalNodes).toBe(3);
       expect(stats.totalChoices).toBe(3);
       expect(stats.averageChoicesPerNode).toBe(1); // 3 choices / 3 nodes
@@ -478,271 +487,265 @@ describe('StoryLoader', () => {
   });
 });
 
-  describe('Error Handling', () => {
-    it('should handle invalid node data', () => {
-      expect(() => {
-        new StoryLoader([
+describe('Error Handling', () => {
+  it('should handle invalid node data', () => {
+    expect(() => {
+      new StoryLoader([
+        {
+          // Missing id
+          title: 'Invalid Node',
+          content: 'Content',
+          choices: [],
+          multimedia: {},
+          metadata: { tags: [], visitCount: 0, difficulty: 'medium' },
+        } as any,
+      ]);
+    }).toThrow();
+  });
+
+  it('should handle duplicate node IDs', () => {
+    expect(() => {
+      new StoryLoader([
+        createMockStoryNode({ id: 'duplicate' }),
+        createMockStoryNode({ id: 'duplicate' }),
+      ]);
+    }).not.toThrow(); // Second one overwrites first
+  });
+
+  it('should handle empty node ID', () => {
+    expect(() => {
+      new StoryLoader([createMockStoryNode({ id: '' })]);
+    }).toThrow();
+  });
+
+  it('should handle null/undefined nodes', () => {
+    expect(() => {
+      new StoryLoader([null as any]);
+    }).toThrow();
+  });
+});
+
+describe('Complex Story Structures', () => {
+  it('should handle branching and converging paths', () => {
+    const mockNodes: StoryNode[] = [
+      createMockStoryNode({
+        id: 'start',
+        choices: [
           {
-            // Missing id
-            title: 'Invalid Node',
-            content: 'Content',
-            choices: [],
-            multimedia: {},
-            metadata: { tags: [], visitCount: 0, difficulty: 'medium' },
-          } as any,
-        ]);
-      }).toThrow();
-    });
-
-    it('should handle duplicate node IDs', () => {
-      expect(() => {
-        new StoryLoader([
-          createMockStoryNode({ id: 'duplicate' }),
-          createMockStoryNode({ id: 'duplicate' }),
-        ]);
-      }).not.toThrow(); // Second one overwrites first
-    });
-
-    it('should handle empty node ID', () => {
-      expect(() => {
-        new StoryLoader([
-          createMockStoryNode({ id: '' }),
-        ]);
-      }).toThrow();
-    });
-
-    it('should handle null/undefined nodes', () => {
-      expect(() => {
-        new StoryLoader([null as any]);
-      }).toThrow();
-    });
-  });
-
-  describe('Complex Story Structures', () => {
-    it('should handle branching and converging paths', () => {
-      const mockNodes: StoryNode[] = [
-        createMockStoryNode({
-          id: 'start',
-          choices: [
-            {
-              id: 'choice-1',
-              text: 'Path A',
-              nextNodeId: 'path-a',
-              conditions: [],
-              consequences: [],
-            },
-            {
-              id: 'choice-2',
-              text: 'Path B',
-              nextNodeId: 'path-b',
-              conditions: [],
-              consequences: [],
-            },
-          ],
-        }),
-        createMockStoryNode({
-          id: 'path-a',
-          choices: [
-            {
-              id: 'choice-3',
-              text: 'Converge',
-              nextNodeId: 'convergence',
-              conditions: [],
-              consequences: [],
-            },
-          ],
-        }),
-        createMockStoryNode({
-          id: 'path-b',
-          choices: [
-            {
-              id: 'choice-4',
-              text: 'Converge',
-              nextNodeId: 'convergence',
-              conditions: [],
-              consequences: [],
-            },
-          ],
-        }),
-        createMockStoryNode({ id: 'convergence' }),
-      ];
-
-      const loader = new StoryLoader(mockNodes);
-      const result = loader.validateStory();
-      
-      expect(result.isValid).toBe(true);
-      expect(result.errors).toHaveLength(0);
-    });
-
-    it('should handle multiple endings', () => {
-      const mockNodes: StoryNode[] = [
-        createMockStoryNode({
-          id: 'start',
-          choices: [
-            {
-              id: 'choice-1',
-              text: 'Good path',
-              nextNodeId: 'good-end',
-              conditions: [],
-              consequences: [],
-            },
-            {
-              id: 'choice-2',
-              text: 'Bad path',
-              nextNodeId: 'bad-end',
-              conditions: [],
-              consequences: [],
-            },
-          ],
-        }),
-        createMockStoryNode({ id: 'good-end' }),
-        createMockStoryNode({ id: 'bad-end' }),
-      ];
-
-      const loader = new StoryLoader(mockNodes);
-      const result = loader.validateStory();
-      
-      expect(result.isValid).toBe(true);
-    });
-
-    it('should handle restart choices', () => {
-      const mockNodes: StoryNode[] = [
-        createMockStoryNode({
-          id: 'start',
-          choices: [
-            {
-              id: 'choice-1',
-              text: 'Continue',
-              nextNodeId: 'end',
-              conditions: [],
-              consequences: [],
-            },
-          ],
-        }),
-        createMockStoryNode({
-          id: 'end',
-          choices: [
-            {
-              id: 'choice-restart',
-              text: 'Restart',
-              nextNodeId: '-1',
-              conditions: [],
-              consequences: [],
-            },
-          ],
-        }),
-      ];
-
-      const loader = new StoryLoader(mockNodes);
-      const result = loader.validateStory();
-      
-      expect(result.isValid).toBe(true);
-    });
-  });
-
-  describe('Disposal', () => {
-    it('should clean up resources', () => {
-      const mockNodes: StoryNode[] = [
-        createMockStoryNode({ id: 'start' }),
-      ];
-
-      const loader = new StoryLoader(mockNodes);
-      expect(loader.getAllNodes()).toHaveLength(1);
-      
-      loader.dispose();
-      
-      expect(loader.getAllNodes()).toHaveLength(0);
-      expect(loader.getStartNodeId()).toBe('');
-    });
-  });
-
-  describe('Edge Cases', () => {
-    it('should handle story with only one node', () => {
-      const mockNodes: StoryNode[] = [
-        createMockStoryNode({ id: 'only-node' }),
-      ];
-
-      const loader = new StoryLoader(mockNodes);
-      expect(loader.getStartNodeId()).toBe('only-node');
-      expect(loader.getAllNodes()).toHaveLength(1);
-    });
-
-    it('should handle nodes with many choices', () => {
-      const choices = Array.from({ length: 50 }, (_, i) => ({
-        id: `choice-${i}`,
-        text: `Choice ${i}`,
-        nextNodeId: `node-${i}`,
-        conditions: [],
-        consequences: [],
-      }));
-
-      const mockNodes: StoryNode[] = [
-        createMockStoryNode({
-          id: 'start',
-          choices,
-        }),
-        ...Array.from({ length: 50 }, (_, i) =>
-          createMockStoryNode({ id: `node-${i}` })
-        ),
-      ];
-
-      const loader = new StoryLoader(mockNodes);
-      const stats = loader.getStats();
-      
-      expect(stats.totalChoices).toBe(50);
-      expect(loader.getNode('start')?.choices).toHaveLength(50);
-    });
-
-    it('should handle deeply nested story', () => {
-      const depth = 20;
-      const mockNodes: StoryNode[] = [];
-
-      for (let i = 0; i < depth; i++) {
-        const nextNodeId = i < depth - 1 ? `node-${i + 1}` : undefined;
-        const choices = nextNodeId
-          ? [
-              {
-                id: `choice-${i}`,
-                text: 'Continue',
-                nextNodeId,
-                conditions: [],
-                consequences: [],
-              },
-            ]
-          : [];
-
-        mockNodes.push(
-          createMockStoryNode({
-            id: i === 0 ? 'start' : `node-${i}`,
-            choices,
-          })
-        );
-      }
-
-      const loader = new StoryLoader(mockNodes);
-      const stats = loader.getStats();
-      
-      expect(stats.maxDepth).toBe(depth - 1);
-    });
-
-    it('should handle nodes with complex metadata', () => {
-      const mockNodes: StoryNode[] = [
-        createMockStoryNode({
-          id: 'complex-node',
-          metadata: {
-            tags: ['tag1', 'tag2', 'tag3', 'special-tag'],
-            visitCount: 5,
-            difficulty: 'hard',
-            lastVisited: new Date('2024-01-01'),
+            id: 'choice-1',
+            text: 'Path A',
+            nextNodeId: 'path-a',
+            conditions: [],
+            consequences: [],
           },
-        }),
-      ];
+          {
+            id: 'choice-2',
+            text: 'Path B',
+            nextNodeId: 'path-b',
+            conditions: [],
+            consequences: [],
+          },
+        ],
+      }),
+      createMockStoryNode({
+        id: 'path-a',
+        choices: [
+          {
+            id: 'choice-3',
+            text: 'Converge',
+            nextNodeId: 'convergence',
+            conditions: [],
+            consequences: [],
+          },
+        ],
+      }),
+      createMockStoryNode({
+        id: 'path-b',
+        choices: [
+          {
+            id: 'choice-4',
+            text: 'Converge',
+            nextNodeId: 'convergence',
+            conditions: [],
+            consequences: [],
+          },
+        ],
+      }),
+      createMockStoryNode({ id: 'convergence' }),
+    ];
 
-      const loader = new StoryLoader(mockNodes);
-      const node = loader.getNode('complex-node');
-      
-      expect(node?.metadata.tags).toHaveLength(4);
-      expect(node?.metadata.difficulty).toBe('hard');
-      expect(node?.metadata.visitCount).toBe(5);
-    });
+    const loader = new StoryLoader(mockNodes);
+    const result = loader.validateStory();
+
+    expect(result.isValid).toBe(true);
+    expect(result.errors).toHaveLength(0);
   });
+
+  it('should handle multiple endings', () => {
+    const mockNodes: StoryNode[] = [
+      createMockStoryNode({
+        id: 'start',
+        choices: [
+          {
+            id: 'choice-1',
+            text: 'Good path',
+            nextNodeId: 'good-end',
+            conditions: [],
+            consequences: [],
+          },
+          {
+            id: 'choice-2',
+            text: 'Bad path',
+            nextNodeId: 'bad-end',
+            conditions: [],
+            consequences: [],
+          },
+        ],
+      }),
+      createMockStoryNode({ id: 'good-end' }),
+      createMockStoryNode({ id: 'bad-end' }),
+    ];
+
+    const loader = new StoryLoader(mockNodes);
+    const result = loader.validateStory();
+
+    expect(result.isValid).toBe(true);
+  });
+
+  it('should handle restart choices', () => {
+    const mockNodes: StoryNode[] = [
+      createMockStoryNode({
+        id: 'start',
+        choices: [
+          {
+            id: 'choice-1',
+            text: 'Continue',
+            nextNodeId: 'end',
+            conditions: [],
+            consequences: [],
+          },
+        ],
+      }),
+      createMockStoryNode({
+        id: 'end',
+        choices: [
+          {
+            id: 'choice-restart',
+            text: 'Restart',
+            nextNodeId: '-1',
+            conditions: [],
+            consequences: [],
+          },
+        ],
+      }),
+    ];
+
+    const loader = new StoryLoader(mockNodes);
+    const result = loader.validateStory();
+
+    expect(result.isValid).toBe(true);
+  });
+});
+
+describe('Disposal', () => {
+  it('should clean up resources', () => {
+    const mockNodes: StoryNode[] = [createMockStoryNode({ id: 'start' })];
+
+    const loader = new StoryLoader(mockNodes);
+    expect(loader.getAllNodes()).toHaveLength(1);
+
+    loader.dispose();
+
+    expect(loader.getAllNodes()).toHaveLength(0);
+    expect(loader.getStartNodeId()).toBe('');
+  });
+});
+
+describe('Edge Cases', () => {
+  it('should handle story with only one node', () => {
+    const mockNodes: StoryNode[] = [createMockStoryNode({ id: 'only-node' })];
+
+    const loader = new StoryLoader(mockNodes);
+    expect(loader.getStartNodeId()).toBe('only-node');
+    expect(loader.getAllNodes()).toHaveLength(1);
+  });
+
+  it('should handle nodes with many choices', () => {
+    const choices = Array.from({ length: 50 }, (_, i) => ({
+      id: `choice-${i}`,
+      text: `Choice ${i}`,
+      nextNodeId: `node-${i}`,
+      conditions: [],
+      consequences: [],
+    }));
+
+    const mockNodes: StoryNode[] = [
+      createMockStoryNode({
+        id: 'start',
+        choices,
+      }),
+      ...Array.from({ length: 50 }, (_, i) =>
+        createMockStoryNode({ id: `node-${i}` })
+      ),
+    ];
+
+    const loader = new StoryLoader(mockNodes);
+    const stats = loader.getStats();
+
+    expect(stats.totalChoices).toBe(50);
+    expect(loader.getNode('start')?.choices).toHaveLength(50);
+  });
+
+  it('should handle deeply nested story', () => {
+    const depth = 20;
+    const mockNodes: StoryNode[] = [];
+
+    for (let i = 0; i < depth; i++) {
+      const nextNodeId = i < depth - 1 ? `node-${i + 1}` : undefined;
+      const choices = nextNodeId
+        ? [
+            {
+              id: `choice-${i}`,
+              text: 'Continue',
+              nextNodeId,
+              conditions: [],
+              consequences: [],
+            },
+          ]
+        : [];
+
+      mockNodes.push(
+        createMockStoryNode({
+          id: i === 0 ? 'start' : `node-${i}`,
+          choices,
+        })
+      );
+    }
+
+    const loader = new StoryLoader(mockNodes);
+    const stats = loader.getStats();
+
+    expect(stats.maxDepth).toBe(depth - 1);
+  });
+
+  it('should handle nodes with complex metadata', () => {
+    const mockNodes: StoryNode[] = [
+      createMockStoryNode({
+        id: 'complex-node',
+        metadata: {
+          tags: ['tag1', 'tag2', 'tag3', 'special-tag'],
+          visitCount: 5,
+          difficulty: 'hard',
+          lastVisited: new Date('2024-01-01'),
+        },
+      }),
+    ];
+
+    const loader = new StoryLoader(mockNodes);
+    const node = loader.getNode('complex-node');
+
+    expect(node?.metadata.tags).toHaveLength(4);
+    expect(node?.metadata.difficulty).toBe('hard');
+    expect(node?.metadata.visitCount).toBe(5);
+  });
+});

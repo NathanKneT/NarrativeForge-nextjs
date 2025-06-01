@@ -46,7 +46,7 @@ export const ProjectInitModal: React.FC<ProjectInitModalProps> = ({
     }
 
     setIsCreating(true);
-    
+
     try {
       await onCreateNew(projectName.trim(), description.trim());
       console.log('✅ Projet créé:', projectName);
@@ -78,41 +78,40 @@ export const ProjectInitModal: React.FC<ProjectInitModalProps> = ({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4"
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80 p-4"
         onClick={allowClose ? onClose : undefined}
       >
         <motion.div
           initial={{ scale: 0.8, opacity: 0, y: 50 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.8, opacity: 0, y: 50 }}
-          transition={{ type: "spring", damping: 20 }}
-          className="bg-gray-800 rounded-xl p-6 w-full max-w-md shadow-2xl border border-gray-700"
+          transition={{ type: 'spring', damping: 20 }}
+          className="w-full max-w-md rounded-xl border border-gray-700 bg-gray-800 p-6 shadow-2xl"
           onClick={(e) => e.stopPropagation()}
           onKeyDown={handleKeyDown}
           tabIndex={-1}
         >
           {/* Header */}
-          <div className="flex justify-between items-center mb-6">
+          <div className="mb-6 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-purple-600 rounded-lg">
+              <div className="rounded-lg bg-purple-600 p-2">
                 <Sparkles size={20} className="text-white" />
               </div>
               <div>
                 <h2 className="text-xl font-bold text-white">
-                  {step === 'choice' ? 'Éditeur d\'Histoire' : 'Nouveau Projet'}
+                  {step === 'choice' ? "Éditeur d'Histoire" : 'Nouveau Projet'}
                 </h2>
-                <p className="text-gray-400 text-sm">
-                  {step === 'choice' 
-                    ? 'Créez ou chargez un projet' 
-                    : 'Donnez un nom à votre histoire'
-                  }
+                <p className="text-sm text-gray-400">
+                  {step === 'choice'
+                    ? 'Créez ou chargez un projet'
+                    : 'Donnez un nom à votre histoire'}
                 </p>
               </div>
             </div>
             {allowClose && onClose && (
               <button
                 onClick={onClose}
-                className="p-2 text-gray-400 hover:text-white transition-colors rounded-lg hover:bg-gray-700"
+                className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-700 hover:text-white"
                 title="Fermer"
               >
                 <X size={20} />
@@ -123,7 +122,7 @@ export const ProjectInitModal: React.FC<ProjectInitModalProps> = ({
           {/* Contenu selon l'étape */}
           {step === 'choice' ? (
             <div className="space-y-4">
-              <p className="text-gray-300 text-center mb-6">
+              <p className="mb-6 text-center text-gray-300">
                 Que souhaitez-vous faire ?
               </p>
 
@@ -132,14 +131,16 @@ export const ProjectInitModal: React.FC<ProjectInitModalProps> = ({
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={handleCreateNew}
-                className="w-full p-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-lg transition-all duration-200 flex items-center gap-3 group"
+                className="group flex w-full items-center gap-3 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 p-4 text-white transition-all duration-200 hover:from-blue-700 hover:to-purple-700"
               >
-                <div className="p-2 bg-white bg-opacity-20 rounded-lg group-hover:bg-opacity-30 transition-all">
+                <div className="rounded-lg bg-white bg-opacity-20 p-2 transition-all group-hover:bg-opacity-30">
                   <Plus size={20} />
                 </div>
-                <div className="text-left flex-1">
+                <div className="flex-1 text-left">
                   <div className="font-medium">Créer une nouvelle histoire</div>
-                  <div className="text-sm text-blue-100">Commencer un projet vierge</div>
+                  <div className="text-sm text-blue-100">
+                    Commencer un projet vierge
+                  </div>
                 </div>
               </motion.button>
 
@@ -148,26 +149,31 @@ export const ProjectInitModal: React.FC<ProjectInitModalProps> = ({
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={onLoadExisting}
-                className="w-full p-4 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-all duration-200 flex items-center gap-3 group"
+                className="group flex w-full items-center gap-3 rounded-lg bg-gray-700 p-4 text-white transition-all duration-200 hover:bg-gray-600"
               >
-                <div className="p-2 bg-gray-600 group-hover:bg-gray-500 rounded-lg transition-all">
+                <div className="rounded-lg bg-gray-600 p-2 transition-all group-hover:bg-gray-500">
                   <FolderOpen size={20} />
                 </div>
-                <div className="text-left flex-1">
+                <div className="flex-1 text-left">
                   <div className="font-medium">Charger un projet existant</div>
-                  <div className="text-sm text-gray-300">Ouvrir une histoire sauvegardée</div>
+                  <div className="text-sm text-gray-300">
+                    Ouvrir une histoire sauvegardée
+                  </div>
                 </div>
               </motion.button>
 
               {/* Info */}
-              <div className="mt-6 p-3 bg-blue-900 bg-opacity-50 border border-blue-500 border-opacity-50 rounded-lg">
+              <div className="mt-6 rounded-lg border border-blue-500 border-opacity-50 bg-blue-900 bg-opacity-50 p-3">
                 <div className="flex items-start gap-2">
-                  <FileText size={16} className="text-blue-400 mt-0.5 flex-shrink-0" />
+                  <FileText
+                    size={16}
+                    className="mt-0.5 flex-shrink-0 text-blue-400"
+                  />
                   <div className="text-sm text-blue-200">
-                    <div className="font-medium mb-1">💡 Conseil</div>
+                    <div className="mb-1 font-medium">💡 Conseil</div>
                     <div>
-                      Créez toujours un nouveau projet avant de commencer. 
-                      Cela évite les conflits et organise mieux votre travail.
+                      Créez toujours un nouveau projet avant de commencer. Cela
+                      évite les conflits et organise mieux votre travail.
                     </div>
                   </div>
                 </div>
@@ -177,7 +183,7 @@ export const ProjectInitModal: React.FC<ProjectInitModalProps> = ({
             <div className="space-y-4">
               {/* Nom du projet */}
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="mb-2 block text-sm font-medium text-gray-300">
                   Nom du projet *
                 </label>
                 <input
@@ -185,29 +191,29 @@ export const ProjectInitModal: React.FC<ProjectInitModalProps> = ({
                   value={projectName}
                   onChange={(e) => setProjectName(e.target.value)}
                   placeholder="Ex: L'Odyssée Mystérieuse"
-                  className="w-full px-3 py-2 bg-gray-700 text-white rounded-lg border border-gray-600 focus:border-blue-500 focus:outline-none transition-colors"
+                  className="w-full rounded-lg border border-gray-600 bg-gray-700 px-3 py-2 text-white transition-colors focus:border-blue-500 focus:outline-none"
                   autoFocus
                   maxLength={50}
                 />
-                <div className="text-xs text-gray-400 mt-1">
+                <div className="mt-1 text-xs text-gray-400">
                   {projectName.length}/50 caractères
                 </div>
               </div>
 
               {/* Description */}
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="mb-2 block text-sm font-medium text-gray-300">
                   Description (optionnel)
                 </label>
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Décrivez brièvement votre histoire..."
-                  className="w-full px-3 py-2 bg-gray-700 text-white rounded-lg border border-gray-600 focus:border-blue-500 focus:outline-none transition-colors resize-none"
+                  className="w-full resize-none rounded-lg border border-gray-600 bg-gray-700 px-3 py-2 text-white transition-colors focus:border-blue-500 focus:outline-none"
                   rows={3}
                   maxLength={200}
                 />
-                <div className="text-xs text-gray-400 mt-1">
+                <div className="mt-1 text-xs text-gray-400">
                   {description.length}/200 caractères
                 </div>
               </div>
@@ -217,18 +223,18 @@ export const ProjectInitModal: React.FC<ProjectInitModalProps> = ({
                 <button
                   onClick={handleBack}
                   disabled={isCreating}
-                  className="flex-1 px-4 py-2 bg-gray-600 hover:bg-gray-700 disabled:bg-gray-800 text-white rounded-lg transition-colors"
+                  className="flex-1 rounded-lg bg-gray-600 px-4 py-2 text-white transition-colors hover:bg-gray-700 disabled:bg-gray-800"
                 >
                   Retour
                 </button>
                 <button
                   onClick={handleConfirmCreate}
                   disabled={!projectName.trim() || isCreating}
-                  className="flex-2 px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white rounded-lg transition-colors flex items-center justify-center gap-2"
+                  className="flex-2 flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-6 py-2 text-white transition-colors hover:bg-blue-700 disabled:bg-gray-600"
                 >
                   {isCreating ? (
                     <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
                       Création...
                     </>
                   ) : (
@@ -241,7 +247,7 @@ export const ProjectInitModal: React.FC<ProjectInitModalProps> = ({
               </div>
 
               {/* Raccourci clavier */}
-              <div className="text-xs text-gray-500 text-center pt-2">
+              <div className="pt-2 text-center text-xs text-gray-500">
                 💡 Appuyez sur Entrée pour créer le projet
               </div>
             </div>

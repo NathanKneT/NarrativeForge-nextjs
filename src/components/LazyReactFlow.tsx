@@ -6,46 +6,48 @@ import React from 'react';
 
 // 🔧 FIX: Skeleton amélioré avec le thème de votre app
 const EditorSkeleton = () => (
-  <div className="w-full h-full bg-gray-800 flex items-center justify-center">
+  <div className="flex h-full w-full items-center justify-center bg-gray-800">
     <div className="text-center">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 border-t-transparent mx-auto"></div>
+      <div className="mx-auto h-12 w-12 animate-spin rounded-full border-b-2 border-blue-500 border-t-transparent"></div>
       <p className="mt-4 text-gray-300">Chargement de l'éditeur...</p>
-      <p className="mt-2 text-xs text-gray-400">Initialisation des composants React Flow...</p>
+      <p className="mt-2 text-xs text-gray-400">
+        Initialisation des composants React Flow...
+      </p>
     </div>
   </div>
 );
 
 // 🔧 FIX: Lazy loading des composants uniquement (pas les hooks)
 const ReactFlow = dynamic(
-  () => import('@xyflow/react').then(mod => ({ default: mod.ReactFlow })),
-  { 
-    ssr: false, 
-    loading: () => <EditorSkeleton />
+  () => import('@xyflow/react').then((mod) => ({ default: mod.ReactFlow })),
+  {
+    ssr: false,
+    loading: () => <EditorSkeleton />,
   }
 );
 
 const Controls = dynamic(
-  () => import('@xyflow/react').then(mod => ({ default: mod.Controls })),
+  () => import('@xyflow/react').then((mod) => ({ default: mod.Controls })),
   { ssr: false }
 );
 
 const Background = dynamic(
-  () => import('@xyflow/react').then(mod => ({ default: mod.Background })),
+  () => import('@xyflow/react').then((mod) => ({ default: mod.Background })),
   { ssr: false }
 );
 
 const MiniMap = dynamic(
-  () => import('@xyflow/react').then(mod => ({ default: mod.MiniMap })),
+  () => import('@xyflow/react').then((mod) => ({ default: mod.MiniMap })),
   { ssr: false }
 );
 
 const Panel = dynamic(
-  () => import('@xyflow/react').then(mod => ({ default: mod.Panel })),
+  () => import('@xyflow/react').then((mod) => ({ default: mod.Panel })),
   { ssr: false }
 );
 
 const Handle = dynamic(
-  () => import('@xyflow/react').then(mod => ({ default: mod.Handle })),
+  () => import('@xyflow/react').then((mod) => ({ default: mod.Handle })),
   { ssr: false }
 );
 
@@ -86,16 +88,14 @@ export { ReactFlow, Controls, Background, MiniMap, Panel, Handle };
 // 🔧 FIX: Wrapper avec Suspense amélioré
 export const LazyReactFlowEditor = ({ children, ...props }: any) => (
   <Suspense fallback={<EditorSkeleton />}>
-    <ReactFlow {...props}>
-      {children}
-    </ReactFlow>
+    <ReactFlow {...props}>{children}</ReactFlow>
   </Suspense>
 );
 
 // 🔧 FIX: Hook personnalisé pour vérifier si React Flow est prêt
 export const useReactFlowReady = () => {
   const [isReady, setIsReady] = React.useState(false);
-  
+
   React.useEffect(() => {
     // Vérifier si React Flow est disponible
     import('@xyflow/react')
@@ -105,6 +105,6 @@ export const useReactFlowReady = () => {
         setIsReady(false);
       });
   }, []);
-  
+
   return isReady;
 };

@@ -2,14 +2,17 @@
 import dynamic from 'next/dynamic';
 
 const ClientOnlyGame = dynamic(
-  () => import('@/components/ClientOnlyGame').then(mod => ({ default: mod.ClientOnlyGame })),
-  { 
+  () =>
+    import('@/components/ClientOnlyGame').then((mod) => ({
+      default: mod.ClientOnlyGame,
+    })),
+  {
     ssr: false,
     loading: () => (
-      <div className="min-h-screen bg-asylum-dark flex items-center justify-center">
-        <div className="text-white text-xl">Chargement du jeu...</div>
+      <div className="flex min-h-screen items-center justify-center bg-asylum-dark">
+        <div className="text-xl text-white">Chargement du jeu...</div>
       </div>
-    )
+    ),
   }
 );
 

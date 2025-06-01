@@ -2,7 +2,15 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Save, Upload, Download, Trash2, Clock, BarChart3 } from 'lucide-react';
+import {
+  X,
+  Save,
+  Upload,
+  Download,
+  Trash2,
+  Clock,
+  BarChart3,
+} from 'lucide-react';
 import { SaveData } from '@/types/story';
 import { SaveManager } from '@/lib/saveManager';
 
@@ -81,7 +89,9 @@ export const SaveLoadModal: React.FC<SaveLoadModalProps> = ({
   };
 
   const handleDelete = async (saveId: string) => {
-    if (window.confirm('Êtes-vous sûr de vouloir supprimer cette sauvegarde ?')) {
+    if (
+      window.confirm('Êtes-vous sûr de vouloir supprimer cette sauvegarde ?')
+    ) {
       try {
         SaveManager.deleteSave(saveId);
         loadSaves();
@@ -107,7 +117,7 @@ export const SaveLoadModal: React.FC<SaveLoadModalProps> = ({
       URL.revokeObjectURL(url);
     } catch (error) {
       console.error(error);
-      setError('Erreur lors de l\'exportation');
+      setError("Erreur lors de l'exportation");
     }
   };
 
@@ -128,7 +138,7 @@ export const SaveLoadModal: React.FC<SaveLoadModalProps> = ({
       }
     };
     reader.readAsText(file);
-    
+
     // Reset input
     event.target.value = '';
   };
@@ -151,18 +161,18 @@ export const SaveLoadModal: React.FC<SaveLoadModalProps> = ({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4"
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 p-4"
         onClick={onClose}
       >
         <motion.div
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.8, opacity: 0 }}
-          className="bg-gray-800 rounded-lg p-6 w-full max-w-2xl max-h-[80vh] overflow-hidden"
+          className="max-h-[80vh] w-full max-w-2xl overflow-hidden rounded-lg bg-gray-800 p-6"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="flex justify-between items-center mb-6">
+          <div className="mb-6 flex items-center justify-between">
             <h2 className="text-2xl font-bold text-white">
               {mode === 'save' ? 'Sauvegarder' : 'Charger'} la partie
             </h2>
@@ -170,12 +180,15 @@ export const SaveLoadModal: React.FC<SaveLoadModalProps> = ({
               {/* Boutons d'export/import */}
               <button
                 onClick={handleExport}
-                className="p-2 text-gray-400 hover:text-white transition-colors"
+                className="p-2 text-gray-400 transition-colors hover:text-white"
                 title="Exporter les sauvegardes"
               >
                 <Download size={20} />
               </button>
-              <label className="p-2 text-gray-400 hover:text-white transition-colors cursor-pointer" title="Importer des sauvegardes">
+              <label
+                className="cursor-pointer p-2 text-gray-400 transition-colors hover:text-white"
+                title="Importer des sauvegardes"
+              >
                 <Upload size={20} />
                 <input
                   type="file"
@@ -186,7 +199,7 @@ export const SaveLoadModal: React.FC<SaveLoadModalProps> = ({
               </label>
               <button
                 onClick={onClose}
-                className="p-2 text-gray-400 hover:text-white transition-colors"
+                className="p-2 text-gray-400 transition-colors hover:text-white"
               >
                 <X size={20} />
               </button>
@@ -195,34 +208,36 @@ export const SaveLoadModal: React.FC<SaveLoadModalProps> = ({
 
           {/* Error message */}
           {error && (
-            <div className="bg-red-900 border border-red-500 text-red-200 px-4 py-2 rounded mb-4">
+            <div className="mb-4 rounded border border-red-500 bg-red-900 px-4 py-2 text-red-200">
               {error}
             </div>
           )}
 
           {/* Save section (mode save only) */}
           {mode === 'save' && (
-            <div className="mb-6 p-4 bg-gray-700 rounded-lg">
-              <h3 className="text-lg font-medium text-white mb-3">Nouvelle sauvegarde</h3>
+            <div className="mb-6 rounded-lg bg-gray-700 p-4">
+              <h3 className="mb-3 text-lg font-medium text-white">
+                Nouvelle sauvegarde
+              </h3>
               <div className="flex gap-3">
                 <input
                   type="text"
                   value={newSaveName}
                   onChange={(e) => setNewSaveName(e.target.value)}
                   placeholder="Nom de la sauvegarde"
-                  className="flex-1 px-3 py-2 bg-gray-600 text-white rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="flex-1 rounded bg-gray-600 px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                   onKeyDown={(e) => e.key === 'Enter' && handleSave()}
                 />
                 <button
                   onClick={handleSave}
                   disabled={isLoading || !newSaveName.trim()}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white rounded transition-colors flex items-center gap-2"
+                  className="flex items-center gap-2 rounded bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700 disabled:bg-gray-600"
                 >
                   <Save size={16} />
                   {isLoading ? 'Sauvegarde...' : 'Sauvegarder'}
                 </button>
               </div>
-              <div className="mt-2 text-sm text-gray-300 flex items-center gap-2">
+              <div className="mt-2 flex items-center gap-2 text-sm text-gray-300">
                 <BarChart3 size={16} />
                 Progression actuelle: {currentProgress} scènes visitées
               </div>
@@ -231,12 +246,12 @@ export const SaveLoadModal: React.FC<SaveLoadModalProps> = ({
 
           {/* Saves list */}
           <div className="flex-1 overflow-y-auto">
-            <h3 className="text-lg font-medium text-white mb-3">
+            <h3 className="mb-3 text-lg font-medium text-white">
               Sauvegardes existantes ({saves.length})
             </h3>
-            
+
             {saves.length === 0 ? (
-              <div className="text-center text-gray-400 py-8">
+              <div className="py-8 text-center text-gray-400">
                 <Save size={48} className="mx-auto mb-4 opacity-50" />
                 <p>Aucune sauvegarde trouvée</p>
               </div>
@@ -247,17 +262,17 @@ export const SaveLoadModal: React.FC<SaveLoadModalProps> = ({
                     key={save.id}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className={`p-4 bg-gray-700 rounded-lg border-2 transition-all cursor-pointer ${
+                    className={`cursor-pointer rounded-lg border-2 bg-gray-700 p-4 transition-all ${
                       selectedSave === save.id
                         ? 'border-blue-500 bg-gray-600'
                         : 'border-transparent hover:border-gray-500'
                     }`}
                     onClick={() => setSelectedSave(save.id)}
                   >
-                    <div className="flex justify-between items-start">
+                    <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <h4 className="font-medium text-white">{save.name}</h4>
-                        <div className="flex items-center gap-4 mt-1 text-sm text-gray-300">
+                        <div className="mt-1 flex items-center gap-4 text-sm text-gray-300">
                           <span className="flex items-center gap-1">
                             <Clock size={14} />
                             {formatDate(save.timestamp)}
@@ -268,7 +283,7 @@ export const SaveLoadModal: React.FC<SaveLoadModalProps> = ({
                           </span>
                         </div>
                       </div>
-                      
+
                       <div className="flex gap-2">
                         {mode === 'load' && (
                           <button
@@ -277,7 +292,7 @@ export const SaveLoadModal: React.FC<SaveLoadModalProps> = ({
                               handleLoad(save);
                             }}
                             disabled={isLoading}
-                            className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-sm transition-colors"
+                            className="rounded bg-green-600 px-3 py-1 text-sm text-white transition-colors hover:bg-green-700"
                           >
                             Charger
                           </button>
@@ -287,7 +302,7 @@ export const SaveLoadModal: React.FC<SaveLoadModalProps> = ({
                             e.stopPropagation();
                             handleDelete(save.id);
                           }}
-                          className="p-1 text-red-400 hover:text-red-300 transition-colors"
+                          className="p-1 text-red-400 transition-colors hover:text-red-300"
                           title="Supprimer"
                         >
                           <Trash2 size={16} />
@@ -301,13 +316,14 @@ export const SaveLoadModal: React.FC<SaveLoadModalProps> = ({
           </div>
 
           {/* Footer */}
-          <div className="mt-6 flex justify-between items-center text-sm text-gray-400">
+          <div className="mt-6 flex items-center justify-between text-sm text-gray-400">
             <span>
-              {SaveManager.getSaveStats().totalSaves} sauvegarde(s) • {SaveManager.getSaveStats().totalSizeKB} KB
+              {SaveManager.getSaveStats().totalSaves} sauvegarde(s) •{' '}
+              {SaveManager.getSaveStats().totalSizeKB} KB
             </span>
             <button
               onClick={onClose}
-              className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded transition-colors"
+              className="rounded bg-gray-600 px-4 py-2 text-white transition-colors hover:bg-gray-700"
             >
               Fermer
             </button>

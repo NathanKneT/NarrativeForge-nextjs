@@ -38,7 +38,9 @@ describe('ErrorBoundary', () => {
       </ErrorBoundary>
     );
 
-    expect(screen.getByText('Oups ! Une erreur s\'est produite')).toBeInTheDocument();
+    expect(
+      screen.getByText("Oups ! Une erreur s'est produite")
+    ).toBeInTheDocument();
     expect(screen.getByText('Réessayer')).toBeInTheDocument();
     expect(screen.getByText('Recharger la page')).toBeInTheDocument();
   });
@@ -82,8 +84,10 @@ describe('ErrorBoundary', () => {
       </ErrorBoundary>
     );
 
-    expect(screen.getByText('Détails de l\'erreur (développement)')).toBeInTheDocument();
-    
+    expect(
+      screen.getByText("Détails de l'erreur (développement)")
+    ).toBeInTheDocument();
+
     process.env.NODE_ENV = originalEnv;
   });
 });

@@ -30,7 +30,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
   public override componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
     console.error('ErrorBoundary caught an error:', error, errorInfo);
-    
+
     this.setState({
       error,
       errorInfo,
@@ -66,32 +66,32 @@ export class ErrorBoundary extends Component<Props, State> {
 
       // UI de fallback par défaut
       return (
-        <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
-          <div className="bg-gray-800 rounded-lg p-8 max-w-lg w-full text-center">
-            <div className="text-red-500 text-6xl mb-4">⚠️</div>
-            <h1 className="text-2xl font-bold text-white mb-4">
+        <div className="flex min-h-screen items-center justify-center bg-gray-900 p-4">
+          <div className="w-full max-w-lg rounded-lg bg-gray-800 p-8 text-center">
+            <div className="mb-4 text-6xl text-red-500">⚠️</div>
+            <h1 className="mb-4 text-2xl font-bold text-white">
               Oups ! Une erreur s'est produite
             </h1>
-            <p className="text-gray-300 mb-6">
-              Une erreur inattendue a interrompu l'application. 
-              Nos développeurs ont été notifiés.
+            <p className="mb-6 text-gray-300">
+              Une erreur inattendue a interrompu l'application. Nos développeurs
+              ont été notifiés.
             </p>
-            
+
             {process.env.NODE_ENV === 'development' && this.state.error && (
               <details className="mb-6 text-left">
-                <summary className="text-red-400 cursor-pointer mb-2">
+                <summary className="mb-2 cursor-pointer text-red-400">
                   Détails de l'erreur (développement)
                 </summary>
-                <div className="bg-gray-700 p-4 rounded text-xs text-gray-300 overflow-auto max-h-40">
-                  <div className="font-bold text-red-400 mb-2">
+                <div className="max-h-40 overflow-auto rounded bg-gray-700 p-4 text-xs text-gray-300">
+                  <div className="mb-2 font-bold text-red-400">
                     {this.state.error.name}: {this.state.error.message}
                   </div>
                   <pre className="whitespace-pre-wrap">
                     {this.state.error.stack}
                   </pre>
                   {this.state.errorInfo && (
-                    <div className="mt-4 pt-4 border-t border-gray-600">
-                      <div className="font-bold text-yellow-400 mb-2">
+                    <div className="mt-4 border-t border-gray-600 pt-4">
+                      <div className="mb-2 font-bold text-yellow-400">
                         Component Stack:
                       </div>
                       <pre className="whitespace-pre-wrap">
@@ -106,14 +106,14 @@ export class ErrorBoundary extends Component<Props, State> {
             <div className="space-y-3">
               <button
                 onClick={this.handleReset}
-                className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium"
+                className="w-full rounded-lg bg-blue-600 px-6 py-3 font-medium text-white transition-colors hover:bg-blue-700"
                 type="button"
               >
                 Réessayer
               </button>
               <button
                 onClick={this.handleReload}
-                className="w-full px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors font-medium"
+                className="w-full rounded-lg bg-gray-600 px-6 py-3 font-medium text-white transition-colors hover:bg-gray-700"
                 type="button"
               >
                 Recharger la page
@@ -136,7 +136,7 @@ export class ErrorBoundary extends Component<Props, State> {
 export function useErrorHandler() {
   return (error: Error, errorInfo?: ErrorInfo) => {
     console.error('Error caught by useErrorHandler:', error, errorInfo);
-    
+
     // Optionnel: Envoyer à un service de monitoring
     // reportErrorToService(error, errorInfo);
   };

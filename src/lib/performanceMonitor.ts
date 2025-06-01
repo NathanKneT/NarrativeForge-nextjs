@@ -25,7 +25,7 @@ class PerformanceMonitor {
   constructor() {
     this.sessionId = this.generateSessionId();
     this.startPeriodicReporting();
-    
+
     // Listen for page visibility changes to report before page unload
     if (typeof window !== 'undefined') {
       document.addEventListener('visibilitychange', () => {
@@ -40,12 +40,15 @@ class PerformanceMonitor {
     return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   }
 
-  public recordMetric(metric: Omit<WebVitalsMetric, 'timestamp' | 'url'>): void {
+  public recordMetric(
+    metric: Omit<WebVitalsMetric, 'timestamp' | 'url'>
+  ): void {
     const fullMetric: WebVitalsMetric = {
       ...metric,
       timestamp: Date.now(),
       url: typeof window !== 'undefined' ? window.location.href : '',
-      userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : undefined,
+      userAgent:
+        typeof navigator !== 'undefined' ? navigator.userAgent : undefined,
     };
 
     this.metrics.push(fullMetric);
@@ -57,11 +60,16 @@ class PerformanceMonitor {
 
     // Log to console in development
     if (process.env.NODE_ENV === 'development') {
-      console.log(`[PERF] ${fullMetric.name}: ${fullMetric.value}ms (${fullMetric.rating})`);
+      console.log(
+        `[PERF] ${fullMetric.name}: ${fullMetric.value}ms (${fullMetric.rating})`
+      );
     }
   }
 
-  public getRating(name: WebVitalsMetric['name'], value: number): WebVitalsMetric['rating'] {
+  public getRating(
+    name: WebVitalsMetric['name'],
+    value: number
+  ): WebVitalsMetric['rating'] {
     const thresholds = {
       CLS: { good: 0.1, poor: 0.25 },
       INP: { good: 200, poor: 500 }, // Updated: INP replaces FID
@@ -130,55 +138,57 @@ export function initWebVitals(): void {
   if (typeof window === 'undefined') return;
 
   // Using the correct web-vitals API with modern metrics
-  import('web-vitals').then(({ onCLS, onINP, onFCP, onLCP, onTTFB }) => {
-    onCLS((metric) => {
-      performanceMonitor.recordMetric({
-        id: metric.id,
-        name: 'CLS',
-        value: metric.value,
-        rating: performanceMonitor.getRating('CLS', metric.value),
+  import('web-vitals')
+    .then(({ onCLS, onINP, onFCP, onLCP, onTTFB }) => {
+      onCLS((metric) => {
+        performanceMonitor.recordMetric({
+          id: metric.id,
+          name: 'CLS',
+          value: metric.value,
+          rating: performanceMonitor.getRating('CLS', metric.value),
+        });
       });
-    });
 
-    // ✅ Updated: INP replaces FID as Core Web Vital
-    onINP((metric) => {
-      performanceMonitor.recordMetric({
-        id: metric.id,
-        name: 'INP',
-        value: metric.value,
-        rating: performanceMonitor.getRating('INP', metric.value),
+      // ✅ Updated: INP replaces FID as Core Web Vital
+      onINP((metric) => {
+        performanceMonitor.recordMetric({
+          id: metric.id,
+          name: 'INP',
+          value: metric.value,
+          rating: performanceMonitor.getRating('INP', metric.value),
+        });
       });
-    });
 
-    onFCP((metric) => {
-      performanceMonitor.recordMetric({
-        id: metric.id,
-        name: 'FCP',
-        value: metric.value,
-        rating: performanceMonitor.getRating('FCP', metric.value),
+      onFCP((metric) => {
+        performanceMonitor.recordMetric({
+          id: metric.id,
+          name: 'FCP',
+          value: metric.value,
+          rating: performanceMonitor.getRating('FCP', metric.value),
+        });
       });
-    });
 
-    onLCP((metric) => {
-      performanceMonitor.recordMetric({
-        id: metric.id,
-        name: 'LCP',
-        value: metric.value,
-        rating: performanceMonitor.getRating('LCP', metric.value),
+      onLCP((metric) => {
+        performanceMonitor.recordMetric({
+          id: metric.id,
+          name: 'LCP',
+          value: metric.value,
+          rating: performanceMonitor.getRating('LCP', metric.value),
+        });
       });
-    });
 
-    onTTFB((metric) => {
-      performanceMonitor.recordMetric({
-        id: metric.id,
-        name: 'TTFB',
-        value: metric.value,
-        rating: performanceMonitor.getRating('TTFB', metric.value),
+      onTTFB((metric) => {
+        performanceMonitor.recordMetric({
+          id: metric.id,
+          name: 'TTFB',
+          value: metric.value,
+          rating: performanceMonitor.getRating('TTFB', metric.value),
+        });
       });
+    })
+    .catch(() => {
+      console.warn('[PERF] Web Vitals library not available');
     });
-  }).catch(() => {
-    console.warn('[PERF] Web Vitals library not available');
-  });
 }
 
 // Performance timing utilities
@@ -187,26 +197,26 @@ export function measureOperation<T>(
   operation: () => T | Promise<T>
 ): Promise<{ result: T; duration: number }> {
   const start = performance.now();
-  
+
   const result = operation();
-  
+
   if (result instanceof Promise) {
     return result.then((value) => {
       const duration = performance.now() - start;
-      
+
       if (process.env.NODE_ENV === 'development') {
         console.log(`[PERF] ${name}: ${duration.toFixed(2)}ms`);
       }
-      
+
       return { result: value, duration };
     });
   } else {
     const duration = performance.now() - start;
-    
+
     if (process.env.NODE_ENV === 'development') {
       console.log(`[PERF] ${name}: ${duration.toFixed(2)}ms`);
     }
-    
+
     return Promise.resolve({ result, duration });
   }
 }
@@ -221,7 +231,9 @@ export function trackMemoryUsage(): void {
   const limit = Math.round(memory.jsHeapSizeLimit / 1024 / 1024);
 
   if (process.env.NODE_ENV === 'development') {
-    console.log(`[MEMORY] Used: ${used}MB, Total: ${total}MB, Limit: ${limit}MB`);
+    console.log(
+      `[MEMORY] Used: ${used}MB, Total: ${total}MB, Limit: ${limit}MB`
+    );
   }
 
   // Report high memory usage
@@ -234,14 +246,18 @@ export function trackMemoryUsage(): void {
 export function trackBundleSize(): void {
   if (typeof window === 'undefined') return;
 
-  const entries = performance.getEntriesByType('navigation') as PerformanceNavigationTiming[];
+  const entries = performance.getEntriesByType(
+    'navigation'
+  ) as PerformanceNavigationTiming[];
   if (entries.length > 0) {
     const navigation = entries[0];
     const transferSize = navigation.transferSize || 0;
     const encodedSize = navigation.encodedBodySize || 0;
-    
+
     if (process.env.NODE_ENV === 'development') {
-      console.log(`[BUNDLE] Transfer: ${(transferSize / 1024).toFixed(2)}KB, Encoded: ${(encodedSize / 1024).toFixed(2)}KB`);
+      console.log(
+        `[BUNDLE] Transfer: ${(transferSize / 1024).toFixed(2)}KB, Encoded: ${(encodedSize / 1024).toFixed(2)}KB`
+      );
     }
   }
 }

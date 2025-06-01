@@ -5,7 +5,10 @@ export class SaveManager {
   private static readonly MAX_SAVES = 10;
 
   // Sauvegarder une partie
-  static async saveGame(saveName: string, gameState: GameState): Promise<string> {
+  static async saveGame(
+    saveName: string,
+    gameState: GameState
+  ): Promise<string> {
     if (typeof window === 'undefined') {
       throw new Error('localStorage not available on server');
     }
@@ -35,7 +38,7 @@ export class SaveManager {
       };
 
       localStorage.setItem(
-        `${this.SAVE_PREFIX}${saveId}`, 
+        `${this.SAVE_PREFIX}${saveId}`,
         JSON.stringify(serializedSave)
       );
 
@@ -55,7 +58,7 @@ export class SaveManager {
     if (typeof window === 'undefined') return [];
 
     const saves: SaveData[] = [];
-    
+
     try {
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
@@ -68,8 +71,9 @@ export class SaveManager {
       }
 
       // Trier par date (plus récent en premier)
-      return saves.sort((a, b) => 
-        new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+      return saves.sort(
+        (a, b) =>
+          new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
       );
     } catch (error) {
       console.error('❌ Erreur lors du chargement des sauvegardes:', error);
@@ -86,7 +90,7 @@ export class SaveManager {
       if (!saveString) return null;
 
       const parsedSave = JSON.parse(saveString);
-      
+
       // Reconvertir Array en Set et strings en Dates
       return {
         ...parsedSave,
@@ -98,7 +102,10 @@ export class SaveManager {
         timestamp: new Date(parsedSave.timestamp),
       };
     } catch (error) {
-      console.error(`❌ Erreur lors du chargement de la sauvegarde ${saveId}:`, error);
+      console.error(
+        `❌ Erreur lors du chargement de la sauvegarde ${saveId}:`,
+        error
+      );
       return null;
     }
   }
@@ -120,13 +127,15 @@ export class SaveManager {
   // Nettoyer les anciennes sauvegardes (garder seulement les MAX_SAVES plus récentes)
   private static async cleanupOldSaves(): Promise<void> {
     const saves = this.getAllSaves();
-    
+
     if (saves.length > this.MAX_SAVES) {
       const savesToDelete = saves.slice(this.MAX_SAVES);
-      savesToDelete.forEach(save => {
+      savesToDelete.forEach((save) => {
         this.deleteSave(save.id);
       });
-      console.log(`🧹 ${savesToDelete.length} anciennes sauvegardes supprimées`);
+      console.log(
+        `🧹 ${savesToDelete.length} anciennes sauvegardes supprimées`
+      );
     }
   }
 
@@ -147,7 +156,7 @@ export class SaveManager {
           // Générer un nouvel ID pour éviter les conflits
           const newSaveId = `imported-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
           const saveToImport = { ...save, id: newSaveId };
-          
+
           await this.saveGame(saveToImport.name, saveToImport.gameState);
           importedCount++;
         }
@@ -156,7 +165,7 @@ export class SaveManager {
       console.log(`📥 ${importedCount} sauvegardes importées`);
       return importedCount;
     } catch (error) {
-      console.error('❌ Erreur lors de l\'importation:', error);
+      console.error("❌ Erreur lors de l'importation:", error);
       throw new Error('Format de fichier invalide');
     }
   }
@@ -164,16 +173,19 @@ export class SaveManager {
   // Valider la structure d'une sauvegarde
   private static isValidSaveData(save: unknown): save is SaveData {
     if (!save || typeof save !== 'object') return false;
-    
+
     const saveObj = save as Record<string, unknown>;
-    
+
     return (
       typeof saveObj.id === 'string' &&
       typeof saveObj.name === 'string' &&
       typeof saveObj.gameState === 'object' &&
       saveObj.gameState !== null &&
-      typeof (saveObj.gameState as Record<string, unknown>).currentNodeId === 'string' &&
-      Array.isArray((saveObj.gameState as Record<string, unknown>).visitedNodes) &&
+      typeof (saveObj.gameState as Record<string, unknown>).currentNodeId ===
+        'string' &&
+      Array.isArray(
+        (saveObj.gameState as Record<string, unknown>).visitedNodes
+      ) &&
       typeof saveObj.timestamp !== 'undefined'
     );
   }
@@ -187,7 +199,7 @@ export class SaveManager {
 
     return {
       totalSaves: saves.length,
-      totalSizeKB: Math.round(totalSize / 1024 * 100) / 100,
+      totalSizeKB: Math.round((totalSize / 1024) * 100) / 100,
       oldestSave: saves.length > 0 ? saves[saves.length - 1]?.timestamp : null,
       newestSave: saves.length > 0 ? saves[0]?.timestamp : null,
     };

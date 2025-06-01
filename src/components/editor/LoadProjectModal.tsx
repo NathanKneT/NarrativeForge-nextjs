@@ -2,7 +2,15 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, FolderOpen, Calendar, FileText, Trash2, Download, Upload } from 'lucide-react';
+import {
+  X,
+  FolderOpen,
+  Calendar,
+  FileText,
+  Trash2,
+  Download,
+  Upload,
+} from 'lucide-react';
 import { StoryProject } from '@/types/editor';
 
 interface SavedProject {
@@ -40,22 +48,30 @@ export const LoadProjectModal: React.FC<LoadProjectModalProps> = ({
   const loadSavedProjects = () => {
     try {
       const projects: SavedProject[] = [];
-      
+
       // Parcourir localStorage pour trouver les projets
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
-        if (key && (key.startsWith('asylum-project-') || key === 'asylum-editor-autosave')) {
+        if (
+          key &&
+          (key.startsWith('asylum-project-') ||
+            key === 'asylum-editor-autosave')
+        ) {
           const projectData = localStorage.getItem(key);
           if (projectData) {
             try {
               const parsed = JSON.parse(projectData);
               const size = new Blob([projectData]).size;
-              
+
               projects.push({
                 id: key,
                 name: parsed.name || 'Projet sans nom',
                 description: parsed.description || 'Aucune description',
-                savedAt: new Date(parsed.metadata?.updatedAt || parsed.metadata?.createdAt || Date.now()),
+                savedAt: new Date(
+                  parsed.metadata?.updatedAt ||
+                    parsed.metadata?.createdAt ||
+                    Date.now()
+                ),
                 size: formatFileSize(size),
                 nodeCount: parsed.nodes?.length || 0,
                 edgeCount: parsed.edges?.length || 0,
@@ -66,11 +82,10 @@ export const LoadProjectModal: React.FC<LoadProjectModalProps> = ({
           }
         }
       }
-      
+
       // Trier par date de modification (plus récent en premier)
       projects.sort((a, b) => b.savedAt.getTime() - a.savedAt.getTime());
       setSavedProjects(projects);
-      
     } catch (error) {
       console.error('Erreur chargement projets:', error);
     }
@@ -98,12 +113,11 @@ export const LoadProjectModal: React.FC<LoadProjectModalProps> = ({
           ...parsed.metadata,
           createdAt: new Date(parsed.metadata.createdAt),
           updatedAt: new Date(parsed.metadata.updatedAt),
-        }
+        },
       };
 
       onLoadProject(project);
       onClose();
-      
     } catch (error) {
       console.error('Erreur chargement projet:', error);
       alert('❌ Erreur lors du chargement du projet');
@@ -133,10 +147,9 @@ export const LoadProjectModal: React.FC<LoadProjectModalProps> = ({
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      
     } catch (error) {
       console.error('Erreur export:', error);
-      alert('❌ Erreur lors de l\'export');
+      alert("❌ Erreur lors de l'export");
     }
   };
 
@@ -159,7 +172,7 @@ export const LoadProjectModal: React.FC<LoadProjectModalProps> = ({
               ...projectData.metadata,
               createdAt: new Date(projectData.metadata.createdAt),
               updatedAt: new Date(),
-            }
+            },
           };
 
           // Sauvegarder le projet importé
@@ -169,12 +182,11 @@ export const LoadProjectModal: React.FC<LoadProjectModalProps> = ({
               ...project.metadata,
               createdAt: project.metadata.createdAt.toISOString(),
               updatedAt: project.metadata.updatedAt.toISOString(),
-            }
+            },
           };
-          
+
           localStorage.setItem(project.id, JSON.stringify(serialized));
           loadSavedProjects(); // Recharger la liste
-          
         } catch (error) {
           console.error('Erreur import:', error);
           alert('❌ Fichier de projet invalide');
@@ -193,26 +205,28 @@ export const LoadProjectModal: React.FC<LoadProjectModalProps> = ({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4"
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80 p-4"
         onClick={onClose}
       >
         <motion.div
           initial={{ scale: 0.8, opacity: 0, y: 50 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.8, opacity: 0, y: 50 }}
-          transition={{ type: "spring", damping: 20 }}
-          className="bg-gray-800 rounded-xl p-6 w-full max-w-4xl max-h-[80vh] shadow-2xl border border-gray-700 overflow-hidden flex flex-col"
+          transition={{ type: 'spring', damping: 20 }}
+          className="flex max-h-[80vh] w-full max-w-4xl flex-col overflow-hidden rounded-xl border border-gray-700 bg-gray-800 p-6 shadow-2xl"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="flex justify-between items-center mb-6">
+          <div className="mb-6 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-600 rounded-lg">
+              <div className="rounded-lg bg-blue-600 p-2">
                 <FolderOpen size={20} className="text-white" />
               </div>
               <div>
-                <h2 className="text-xl font-bold text-white">Charger un Projet</h2>
-                <p className="text-gray-400 text-sm">
+                <h2 className="text-xl font-bold text-white">
+                  Charger un Projet
+                </h2>
+                <p className="text-sm text-gray-400">
                   {savedProjects.length} projet(s) sauvegardé(s)
                 </p>
               </div>
@@ -220,7 +234,7 @@ export const LoadProjectModal: React.FC<LoadProjectModalProps> = ({
             <div className="flex items-center gap-2">
               <button
                 onClick={handleImportProject}
-                className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors flex items-center gap-2"
+                className="flex items-center gap-2 rounded-lg bg-green-600 px-3 py-2 text-white transition-colors hover:bg-green-700"
                 title="Importer un projet"
               >
                 <Upload size={16} />
@@ -228,7 +242,7 @@ export const LoadProjectModal: React.FC<LoadProjectModalProps> = ({
               </button>
               <button
                 onClick={onClose}
-                className="p-2 text-gray-400 hover:text-white transition-colors rounded-lg hover:bg-gray-700"
+                className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-700 hover:text-white"
                 title="Fermer"
               >
                 <X size={20} />
@@ -239,10 +253,12 @@ export const LoadProjectModal: React.FC<LoadProjectModalProps> = ({
           {/* Liste des projets */}
           <div className="flex-1 overflow-y-auto">
             {savedProjects.length === 0 ? (
-              <div className="text-center text-gray-400 py-12">
+              <div className="py-12 text-center text-gray-400">
                 <FolderOpen size={48} className="mx-auto mb-4 opacity-50" />
-                <p className="text-lg mb-2">Aucun projet sauvegardé</p>
-                <p className="text-sm">Créez et sauvegardez votre premier projet pour le voir ici</p>
+                <p className="mb-2 text-lg">Aucun projet sauvegardé</p>
+                <p className="text-sm">
+                  Créez et sauvegardez votre premier projet pour le voir ici
+                </p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -250,7 +266,7 @@ export const LoadProjectModal: React.FC<LoadProjectModalProps> = ({
                   <motion.div
                     key={project.id}
                     whileHover={{ scale: 1.01 }}
-                    className={`p-4 bg-gray-700 rounded-lg border-2 transition-all cursor-pointer ${
+                    className={`cursor-pointer rounded-lg border-2 bg-gray-700 p-4 transition-all ${
                       selectedProject === project.id
                         ? 'border-blue-500 bg-gray-600'
                         : 'border-gray-600 hover:border-gray-500'
@@ -259,48 +275,53 @@ export const LoadProjectModal: React.FC<LoadProjectModalProps> = ({
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
+                        <div className="mb-2 flex items-center gap-3">
                           <FileText size={18} className="text-blue-400" />
-                          <h3 className="font-medium text-white">{project.name}</h3>
+                          <h3 className="font-medium text-white">
+                            {project.name}
+                          </h3>
                           {project.id === 'asylum-editor-autosave' && (
-                            <span className="px-2 py-1 bg-orange-600 text-white text-xs rounded">
+                            <span className="rounded bg-orange-600 px-2 py-1 text-xs text-white">
                               AUTO
                             </span>
                           )}
                         </div>
-                        
-                        <p className="text-gray-300 text-sm mb-2">{project.description}</p>
-                        
+
+                        <p className="mb-2 text-sm text-gray-300">
+                          {project.description}
+                        </p>
+
                         <div className="flex items-center gap-4 text-xs text-gray-400">
                           <div className="flex items-center gap-1">
                             <Calendar size={12} />
-                            {project.savedAt.toLocaleDateString()} à {project.savedAt.toLocaleTimeString()}
+                            {project.savedAt.toLocaleDateString()} à{' '}
+                            {project.savedAt.toLocaleTimeString()}
                           </div>
                           <span>{project.nodeCount} nœuds</span>
                           <span>{project.edgeCount} connexions</span>
                           <span>{project.size}</span>
                         </div>
                       </div>
-                      
-                      <div className="flex items-center gap-2 ml-4">
+
+                      <div className="ml-4 flex items-center gap-2">
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
                             handleExportProject(project.id, project.name);
                           }}
-                          className="p-2 bg-purple-600 hover:bg-purple-700 text-white rounded transition-colors"
+                          className="rounded bg-purple-600 p-2 text-white transition-colors hover:bg-purple-700"
                           title="Exporter"
                         >
                           <Download size={14} />
                         </button>
-                        
+
                         {project.id !== 'asylum-editor-autosave' && (
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
                               handleDeleteProject(project.id, project.name);
                             }}
-                            className="p-2 bg-red-600 hover:bg-red-700 text-white rounded transition-colors"
+                            className="rounded bg-red-600 p-2 text-white transition-colors hover:bg-red-700"
                             title="Supprimer"
                           >
                             <Trash2 size={14} />
@@ -316,26 +337,30 @@ export const LoadProjectModal: React.FC<LoadProjectModalProps> = ({
 
           {/* Footer */}
           {savedProjects.length > 0 && (
-            <div className="mt-6 flex justify-between items-center pt-4 border-t border-gray-700">
-              <p className="text-gray-400 text-sm">
-                {selectedProject ? 'Projet sélectionné' : 'Sélectionnez un projet à charger'}
+            <div className="mt-6 flex items-center justify-between border-t border-gray-700 pt-4">
+              <p className="text-sm text-gray-400">
+                {selectedProject
+                  ? 'Projet sélectionné'
+                  : 'Sélectionnez un projet à charger'}
               </p>
-              
+
               <div className="flex gap-3">
                 <button
                   onClick={onClose}
-                  className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors"
+                  className="rounded-lg bg-gray-600 px-4 py-2 text-white transition-colors hover:bg-gray-700"
                 >
                   Annuler
                 </button>
                 <button
-                  onClick={() => selectedProject && handleLoadProject(selectedProject)}
+                  onClick={() =>
+                    selectedProject && handleLoadProject(selectedProject)
+                  }
                   disabled={!selectedProject || isLoading}
-                  className="px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white rounded-lg transition-colors flex items-center gap-2"
+                  className="flex items-center gap-2 rounded-lg bg-blue-600 px-6 py-2 text-white transition-colors hover:bg-blue-700 disabled:bg-gray-600"
                 >
                   {isLoading ? (
                     <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
                       Chargement...
                     </>
                   ) : (

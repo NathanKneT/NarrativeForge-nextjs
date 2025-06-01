@@ -15,7 +15,7 @@ jest.mock('@/lib/saveManager', () => ({
 
 const createMockLocalStorage = () => {
   let store: Record<string, string> = {};
-  
+
   return {
     getItem: jest.fn((key: string) => store[key] || null),
     setItem: jest.fn((key: string, value: string) => {
@@ -34,11 +34,19 @@ const createMockLocalStorage = () => {
 
 describe('GameStore', () => {
   let mockLocalStorage: ReturnType<typeof createMockLocalStorage>;
-  const mockSaveGame = SaveManager.saveGame as jest.MockedFunction<typeof SaveManager.saveGame>;
-  const mockGetAllSaves = SaveManager.getAllSaves as jest.MockedFunction<typeof SaveManager.getAllSaves>;
-  const mockLoadSaveById = SaveManager.loadSaveById as jest.MockedFunction<typeof SaveManager.loadSaveById>;
-  const mockDeleteSave = SaveManager.deleteSave as jest.MockedFunction<typeof SaveManager.deleteSave>;
-  
+  const mockSaveGame = SaveManager.saveGame as jest.MockedFunction<
+    typeof SaveManager.saveGame
+  >;
+  const mockGetAllSaves = SaveManager.getAllSaves as jest.MockedFunction<
+    typeof SaveManager.getAllSaves
+  >;
+  const mockLoadSaveById = SaveManager.loadSaveById as jest.MockedFunction<
+    typeof SaveManager.loadSaveById
+  >;
+  const mockDeleteSave = SaveManager.deleteSave as jest.MockedFunction<
+    typeof SaveManager.deleteSave
+  >;
+
   beforeEach(() => {
     mockLocalStorage = createMockLocalStorage();
     Object.defineProperty(window, 'localStorage', {
@@ -50,7 +58,7 @@ describe('GameStore', () => {
     act(() => {
       result.current.clearCorruptedState();
     });
-    
+
     jest.clearAllMocks();
     mockSaveGame.mockResolvedValue('mock-save-id');
     mockGetAllSaves.mockReturnValue([]);
@@ -74,7 +82,7 @@ describe('GameStore', () => {
 
     it('should handle SaveManager success responses correctly', async () => {
       const { result } = renderHook(() => useGameStore());
-      
+
       mockSaveGame.mockResolvedValue('successful-save-id');
 
       act(() => {
@@ -90,7 +98,10 @@ describe('GameStore', () => {
 
       expect(result.current.isLoading).toBe(false);
       expect(result.current.error).toBeNull();
-      expect(mockSaveGame).toHaveBeenCalledWith('Success Test', expect.any(Object));
+      expect(mockSaveGame).toHaveBeenCalledWith(
+        'Success Test',
+        expect.any(Object)
+      );
     });
 
     it('should call SaveManager.saveGame with correct parameters', async () => {
@@ -290,7 +301,9 @@ describe('GameStore', () => {
       });
 
       const gameState = result.current.gameState;
-      expect(gameState?.visitedNodes.has('node-with-special-chars-éà')).toBe(true);
+      expect(gameState?.visitedNodes.has('node-with-special-chars-éà')).toBe(
+        true
+      );
       expect(gameState?.choices['start']).toBe('choice-with-emoji-🎮');
     });
 
@@ -306,9 +319,9 @@ describe('GameStore', () => {
             playTime: 0,
             variables: {},
             inventory: [],
-          }
+          },
         },
-        version: 1
+        version: 1,
       });
 
       mockLocalStorage.getItem.mockReturnValue(invalidData);
@@ -331,8 +344,8 @@ describe('GameStore', () => {
             playTime: 0,
             variables: {},
             inventory: [],
-          }
-        }
+          },
+        },
       });
 
       mockLocalStorage.getItem.mockReturnValue(edgeData);
@@ -353,15 +366,15 @@ describe('GameStore', () => {
             playTime: 0,
             variables: {},
             inventory: [],
-          }
+          },
         },
-        version: 0
+        version: 0,
       });
 
       mockLocalStorage.getItem.mockReturnValue(oldVersionData);
 
       const { result } = renderHook(() => useGameStore());
-      
+
       // Devrait être migré vers version 1
       expect(result.current.gameState).toBeDefined();
     });
@@ -434,7 +447,9 @@ describe('GameStore', () => {
       });
 
       expect(result.current.getVisitedNodesCount()).toBeGreaterThan(1000);
-      expect(Object.keys(result.current.gameState?.choices || {}).length).toBeGreaterThan(5);
+      expect(
+        Object.keys(result.current.gameState?.choices || {}).length
+      ).toBeGreaterThan(5);
     });
 
     it('should handle special characters in node IDs', () => {
@@ -463,7 +478,7 @@ describe('GameStore', () => {
         });
       });
 
-      specialNodeIds.forEach(nodeId => {
+      specialNodeIds.forEach((nodeId) => {
         expect(result.current.hasVisitedNode(nodeId)).toBe(true);
       });
     });
@@ -576,7 +591,7 @@ describe('GameStore', () => {
   describe('loadGame', () => {
     it('should load saved game state correctly', () => {
       const { result } = renderHook(() => useGameStore());
-      
+
       const mockSaveData = {
         id: 'save-1',
         name: 'Test Save',
@@ -606,8 +621,10 @@ describe('GameStore', () => {
       const { result } = renderHook(() => useGameStore());
 
       // Forcer une erreur en mockant console.error
-      const mockConsoleError = jest.spyOn(console, 'error').mockImplementation();
-      
+      const mockConsoleError = jest
+        .spyOn(console, 'error')
+        .mockImplementation();
+
       const corruptSaveData = null as any;
 
       expect(() => {
@@ -855,7 +872,9 @@ describe('GameStore', () => {
       expect(result.current.currentNode).toBeNull();
       expect(result.current.error).toBeNull();
       expect(result.current.isLoading).toBe(false);
-      expect(mockLocalStorage.removeItem).toHaveBeenCalledWith('asylum-game-storage');
+      expect(mockLocalStorage.removeItem).toHaveBeenCalledWith(
+        'asylum-game-storage'
+      );
     });
   });
 
@@ -870,12 +889,12 @@ describe('GameStore', () => {
         storyProgress: 1,
         gameState: {
           currentNodeId: null as any,
-          visitedNodes: "invalid" as any,
+          visitedNodes: 'invalid' as any,
           choices: null as any,
-          startTime: "not-a-date" as any,
-          playTime: "not-a-number" as any,
+          startTime: 'not-a-date' as any,
+          playTime: 'not-a-number' as any,
           variables: null as any,
-          inventory: "not-an-array" as any,
+          inventory: 'not-an-array' as any,
         },
       };
 
