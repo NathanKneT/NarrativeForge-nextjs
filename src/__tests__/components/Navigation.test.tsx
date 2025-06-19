@@ -18,15 +18,15 @@ describe('Navigation', () => {
   it('renders navigation links', () => {
     render(<Navigation />);
 
-    expect(screen.getByText('Jouer')).toBeInTheDocument();
-    expect(screen.getByText('Éditeur')).toBeInTheDocument();
+    expect(screen.getByText('Stories')).toBeInTheDocument(); // Changed from 'Jouer'
+    expect(screen.getByText('Editor')).toBeInTheDocument(); // Changed from 'Éditeur'
   });
 
   it('highlights active link for home page', () => {
     usePathname.mockReturnValue('/');
     render(<Navigation />);
 
-    const homeLink = screen.getByText('Jouer').closest('a');
+    const homeLink = screen.getByText('Stories').closest('a'); // Changed from 'Jouer'
     expect(homeLink).toHaveClass('bg-blue-600', 'text-white');
   });
 
@@ -34,15 +34,15 @@ describe('Navigation', () => {
     usePathname.mockReturnValue('/editor');
     render(<Navigation />);
 
-    const editorLink = screen.getByText('Éditeur').closest('a');
+    const editorLink = screen.getByText('Editor').closest('a'); // Changed from 'Éditeur'
     expect(editorLink).toHaveClass('bg-blue-600', 'text-white');
   });
 
   it('has correct href attributes', () => {
     render(<Navigation />);
 
-    const homeLink = screen.getByText('Jouer').closest('a');
-    const editorLink = screen.getByText('Éditeur').closest('a');
+    const homeLink = screen.getByText('Stories').closest('a'); // Changed from 'Jouer'
+    const editorLink = screen.getByText('Editor').closest('a'); // Changed from 'Éditeur'
 
     expect(homeLink).toHaveAttribute('href', '/');
     expect(editorLink).toHaveAttribute('href', '/editor');
@@ -53,6 +53,6 @@ describe('Navigation', () => {
 
     const nav = screen.getByRole('navigation');
     expect(nav).toBeInTheDocument();
-    expect(nav).toHaveClass('fixed', 'top-4', 'left-4', 'z-50');
+    expect(nav).toHaveClass('fixed', 'left-4', 'top-4', 'z-50'); // Updated classes
   });
 });

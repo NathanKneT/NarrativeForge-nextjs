@@ -4,7 +4,7 @@ import './globals.css';
 
 const inter = Inter({ subsets: ['latin'] });
 
-// 🔧 FIX: Séparer viewport de metadata (Next.js 14+ requirement)
+// Separate viewport from metadata (Next.js 14+ requirement)
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
@@ -16,14 +16,14 @@ export const viewport: Viewport = {
   ],
 };
 
-// 🔧 FIX: Définir metadataBase pour résoudre les warnings OG/Twitter
+// Define metadataBase to resolve OG/Twitter warnings
 export const metadata: Metadata = {
   metadataBase: new URL(
     process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
   ),
   title: {
-    default: 'Asylum Interactive Story',
-    template: '%s | Asylum Interactive Story',
+    default: 'Interactive Stories Platform',
+    template: '%s | Interactive Stories',
   },
   description:
     'An immersive interactive storytelling platform with visual node-based editor. Create and experience branching narratives with professional-grade tools.',
@@ -34,12 +34,14 @@ export const metadata: Metadata = {
     'interactive fiction',
     'node editor',
     'narrative design',
-    'asylum',
+    'branching stories',
     'visual storytelling',
+    'game development',
+    'narrative games',
   ],
   authors: [{ name: 'Nathan RIHET' }],
   creator: 'Nathan RIHET',
-  publisher: 'Asylum Interactive',
+  publisher: 'Interactive Stories Platform',
   robots: {
     index: true,
     follow: true,
@@ -55,24 +57,24 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'en_US',
     url: '/',
-    title: 'Asylum Interactive Story Platform',
+    title: 'Interactive Stories Platform',
     description:
       'Create and experience immersive interactive stories with our professional visual editor.',
-    siteName: 'Asylum Interactive Story',
+    siteName: 'Interactive Stories Platform',
     images: [
       {
         url: '/og-image.png',
         width: 1200,
         height: 630,
-        alt: 'Asylum Interactive Story Platform',
+        alt: 'Interactive Stories Platform',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Asylum Interactive Story Platform',
+    title: 'Interactive Stories Platform',
     description: 'Create and experience immersive interactive stories',
-    creator: '@AsylumStory',
+    creator: '@InteractiveStories',
     images: ['/twitter-image.png'],
   },
   icons: {
@@ -84,7 +86,7 @@ export const metadata: Metadata = {
       { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
     ],
     other: [
-      { rel: 'mask-icon', url: '/safari-pinned-tab.svg', color: '#e94560' },
+      { rel: 'mask-icon', url: '/safari-pinned-tab.svg', color: '#3b82f6' },
     ],
   },
   manifest: '/site.webmanifest',
@@ -103,7 +105,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className} suppressHydrationWarning>
         {children}
-        {/* 🚀 Performance monitoring script */}
+        {/* Performance monitoring script */}
         <script
           dangerouslySetInnerHTML={{
             __html: `

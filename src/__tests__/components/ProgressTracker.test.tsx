@@ -16,11 +16,11 @@ describe('ProgressTracker', () => {
       <ProgressTracker currentProgress={5} totalNodes={10} visitedNodes={5} />
     );
 
-    // Attendre l'hydration côté client
+    // Wait for client-side hydration
     await waitFor(() => {
-      expect(screen.getByText('Progression')).toBeInTheDocument();
+      expect(screen.getByText('Progress')).toBeInTheDocument(); // Changed from 'Progression'
       expect(screen.getByText('50%')).toBeInTheDocument();
-      expect(screen.getByText('5 / 10 scènes visitées')).toBeInTheDocument();
+      expect(screen.getByText('5 / 10 scenes visited')).toBeInTheDocument(); // Changed from 'scènes visitées'
     });
   });
 
@@ -39,10 +39,9 @@ describe('ProgressTracker', () => {
       <ProgressTracker currentProgress={0} totalNodes={0} visitedNodes={0} />
     );
 
-    // Attendre l'hydration et vérifier que 0% s'affiche
     await waitFor(() => {
       expect(screen.getByText('0%')).toBeInTheDocument();
-      expect(screen.getByText('0 / 0 scènes visitées')).toBeInTheDocument();
+      expect(screen.getByText('0 / 0 scenes visited')).toBeInTheDocument(); // Changed from 'scènes visitées'
     });
   });
 
@@ -53,7 +52,7 @@ describe('ProgressTracker', () => {
 
     await waitFor(() => {
       expect(screen.getByText('100%')).toBeInTheDocument();
-      expect(screen.getByText('10 / 10 scènes visitées')).toBeInTheDocument();
+      expect(screen.getByText('10 / 10 scenes visited')).toBeInTheDocument(); // Changed from 'scènes visitées'
     });
   });
 
@@ -67,20 +66,19 @@ describe('ProgressTracker', () => {
     });
   });
 
-  // 🔧 FIX: Test SSR plus réaliste - vérifie la présence mais pas les valeurs exactes
   it('shows initial render state', () => {
     const { container } = render(
       <ProgressTracker currentProgress={5} totalNodes={10} visitedNodes={5} />
     );
 
-    // Vérifier que le composant s'affiche
-    expect(screen.getByText('Progression')).toBeInTheDocument();
+    // Verify component renders
+    expect(screen.getByText('Progress')).toBeInTheDocument(); // Changed from 'Progression'
 
-    // Vérifier la structure CSS de base
+    // Verify basic CSS structure
     expect(container.firstChild).toHaveClass('bg-gray-700');
 
-    // Vérifier qu'il y a un pourcentage affiché (peu importe la valeur initiale)
-    expect(container.querySelector('.text-red-400')).toBeInTheDocument();
+    // Verify percentage is displayed (regardless of initial value)
+    expect(container.querySelector('.text-blue-400')).toBeInTheDocument(); // Changed from 'text-red-400'
   });
 
   it('has proper CSS classes for progress bar', async () => {
@@ -89,7 +87,7 @@ describe('ProgressTracker', () => {
     );
 
     await waitFor(() => {
-      const progressBar = container.querySelector('.bg-red-400');
+      const progressBar = container.querySelector('.bg-blue-400'); // Changed from 'bg-red-400'
       expect(progressBar).toBeInTheDocument();
       expect(progressBar).toHaveClass('h-2', 'rounded-full');
     });

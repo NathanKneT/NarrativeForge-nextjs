@@ -38,8 +38,8 @@ describe('storyMigration', () => {
     // Check start node
     const startNode = result.find((node) => node.id === '1');
     expect(startNode).toBeDefined();
-    expect(startNode?.title).toBe("Début de l'histoire");
-    expect(startNode?.metadata.tags).toContain('début');
+    expect(startNode?.title).toBe("Beginning of the Story"); // Changed from French
+    expect(startNode?.metadata.tags).toContain('start'); // Changed from 'début'
   });
 
   it('should convert IDs to strings', () => {

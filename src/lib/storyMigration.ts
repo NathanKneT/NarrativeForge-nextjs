@@ -1,6 +1,7 @@
+// src/lib/storyMigration.ts - Updated with English text
 import { StoryNode, Choice } from '@/types/story';
 
-// Interface pour TON format exact
+// Interface for the old story format
 interface OldStoryNode {
   id: number;
   text: string;
@@ -10,19 +11,19 @@ interface OldStoryNode {
   }[];
 }
 
-// Fonction de migration adaptée à ton format - CORRIGÉE
+// Migration function adapted to your format - FIXED
 export function migrateStoryData(oldData: OldStoryNode[]): StoryNode[] {
   const nodes: StoryNode[] = [];
 
-  // ✅ FIX: Trier par ID pour s'assurer que le nœud 1 est traité en premier
+  // ✅ FIX: Sort by ID to ensure node 1 is processed first
   const sortedData = [...oldData].sort((a, b) => a.id - b.id);
 
   sortedData.forEach((oldNode) => {
     const choices: Choice[] = [];
 
-    // Traiter les options
+    // Process options
     oldNode.options.forEach((option, index) => {
-      // ✅ FIX: Gérer le cas où nextText est -1 (redémarrage)
+      // ✅ FIX: Handle case where nextText is -1 (restart)
       const nextNodeId =
         option.nextText === -1 ? '-1' : option.nextText.toString();
 
@@ -35,15 +36,15 @@ export function migrateStoryData(oldData: OldStoryNode[]): StoryNode[] {
       });
     });
 
-    // Créer le nouveau noeud
+    // Create the new node
     const newNode: StoryNode = {
-      id: oldNode.id.toString(), // ✅ FIX: Conserver l'ID original
-      title: oldNode.id === 1 ? `Début de l'histoire` : `Scène ${oldNode.id}`, // ✅ FIX: Titre spécial pour le nœud 1
+      id: oldNode.id.toString(), // ✅ FIX: Keep original ID
+      title: oldNode.id === 1 ? `Beginning of the Story` : `Scene ${oldNode.id}`, // ✅ FIX: English title
       content: oldNode.text,
       choices,
-      multimedia: {}, // ✅ FIX: Propriété obligatoire
+      multimedia: {}, // ✅ FIX: Required property
       metadata: {
-        tags: oldNode.id === 1 ? ['début'] : [], // ✅ FIX: Tag spécial pour le début
+        tags: oldNode.id === 1 ? ['start'] : [], // ✅ FIX: English tag
         visitCount: 0,
         difficulty: 'medium',
       },
@@ -52,16 +53,16 @@ export function migrateStoryData(oldData: OldStoryNode[]): StoryNode[] {
     nodes.push(newNode);
   });
 
-  // ✅ FIX: Validation que le nœud "1" existe
+  // ✅ FIX: Validate that node "1" exists
   const startNode = nodes.find((n) => n.id === '1');
   if (!startNode) {
     console.warn(
-      '⚠️ Aucun nœud avec ID "1" trouvé, le premier nœud sera considéré comme le début'
+      '⚠️ No node with ID "1" found, first node will be considered as start'
     );
   }
 
-  console.log('📊 Migration terminée:', {
-    nodesTotal: nodes.length,
+  console.log('📊 Migration completed:', {
+    totalNodes: nodes.length,
     startNodeId: startNode?.id || nodes[0]?.id || 'unknown',
     nodesWithChoices: nodes.filter((n) => n.choices.length > 0).length,
   });

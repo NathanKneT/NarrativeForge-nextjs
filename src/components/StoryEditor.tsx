@@ -43,6 +43,8 @@ import { GraphToStoryConverter } from '@/lib/graphToStoryConverter';
 import { ProjectInitModal } from './editor/ProjectInitModal';
 import { SaveNotification, useNotification } from './editor/SaveNotification';
 import { LoadProjectModal } from './editor/LoadProjectModal';
+// 🔧 FIX: Import the dynamic story manager
+import { dynamicStoryManager } from '@/lib/dynamicStoryManager';
 
 // Types de nœuds personnalisés avec types stricts compatibles React Flow v12
 const nodeTypes = {
@@ -193,6 +195,57 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
       project: null,
     });
 
+    // 🔧 FIX: Add validation function for story testing
+    const validateStoryForTest = useCallback(() => {
+      const errors: string[] = [];
+      const warnings: string[] = [];
+
+      // Check for at least one start node
+      const startNodes = nodes.filter((node) => node.data?.nodeType === 'start');
+      if (startNodes.length === 0) {
+        errors.push('❌ At least one start node is required');
+      }
+      if (startNodes.length > 1) {
+        errors.push('❌ Only one start node is allowed');
+      }
+
+      // Check for at least one end node
+      const endNodes = nodes.filter((node) => node.data?.nodeType === 'end');
+      if (endNodes.length === 0) {
+        warnings.push('⚠️ No end nodes found - players may get stuck');
+      }
+
+      // Check that all nodes (except end) have outgoing connections
+      nodes.forEach((node) => {
+        if (node.data?.nodeType !== 'end') {
+          const hasOutgoingConnection = edges.some(
+            (edge) => edge.source === node.id
+          );
+          if (!hasOutgoingConnection && node.data?.nodeType !== 'end') {
+            warnings.push(
+              `⚠️ Node "${node.data?.storyNode?.title || node.id}" has no outgoing connections`
+            );
+          }
+        }
+      });
+
+      // Check that all nodes (except start) have incoming connections
+      nodes.forEach((node) => {
+        if (node.data?.nodeType !== 'start') {
+          const hasIncomingConnection = edges.some(
+            (edge) => edge.target === node.id
+          );
+          if (!hasIncomingConnection) {
+            warnings.push(
+              `⚠️ Node "${node.data?.storyNode?.title || node.id}" is not accessible from start`
+            );
+          }
+        }
+      });
+
+      return { errors, warnings };
+    }, [nodes, edges]);
+
     // Exposer les données via ref avec types stricts
     useImperativeHandle(
       ref,
@@ -206,7 +259,7 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
         },
       }),
       [nodes, edges, currentProject]
-    ); // 🔧 FIX: Ajout des dépendances
+    );
 
     // 🔧 FIX: Sauvegarder automatiquement dans localStorage avec gestion d'erreurs typée
     const autoSave = useCallback((): void => {
@@ -1101,107 +1154,135 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
       [setNodes, setEdges, showNotification]
     );
 
-    // 🔧 FIX: FONCTION DE TEST CORRIGÉE avec gestion d'erreurs améliorée
+    // 🔧 FIX: NOUVELLE FONCTION DE TEST CORRIGÉE avec dynamicStoryManager
     const testStory = useCallback((): void => {
       try {
         if (nodes.length === 0) {
-          alert("❌ Aucun nœud à tester ! Créez d'abord votre histoire.");
+          alert("❌ No nodes to test! Create your story first.");
           return;
         }
 
-        const startNodes = nodes.filter((n) => n.data.nodeType === 'start');
-        if (startNodes.length === 0) {
-          alert(
-            '❌ Aucun nœud de début trouvé ! Ajoutez un nœud de début pour tester.'
-          );
-          return;
-        }
-
-        console.log("🧪 Début du test de l'histoire...");
-
-        // Convertir le graphe React Flow vers le format du jeu
-        const conversionResult = GraphToStoryConverter.convert(nodes, edges);
-
-        // Vérifier s'il y a des erreurs critiques
-        if (conversionResult.errors.length > 0) {
+        // Validation avec la fonction locale
+        const validation = validateStoryForTest();
+        
+        if (validation.errors.length > 0) {
           const errorMessage =
-            "Impossible de tester l'histoire :\n\n" +
-            conversionResult.errors.join('\n');
+            "Cannot test the story:\n\n" +
+            validation.errors.join('\n');
           alert(errorMessage);
           return;
         }
 
-        // Afficher les avertissements s'il y en a
-        if (conversionResult.warnings.length > 0) {
+        // Show warnings but allow testing
+        if (validation.warnings.length > 0) {
           const warningMessage =
-            'Avertissements détectés :\n\n' +
-            conversionResult.warnings.join('\n') +
-            '\n\nVoulez-vous continuer le test ?';
+            'Warnings detected:\n\n' +
+            validation.warnings.join('\n') +
+            '\n\nContinue testing anyway?';
           if (!window.confirm(warningMessage)) {
             return;
           }
         }
 
-        // Générer des statistiques pour le debug
-        const stats = GraphToStoryConverter.generateStats(conversionResult);
-        console.log("📊 Statistiques de l'histoire:", stats);
+        console.log("🧪 Starting story test...");
 
-        // Sérialiser l'histoire pour le transport
-        const storyData = JSON.stringify({
-          story: conversionResult.story,
-          startNodeId: conversionResult.startNodeId,
-          metadata: {
-            generatedAt: new Date().toISOString(),
-            editorVersion: '1.0.0',
-            totalNodes: stats.totalNodes,
-            totalChoices: stats.totalChoices,
-          },
-        });
+        // Convert the current editor state to story format
+        const conversionResult = GraphToStoryConverter.convert(nodes, edges);
 
-        // Option A: Nouvelle fenêtre/onglet (recommandé)
-        const testUrl = new URL('/', window.location.origin);
-        testUrl.searchParams.set('test', 'true');
-        testUrl.searchParams.set('story', encodeURIComponent(storyData));
-
-        const newWindow = window.open(testUrl.toString(), '_blank');
-
-        if (!newWindow) {
-          // Fallback si les popups sont bloquées
-          alert(
-            'Les popups sont bloquées. Copiez ce lien pour tester :\n\n' +
-              testUrl.toString()
-          );
+        // Check for critical errors
+        if (conversionResult.errors.length > 0) {
+          const errorMessage =
+            "Cannot test the story:\n\n" +
+            conversionResult.errors.join('\n');
+          alert(errorMessage);
           return;
         }
 
-        // Message de succès avec statistiques
-        const successMessage =
-          `✅ Test lancé avec succès !\n\n` +
-          `📊 Statistiques :\n` +
-          `• ${stats.totalNodes} nœuds\n` +
-          `• ${stats.totalChoices} choix\n` +
-          `• ${stats.averageChoicesPerNode} choix/nœud en moyenne\n` +
-          `• Profondeur max: ${stats.maxDepth}\n` +
-          `• ${stats.endNodes} fin(s)`;
-
-        console.log(successMessage);
-
-        // 🔧 FIX: Notification discrète au lieu d'alert
-        if ('Notification' in window && Notification.permission === 'granted') {
-          new Notification("Test d'histoire lancé", {
-            body: `${stats.totalNodes} nœuds, ${stats.totalChoices} choix`,
-            icon: '/favicon.ico',
-          });
-        } else if (process.env.NODE_ENV === 'development') {
-          console.log('📊 Test lancé:', stats);
+        // Show warnings but allow testing
+        if (conversionResult.warnings.length > 0) {
+          const warningMessage =
+            'Warnings detected:\n\n' +
+            conversionResult.warnings.join('\n') +
+            '\n\nContinue testing anyway?';
+          if (!window.confirm(warningMessage)) {
+            return;
+          }
         }
+
+        // 🔧 FIX: Create a temporary story in the dynamic manager for testing
+        const createTestStory = async () => {
+          try {
+            // Create a temporary test story
+            const testStoryProject = {
+              metadata: {
+                id: 'test-story-' + Date.now(),
+                title: (currentProject?.name || 'Test Story') + ' (Test)',
+                description: 'Test version of story from editor',
+                author: 'Editor User',
+                version: '1.0.0',
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+                estimatedPlayTime: '5-15 min',
+                difficulty: 'Medium' as const,
+                tags: ['test', 'editor'],
+                rating: 0,
+                totalNodes: conversionResult.story.length,
+                featured: false,
+                published: true // Temporarily publish for testing
+              },
+              story: conversionResult.story,
+              startNodeId: conversionResult.startNodeId
+            };
+
+            console.log('🔧 Creating test story:', testStoryProject.metadata.title);
+
+            // Save the test story
+            await dynamicStoryManager.saveStory(testStoryProject);
+
+            console.log('✅ Test story saved, opening...');
+
+            // Open the test story in a new tab/window
+            const testUrl = new URL('/', window.location.origin);
+            testUrl.searchParams.set('testStory', testStoryProject.metadata.id);
+
+            const newWindow = window.open(testUrl.toString(), '_blank');
+
+            if (!newWindow) {
+              // Fallback if popups are blocked
+              alert(
+                'Popups are blocked. The test story has been created.\nGo to the main page and look for: "' + 
+                testStoryProject.metadata.title + '"'
+              );
+              return;
+            }
+
+            console.log('✅ Test story created and launched:', testStoryProject.metadata.id);
+
+            // Clean up the test story after a delay
+            setTimeout(async () => {
+              try {
+                await dynamicStoryManager.deleteStory(testStoryProject.metadata.id);
+                console.log('🧹 Test story cleaned up');
+              } catch (error) {
+                console.warn('⚠️ Failed to clean up test story:', error);
+              }
+            }, 5 * 60 * 1000); // Clean up after 5 minutes
+
+          } catch (error) {
+            console.error('❌ Failed to create test story:', error);
+            alert('Failed to create test story. Please try publishing instead.');
+          }
+        };
+
+        // Execute the test story creation
+        createTestStory();
+
       } catch (error: unknown) {
-        console.error('❌ Erreur lors du test:', error);
-        const errorMessage =
-          error instanceof Error ? error.message : 'Erreur inconnue';
-        alert(`Erreur lors du test de l'histoire :\n\n${errorMessage}`);
+        console.error('❌ Test error:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        alert(`Test failed: ${errorMessage}`);
       }
-    }, [nodes, edges]);
+    }, [nodes, edges, currentProject, validateStoryForTest]);
 
     // Auto-arrangement intelligent des nœuds - Types stricts
     const autoArrange = useCallback((): void => {
@@ -1497,3 +1578,4 @@ export function StoryEditor(props: StoryEditorProps): React.ReactElement {
 }
 
 export { StoryEditorContent };
+        

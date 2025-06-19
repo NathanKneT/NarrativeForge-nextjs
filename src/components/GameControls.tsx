@@ -1,3 +1,4 @@
+// src/components/GameControls.tsx
 'use client';
 
 import React from 'react';
@@ -28,13 +29,13 @@ export const GameControls: React.FC<GameControlsProps> = ({
   onToggleMute,
 }) => {
   const controls = [
-    { icon: Save, label: 'Sauvegarder', action: onSave },
-    { icon: FolderOpen, label: 'Charger', action: onLoad }, // Maintenant utilisé
-    { icon: RotateCcw, label: 'Recommencer', action: onRestart },
-    { icon: Settings, label: 'Paramètres', action: onSettings },
+    { icon: Save, label: 'Save Game', action: onSave },
+    { icon: FolderOpen, label: 'Load Game', action: onLoad },
+    { icon: RotateCcw, label: 'Restart', action: onRestart },
+    { icon: Settings, label: 'Settings', action: onSettings },
     {
       icon: isMuted ? VolumeX : Volume2,
-      label: isMuted ? 'Activer le son' : 'Couper le son',
+      label: isMuted ? 'Unmute' : 'Mute',
       action: onToggleMute,
     },
   ];
@@ -45,9 +46,9 @@ export const GameControls: React.FC<GameControlsProps> = ({
         <button
           key={label}
           onClick={action}
-          className="rounded-lg bg-asylum-medium p-3 
-                   text-white transition-colors duration-200 hover:bg-asylum-accent
-                   focus:outline-none focus:ring-2 focus:ring-asylum-accent"
+          className="rounded-lg bg-gray-700 p-3 
+                   text-white transition-colors duration-200 hover:bg-blue-600
+                   focus:outline-none focus:ring-2 focus:ring-blue-500"
           title={label}
         >
           <Icon size={20} />
