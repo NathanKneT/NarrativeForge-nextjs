@@ -5,37 +5,28 @@ import { StoryViewer } from '@/components/StoryViewer';
 import { ProgressTracker } from '@/components/ProgressTracker';
 import { GameControls } from '@/components/GameControls';
 import { SaveLoadModal } from '@/components/SaveLoadModal';
-import { Navigation } from '@/components/Navigation';
 import { useGameStore } from '@/stores/gameStore';
 import { StoryLoader } from '@/lib/storyLoader';
-import { migrateStoryData } from '@/lib/storyMigration';
+import { dynamicStoryManager, StoryProject } from '@/lib/dynamicStoryManager';
 import { SaveData, StoryNode } from '@/types/story';
+import { ArrowLeft } from 'lucide-react';
 
-// Import du text.json par défaut
-import defaultStoryData from '@/data/text.json';
-
-interface TestStoryData {
-  story: StoryNode[];
-  startNodeId: string;
-  metadata: {
-    generatedAt: string;
-    editorVersion: string;
-    totalNodes: number;
-    totalChoices: number;
-  };
+interface ClientOnlyGameProps {
+  storyId: string;
+  onBack?: () => void;
 }
 
-export function ClientOnlyGame() {
+export function ClientOnlyGame({ storyId, onBack }: ClientOnlyGameProps) {
   const [storyLoader, setStoryLoader] = useState<StoryLoader | null>(null);
+  const [storyProject, setStoryProject] = useState<StoryProject | null>(null);
   const [isMuted, setIsMuted] = useState(false);
   const [hasHydrated, setHasHydrated] = useState(false);
   const [isClient, setIsClient] = useState(false);
   const [saveModalOpen, setSaveModalOpen] = useState(false);
   const [loadModalOpen, setLoadModalOpen] = useState(false);
-  const [isTestMode, setIsTestMode] = useState(false);
-  const [testStoryInfo, setTestStoryInfo] = useState<
-    TestStoryData['metadata'] | null
-  >(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadingMessage, setLoadingMessage] = useState('Initializing...');
+  const [error, setError] = useState<string | null>(null);
 
   const {
     gameState,
@@ -46,355 +37,220 @@ export function ClientOnlyGame() {
     loadGame,
     restartGame,
     setCurrentNode,
-    setError,
+    setError: setGameError,
     clearCorruptedState,
   } = useGameStore();
 
-  // S'assurer qu'on est côté client
+  // Ensure we're on the client side
   useEffect(() => {
     setIsClient(true);
     setHasHydrated(true);
   }, []);
 
-  // ✅ FIX: Fonction pour vérifier si l'état du jeu est compatible avec l'histoire
-  const isGameStateValid = useCallback(
-    (gameState: any, storyLoader: StoryLoader | null): boolean => {
-      if (!gameState || !storyLoader) return false;
+  // Load story data from dynamic story manager
+  useEffect(() => {
+    if (!hasHydrated || !isClient || !storyId) return;
 
-      // Vérifier que le nœud actuel existe dans l'histoire
-      const currentNodeExists = storyLoader.getNode(gameState.currentNodeId);
-      if (!currentNodeExists) {
-        console.warn(
-          "⚠️ Nœud actuel introuvable dans l'histoire:",
-          gameState.currentNodeId
-        );
-        return false;
-      }
+    const loadStoryData = async () => {
+      try {
+        setLoadingMessage('Loading story...');
+        setError(null);
+        
+        const loadedStoryProject = await dynamicStoryManager.getStory(storyId);
+        
+        if (!loadedStoryProject) {
+          throw new Error(`Story not found: ${storyId}`);
+        }
 
-      // Vérifier que tous les nœuds visités existent
-      if (gameState.visitedNodes) {
-        for (const nodeId of gameState.visitedNodes) {
-          if (!storyLoader.getNode(nodeId)) {
-            console.warn('⚠️ Nœud visité introuvable:', nodeId);
-            return false;
+        setLoadingMessage('Validating story...');
+        
+        // Validate the story structure
+        if (!loadedStoryProject.story || loadedStoryProject.story.length === 0) {
+          throw new Error('Story contains no content');
+        }
+
+        if (!loadedStoryProject.startNodeId) {
+          throw new Error('Story has no starting point');
+        }
+
+        setLoadingMessage('Initializing game engine...');
+        
+        // Create story loader
+        const loader = new StoryLoader(loadedStoryProject.story);
+        
+        // Validate story integrity
+        const validation = loader.validateStory();
+        if (!validation.isValid) {
+          console.warn('Story validation warnings:', validation.warnings);
+          if (validation.errors.length > 0) {
+            throw new Error('Story validation failed: ' + validation.errors.join(', '));
           }
         }
-      }
 
-      return true;
-    },
-    []
-  );
-
-  // Détecter et charger une histoire de test depuis l'URL
-  useEffect(() => {
-    if (!hasHydrated || !isClient) return;
-
-    const urlParams = new URLSearchParams(window.location.search);
-    const isTest = urlParams.get('test') === 'true';
-    const storyParam = urlParams.get('story');
-
-    if (isTest && storyParam) {
-      try {
-        console.log("🧪 Mode test détecté, chargement de l'histoire...");
-
-        const testStoryData: TestStoryData = JSON.parse(
-          decodeURIComponent(storyParam)
-        );
-
-        // Validation de base des données de test
-        if (!testStoryData.story || !Array.isArray(testStoryData.story)) {
-          throw new Error("Format d'histoire de test invalide");
-        }
-
-        if (!testStoryData.startNodeId) {
-          throw new Error("Nœud de départ manquant dans l'histoire de test");
-        }
-
-        console.log('✅ Histoire de test validée:', {
-          nodes: testStoryData.story.length,
-          startNode: testStoryData.startNodeId,
-          metadata: testStoryData.metadata,
-        });
-
-        const loader = new StoryLoader(testStoryData.story);
         setStoryLoader(loader);
-        setIsTestMode(true);
-        setTestStoryInfo(testStoryData.metadata);
+        setStoryProject(loadedStoryProject);
 
-        // ✅ FIX: Toujours réinitialiser en mode test pour éviter les conflits
-        clearCorruptedState();
-        initializeGame(testStoryData.startNodeId);
-
-        // Nettoyer l'URL pour éviter la pollution
-        const newUrl = new URL(window.location.href);
-        newUrl.searchParams.delete('test');
-        newUrl.searchParams.delete('story');
-        window.history.replaceState({}, '', newUrl.toString());
-
-        return; // Sortir early pour éviter le chargement de l'histoire par défaut
-      } catch (error) {
-        console.error(
-          "❌ Erreur lors du chargement de l'histoire de test:",
-          error
-        );
-        setError("Impossible de charger l'histoire de test");
-        // Continuer avec l'histoire par défaut en cas d'erreur
-      }
-    }
-
-    // Chargement de l'histoire par défaut
-    loadDefaultStory();
-  }, [hasHydrated, isClient, initializeGame, setError, clearCorruptedState]);
-
-  // Fonction pour charger l'histoire par défaut
-  const loadDefaultStory = useCallback(() => {
-    try {
-      console.log("🔄 Chargement de l'histoire par défaut...");
-
-      // Migrer les anciennes données vers le nouveau format
-      const migratedData = migrateStoryData(defaultStoryData);
-      const loader = new StoryLoader(migratedData);
-
-      // Valider l'intégrité de l'histoire
-      const validation = loader.validateStory();
-      if (!validation.isValid) {
-        console.warn(
-          "Avertissements de validation de l'histoire:",
-          validation.errors
-        );
-        // Ne pas arrêter pour des erreurs mineures, juste les logger
-        if (
-          validation.errors.some(
-            (error) =>
-              error.includes('introuvable') || error.includes('manquant')
-          )
-        ) {
-          throw new Error(
-            'Erreurs critiques de validation : ' + validation.errors.join(', ')
-          );
+        // Check if existing game state is valid for this story
+        if (gameState && !isGameStateValid(gameState, loader)) {
+          console.log('🧹 Game state invalid for this story, resetting...');
+          clearCorruptedState();
         }
-      }
 
-      if (validation.warnings.length > 0) {
-        console.warn('Avertissements de validation:', validation.warnings);
-      }
+        // Initialize game if needed
+        if (!gameState || !isGameStateValid(gameState, loader)) {
+          console.log('🚀 Initializing new game with node:', loadedStoryProject.startNodeId);
+          initializeGame(loadedStoryProject.startNodeId);
+        }
 
-      setStoryLoader(loader);
-      setIsTestMode(false);
-      setTestStoryInfo(null);
-
-      // ✅ FIX: Vérifier si l'état du jeu existant est compatible
-      if (gameState && !isGameStateValid(gameState, loader)) {
-        console.log(
-          "🧹 État du jeu incompatible avec l'histoire, réinitialisation..."
-        );
-        clearCorruptedState();
+        setIsLoading(false);
+      } catch (error) {
+        console.error('❌ Failed to load story:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Failed to load story';
+        setError(errorMessage);
+        setGameError(errorMessage);
+        setIsLoading(false);
       }
+    };
 
-      // Initialiser le jeu si pas encore fait OU si l'état était corrompu
-      if (!gameState || !isGameStateValid(gameState, loader)) {
-        const startNodeId = loader.getStartNodeId();
-        console.log('🚀 Initialisation avec le nœud:', startNodeId);
-        initializeGame(startNodeId);
-      }
-    } catch (error) {
-      console.error(
-        "❌ Erreur lors du chargement de l'histoire par défaut:",
-        error
-      );
-      setError("Impossible de charger l'histoire");
+    loadStoryData();
+  }, [hasHydrated, isClient, storyId, gameState, initializeGame, setGameError, clearCorruptedState]);
+
+  // Validate game state against current story
+  const isGameStateValid = useCallback((gameState: any, storyLoader: StoryLoader | null): boolean => {
+    if (!gameState || !storyLoader) return false;
+
+    const currentNodeExists = storyLoader.getNode(gameState.currentNodeId);
+    if (!currentNodeExists) {
+      console.warn('⚠️ Current node not found in story:', gameState.currentNodeId);
+      return false;
     }
-  }, [
-    gameState,
-    initializeGame,
-    setError,
-    isGameStateValid,
-    clearCorruptedState,
-  ]);
 
-  // ✅ FIX: Charger le nœud actuel avec gestion des erreurs et nettoyage automatique
+    return true;
+  }, []);
+
+  // Load current node
   useEffect(() => {
-    if (storyLoader && gameState && hasHydrated && isClient) {
-      // Vérifier si le nœud actuel est déjà le bon
+    if (storyLoader && gameState && hasHydrated && isClient && !isLoading) {
       if (currentNode?.id === gameState.currentNodeId) {
         return;
       }
 
       const node = storyLoader.getNode(gameState.currentNodeId);
       if (node) {
-        console.log('📖 Chargement du nœud:', node.id, node.title);
+        console.log('📖 Loading node:', node.id, node.title);
         setCurrentNode(node);
       } else {
-        console.error('❌ Nœud introuvable:', gameState.currentNodeId);
-
-        // ✅ FIX: Auto-nettoyage de l'état corrompu
-        console.log(
-          "🧹 Détection d'un état corrompu, nettoyage automatique..."
-        );
-        clearCorruptedState();
-
-        // Recharger l'histoire par défaut avec un petit délai
-        setTimeout(() => {
-          loadDefaultStory();
-        }, 100);
-
-        return;
+        console.error('❌ Node not found:', gameState.currentNodeId);
+        setError('Story node not found');
+        setGameError('Story node not found');
       }
     }
-  }, [
-    storyLoader,
-    gameState?.currentNodeId,
-    hasHydrated,
-    isClient,
-    setCurrentNode,
-    setError,
-    currentNode?.id,
-    clearCorruptedState,
-    loadDefaultStory,
-  ]);
+  }, [storyLoader, gameState?.currentNodeId, hasHydrated, isClient, isLoading, setCurrentNode, setGameError, currentNode?.id]);
 
-  // Gestionnaire de choix avec gestion du redémarrage
-  const handleChoiceSelect = useCallback(
-    (choiceId: string) => {
-      if (!storyLoader || !gameState) return;
+  // Handle choice selection
+  const handleChoiceSelect = useCallback((choiceId: string) => {
+    if (!storyLoader || !gameState) return;
 
-      console.log('🎮 Choix sélectionné:', choiceId);
-      const nextNode = storyLoader.getNextNode(
-        gameState.currentNodeId,
-        choiceId
-      );
+    console.log('🎮 Choice selected:', choiceId);
+    const nextNode = storyLoader.getNextNode(gameState.currentNodeId, choiceId);
 
-      if (nextNode) {
-        // Navigation normale
-        makeChoice(choiceId, nextNode.id);
+    if (nextNode) {
+      makeChoice(choiceId, nextNode.id);
+    } else {
+      // Check for restart
+      const currentNode = storyLoader.getNode(gameState.currentNodeId);
+      const choice = currentNode?.choices.find(c => c.id === choiceId);
+
+      if (choice && choice.nextNodeId === '-1') {
+        console.log('🔄 Restarting story...');
+        handleRestart();
       } else {
-        // Vérifier si c'est un redémarrage
-        const currentNode = storyLoader.getNode(gameState.currentNodeId);
-        const choice = currentNode?.choices.find((c) => c.id === choiceId);
-
-        if (choice && choice.nextNodeId === '-1') {
-          console.log("🔄 Redémarrage de l'histoire...");
-          handleRestart();
-        } else {
-          console.error('❌ Impossible de naviguer vers le nœud suivant');
-          setError('Navigation impossible - nœud de destination introuvable');
-        }
+        console.error('❌ Cannot navigate to next node');
+        setError('Navigation failed - destination node not found');
+        setGameError('Navigation failed - destination node not found');
       }
-    },
-    [storyLoader, gameState, makeChoice, setError]
-  );
-
-  // Gestionnaires de contrôles
-  const handleSave = useCallback(() => {
-    if (isTestMode) {
-      alert(
-        "La sauvegarde n'est pas disponible en mode test. Retournez à l'éditeur pour sauvegarder votre projet."
-      );
-      return;
     }
+  }, [storyLoader, gameState, makeChoice, setGameError]);
+
+  // Game control handlers
+  const handleSave = useCallback(() => {
     setSaveModalOpen(true);
-  }, [isTestMode]);
+  }, []);
 
   const handleLoad = useCallback(() => {
-    if (isTestMode) {
-      const shouldContinue = confirm(
-        "Vous êtes en mode test. Charger une sauvegarde quittera ce mode et retournera à l'histoire principale. Continuer ?"
-      );
-      if (!shouldContinue) return;
-
-      // Quitter le mode test et recharger l'histoire par défaut
-      setIsTestMode(false);
-      setTestStoryInfo(null);
-      clearCorruptedState(); // ✅ FIX: Nettoyer l'état avant de recharger
-      loadDefaultStory();
-    }
     setLoadModalOpen(true);
-  }, [isTestMode, loadDefaultStory, clearCorruptedState]);
+  }, []);
 
-  const handleSaveConfirm = useCallback(
-    async (saveName: string) => {
-      try {
-        await saveGame(saveName);
-        setSaveModalOpen(false);
-
-        // Notification améliorée
-        if ('Notification' in window && Notification.permission === 'granted') {
-          new Notification('Partie sauvegardée', {
-            body: `Sauvegarde "${saveName}" créée avec succès`,
-            icon: '/favicon.ico',
-          });
-        } else {
-          alert('Partie sauvegardée !');
-        }
-      } catch (error) {
-        console.error('Erreur de sauvegarde:', error);
-        alert('Erreur lors de la sauvegarde');
+  const handleSaveConfirm = useCallback(async (saveName: string) => {
+    try {
+      await saveGame(saveName);
+      setSaveModalOpen(false);
+      
+      if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification('Game saved successfully!', {
+          body: `Save "${saveName}" created`,
+          icon: '/favicon.ico',
+        });
+      } else {
+        alert('Game saved successfully!');
       }
-    },
-    [saveGame]
-  );
+    } catch (error) {
+      console.error('Save error:', error);
+      alert('Failed to save game');
+    }
+  }, [saveGame]);
 
-  const handleLoadConfirm = useCallback(
-    (saveData: SaveData) => {
-      try {
-        // ✅ FIX: Vérifier la compatibilité de la sauvegarde avec l'histoire actuelle
-        if (storyLoader && !isGameStateValid(saveData.gameState, storyLoader)) {
-          const shouldContinue = confirm(
-            "Cette sauvegarde semble incompatible avec l'histoire actuelle. Cela peut causer des problèmes. Continuer quand même ?"
-          );
-          if (!shouldContinue) return;
-        }
-
-        loadGame(saveData);
-        setLoadModalOpen(false);
-
-        if ('Notification' in window && Notification.permission === 'granted') {
-          new Notification('Partie chargée', {
-            body: `Sauvegarde "${saveData.name}" chargée`,
-            icon: '/favicon.ico',
-          });
-        } else {
-          alert('Partie chargée !');
-        }
-      } catch (error) {
-        console.error('Erreur de chargement:', error);
-        alert('Erreur lors du chargement');
+  const handleLoadConfirm = useCallback((saveData: SaveData) => {
+    try {
+      if (storyLoader && !isGameStateValid(saveData.gameState, storyLoader)) {
+        const shouldContinue = confirm(
+          'This save seems incompatible with the current story. This may cause issues. Continue anyway?'
+        );
+        if (!shouldContinue) return;
       }
-    },
-    [loadGame, storyLoader, isGameStateValid]
-  );
+
+      loadGame(saveData);
+      setLoadModalOpen(false);
+      
+      if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification('Game loaded successfully!', {
+          body: `Save "${saveData.name}" loaded`,
+          icon: '/favicon.ico',
+        });
+      } else {
+        alert('Game loaded successfully!');
+      }
+    } catch (error) {
+      console.error('Load error:', error);
+      alert('Failed to load game');
+    }
+  }, [loadGame, storyLoader, isGameStateValid]);
 
   const handleRestart = useCallback(() => {
-    const confirmMessage = isTestMode
-      ? "Redémarrer l'histoire de test ?"
-      : "Redémarrer l'histoire ?";
+    if (!confirm('Restart the story? You will lose current progress.')) return;
 
-    if (!confirm(confirmMessage)) return;
-
-    console.log('🔄 Redémarrage demandé');
+    console.log('🔄 Restart requested');
     restartGame();
 
-    if (storyLoader) {
-      const startNodeId = storyLoader.getStartNodeId();
-      console.log('🚀 Redémarrage vers le nœud:', startNodeId);
-      initializeGame(startNodeId);
+    if (storyLoader && storyProject) {
+      console.log('🚀 Restarting with node:', storyProject.startNodeId);
+      initializeGame(storyProject.startNodeId);
     }
-  }, [isTestMode, restartGame, storyLoader, initializeGame]);
+  }, [restartGame, storyLoader, storyProject, initializeGame]);
 
   const handleSettings = useCallback(() => {
     const options = [
-      'Paramètres audio',
-      "Paramètres d'affichage",
-      'Nettoyer les données corrompues',
-      'Réinitialiser toutes les données',
-      'À propos',
+      'Audio Settings',
+      'Display Settings',
+      'Clear Corrupted Data',
+      'Reset All Data',
+      'About',
     ];
 
     const choice = prompt(
-      'Paramètres disponibles :\n' +
+      'Available Settings:\n' +
         options.map((opt, i) => `${i + 1}. ${opt}`).join('\n') +
-        '\n\nEntrez le numéro de votre choix :'
+        '\n\nEnter your choice number:'
     );
 
     const optionIndex = parseInt(choice || '') - 1;
@@ -402,71 +258,92 @@ export function ClientOnlyGame() {
     switch (optionIndex) {
       case 0:
         setIsMuted(!isMuted);
-        alert(`Audio ${isMuted ? 'activé' : 'désactivé'}`);
+        alert(`Audio ${isMuted ? 'enabled' : 'disabled'}`);
         break;
       case 1:
-        alert("Paramètres d'affichage à implémenter");
+        alert('Display settings to be implemented');
         break;
       case 2:
-        if (
-          confirm(
-            'Nettoyer les données de jeu corrompues ? Cela supprimera votre progression actuelle mais préservera vos sauvegardes.'
-          )
-        ) {
+        if (confirm('Clean corrupted game data? This will remove your current progress but preserve saves.')) {
           clearCorruptedState();
-          loadDefaultStory();
-          alert('✅ Données nettoyées ! Le jeu redémarre.');
+          if (storyProject) {
+            initializeGame(storyProject.startNodeId);
+          }
+          alert('✅ Data cleaned! Game restarted.');
         }
         break;
       case 3:
-        if (
-          confirm(
-            'Voulez-vous vraiment réinitialiser toutes les données ? Cette action est irréversible.'
-          )
-        ) {
+        if (confirm('Reset all data? This action is irreversible.')) {
           localStorage.clear();
           window.location.reload();
         }
         break;
       case 4:
         alert(
-          `Asylum Interactive Story\nVersion 1.0.0\n\n${isTestMode ? 'Mode Test Actif' : 'Mode Normal'}\n\nDéveloppé avec Next.js, React Flow et TypeScript`
+          `Interactive Story Platform\nVersion 1.0.0\n\n${storyProject ? `Story: ${storyProject.metadata.title}\nBy: ${storyProject.metadata.author}` : 'No story loaded'}\n\nBuilt with Next.js, React Flow and TypeScript`
         );
         break;
       default:
         break;
     }
-  }, [isMuted, clearCorruptedState, loadDefaultStory, isTestMode]);
+  }, [isMuted, clearCorruptedState, storyProject, initializeGame]);
 
-  // Affichage pendant l'hydration et le chargement initial
-  if (!isClient || !hasHydrated) {
+  // Loading screen
+  if (!isClient || !hasHydrated || isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-black">
-        <div className="animate-pulse text-xl text-white">Chargement...</div>
+        <div className="text-center">
+          <div className="mb-4 h-16 w-16 animate-spin rounded-full border-b-2 border-blue-500 border-t-transparent mx-auto"></div>
+          <div className="mb-4 text-xl text-white">{loadingMessage}</div>
+          {storyProject && (
+            <div className="text-sm text-gray-400">
+              Loading: {storyProject.metadata.title}
+            </div>
+          )}
+          {onBack && (
+            <button
+              onClick={onBack}
+              className="mt-4 rounded-lg bg-gray-600 px-4 py-2 text-white transition-colors hover:bg-gray-700"
+            >
+              Back to Menu
+            </button>
+          )}
+        </div>
       </div>
     );
   }
 
-  if (!currentNode || !storyLoader) {
+  // Error state
+  if (error || !currentNode || !storyLoader || !storyProject) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-black">
-        <div className="text-center">
-          <div className="mb-4 text-xl text-white">
-            {isTestMode
-              ? "Initialisation de l'histoire de test..."
-              : "Initialisation de l'histoire..."}
+        <div className="text-center max-w-md">
+          <div className="mb-4 text-6xl text-red-400">⚠️</div>
+          <div className="mb-4 text-xl text-red-400">Failed to load story</div>
+          <div className="mb-4 text-sm text-gray-400">
+            {error || 'Unknown error occurred'}
           </div>
-          {gameState && (
-            <div className="text-sm text-gray-400">
-              Nœud actuel: {gameState.currentNodeId}
+          {storyProject && (
+            <div className="mb-4 text-sm text-gray-500">
+              Story: {storyProject.metadata.title}
             </div>
           )}
-          {testStoryInfo && (
-            <div className="mt-2 text-sm text-blue-400">
-              🧪 Test: {testStoryInfo.totalNodes} nœuds,{' '}
-              {testStoryInfo.totalChoices} choix
-            </div>
-          )}
+          <div className="flex gap-3 justify-center">
+            {onBack && (
+              <button
+                onClick={onBack}
+                className="rounded-lg bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700"
+              >
+                Back to Menu
+              </button>
+            )}
+            <button
+              onClick={() => window.location.reload()}
+              className="rounded-lg bg-gray-600 px-4 py-2 text-white transition-colors hover:bg-gray-700"
+            >
+              Reload
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -474,46 +351,43 @@ export function ClientOnlyGame() {
 
   const totalNodes = storyLoader.getAllNodes().length;
   const visitedNodes = gameState?.visitedNodes.size || 0;
-  const currentProgress = visitedNodes;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-700">
-      <Navigation />
+      {/* Header with back button and story info */}
+      <header className="border-b border-gray-700 bg-gray-800 p-4">
+        <div className="container mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            {onBack && (
+              <button
+                onClick={onBack}
+                className="flex items-center gap-2 rounded-lg bg-gray-600 px-3 py-2 text-white transition-colors hover:bg-gray-700"
+                title="Back to Menu"
+              >
+                <ArrowLeft size={16} />
+                Menu
+              </button>
+            )}
+            <div>
+              <h1 className="text-xl font-bold text-white">{storyProject.metadata.title}</h1>
+              <p className="text-sm text-gray-400">by {storyProject.metadata.author}</p>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-4 text-sm text-gray-400">
+            <span>Difficulty: {storyProject.metadata.difficulty}</span>
+            <span>Est. Time: {storyProject.metadata.estimatedPlayTime}</span>
+            {storyProject.metadata.version && (
+              <span>v{storyProject.metadata.version}</span>
+            )}
+          </div>
+        </div>
+      </header>
 
       <div className="container mx-auto px-4 py-8">
-        <header className="mb-8 text-center">
-          <h1 className="mb-2 text-4xl font-bold text-white">
-            Asylum{' '}
-            {isTestMode && (
-              <span className="text-sm text-blue-400">🧪 MODE TEST</span>
-            )}
-          </h1>
-          <p className="text-gray-300">Histoire Interactive</p>
-
-          {/* Info de test */}
-          {isTestMode && testStoryInfo && (
-            <div className="mx-auto mt-4 max-w-md rounded-lg border border-blue-500/50 bg-blue-900/50 p-3">
-              <div className="text-sm text-blue-200">
-                <div className="mb-1 font-medium">🧪 Histoire de Test</div>
-                <div className="space-y-1 text-xs">
-                  <div>
-                    Générée:{' '}
-                    {new Date(testStoryInfo.generatedAt).toLocaleString()}
-                  </div>
-                  <div>Éditeur v{testStoryInfo.editorVersion}</div>
-                  <div>
-                    {testStoryInfo.totalNodes} nœuds •{' '}
-                    {testStoryInfo.totalChoices} choix
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-        </header>
-
         <div className="mx-auto max-w-4xl">
           <ProgressTracker
-            currentProgress={currentProgress}
+            currentProgress={visitedNodes}
             totalNodes={totalNodes}
             visitedNodes={visitedNodes}
           />
@@ -529,7 +403,7 @@ export function ClientOnlyGame() {
 
           <StoryViewer node={currentNode} onChoiceSelect={handleChoiceSelect} />
 
-          {/* Modales de sauvegarde/chargement */}
+          {/* Save/Load Modals */}
           <SaveLoadModal
             isOpen={saveModalOpen}
             onClose={() => setSaveModalOpen(false)}
@@ -547,37 +421,30 @@ export function ClientOnlyGame() {
             onLoad={handleLoadConfirm}
           />
 
-          {/* Debug info en dev */}
+          {/* Debug info in development */}
           {isClient && process.env.NODE_ENV === 'development' && (
             <div className="mt-8 rounded bg-gray-800 p-4 text-sm text-white">
               <h3 className="mb-2 font-bold">Debug Info:</h3>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p>Mode: {isTestMode ? 'Test' : 'Normal'}</p>
-                  <p>Nœud actuel: {currentNode.id}</p>
-                  <p>Nœuds visités: {visitedNodes}</p>
-                  <p>Total nœuds: {totalNodes}</p>
+                  <p>Story ID: {storyProject.metadata.id}</p>
+                  <p>Current Node: {currentNode.id}</p>
+                  <p>Visited Nodes: {visitedNodes}</p>
+                  <p>Total Nodes: {totalNodes}</p>
                 </div>
                 <div>
-                  <p>Choix disponibles: {currentNode.choices.length}</p>
-                  <p>Nœud de départ: {storyLoader.getStartNodeId()}</p>
-                  <p>Hydraté: {hasHydrated ? 'Oui' : 'Non'}</p>
-                  <p>Client: {isClient ? 'Oui' : 'Non'}</p>
-                  <p>
-                    État valide:{' '}
-                    {isGameStateValid(gameState, storyLoader) ? 'Oui' : 'Non'}
-                  </p>
+                  <p>Available Choices: {currentNode.choices.length}</p>
+                  <p>Start Node: {storyLoader.getStartNodeId()}</p>
+                  <p>Hydrated: {hasHydrated ? 'Yes' : 'No'}</p>
+                  <p>Client: {isClient ? 'Yes' : 'No'}</p>
                 </div>
               </div>
-              {testStoryInfo && (
-                <div className="mt-2 border-t border-gray-600 pt-2">
-                  <p className="text-blue-400">Test Info:</p>
-                  <p className="text-xs">Généré: {testStoryInfo.generatedAt}</p>
-                  <p className="text-xs">
-                    Version: {testStoryInfo.editorVersion}
-                  </p>
-                </div>
-              )}
+              <div className="mt-2 border-t border-gray-600 pt-2">
+                <p className="text-blue-400">Story Metadata:</p>
+                <p className="text-xs">Created: {new Date(storyProject.metadata.createdAt).toLocaleDateString()}</p>
+                <p className="text-xs">Updated: {new Date(storyProject.metadata.updatedAt).toLocaleDateString()}</p>
+                <p className="text-xs">Tags: {storyProject.metadata.tags.join(', ') || 'None'}</p>
+              </div>
             </div>
           )}
         </div>

@@ -14,8 +14,12 @@ import {
   Square,
   Shuffle,
   Home,
+  Upload,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import { StoryProject } from '@/types/editor';
+import { dynamicStoryManager } from '@/lib/dynamicStoryManager';
 
 interface EditorToolbarProps {
   onCreateNode: (
@@ -47,28 +51,29 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
 }) => {
   const [showNodeMenu, setShowNodeMenu] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
-  const [showTestError, setShowTestError] = useState(false);
+  const [showPublishMenu, setShowPublishMenu] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
 
-  // Validation pour le test
+  // Validation for testing
   const validateStoryForTest = () => {
     const errors: string[] = [];
 
-    // Vérifier qu'il y a au moins un nœud de début
+    // Check for at least one start node
     const startNodes = nodes.filter((node) => node.data?.nodeType === 'start');
     if (startNodes.length === 0) {
-      errors.push('Il faut au moins un nœud de début');
+      errors.push('At least one start node is required');
     }
     if (startNodes.length > 1) {
-      errors.push("Il ne peut y avoir qu'un seul nœud de début");
+      errors.push('Only one start node is allowed');
     }
 
-    // Vérifier qu'il y a au moins un nœud de fin
+    // Check for at least one end node
     const endNodes = nodes.filter((node) => node.data?.nodeType === 'end');
     if (endNodes.length === 0) {
-      errors.push('Il faut au moins un nœud de fin');
+      errors.push('At least one end node is required');
     }
 
-    // Vérifier que tous les nœuds (sauf fin) ont des connexions sortantes
+    // Check that all nodes (except end) have outgoing connections
     nodes.forEach((node) => {
       if (node.data?.nodeType !== 'end') {
         const hasOutgoingConnection = edges.some(
@@ -76,13 +81,13 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
         );
         if (!hasOutgoingConnection) {
           errors.push(
-            `Le nœud "${node.data?.storyNode?.title || node.id}" n'a pas de connexion sortante`
+            `Node "${node.data?.storyNode?.title || node.id}" has no outgoing connections`
           );
         }
       }
     });
 
-    // Vérifier que tous les nœuds (sauf début) ont des connexions entrantes
+    // Check that all nodes (except start) have incoming connections
     nodes.forEach((node) => {
       if (node.data?.nodeType !== 'start') {
         const hasIncomingConnection = edges.some(
@@ -90,7 +95,7 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
         );
         if (!hasIncomingConnection) {
           errors.push(
-            `Le nœud "${node.data?.storyNode?.title || node.id}" n'est pas accessible`
+            `Node "${node.data?.storyNode?.title || node.id}" is not accessible`
           );
         }
       }
@@ -103,45 +108,110 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
     const errors = validateStoryForTest();
 
     if (errors.length > 0) {
-      // Afficher les erreurs
       const errorMessage =
-        "Impossible de tester l'histoire :\n\n" + errors.join('\n');
+        "Cannot test the story:\n\n" + errors.join('\n');
       alert(errorMessage);
       return;
     }
 
-    // Si pas d'erreurs, lancer le test
+    // If no errors, launch the test
     onTestStory();
+  };
+
+  const handlePublishStory = async () => {
+    if (!currentProject || nodes.length === 0) {
+      alert('❌ No project to publish! Create and save a story first.');
+      return;
+    }
+
+    const errors = validateStoryForTest();
+    if (errors.length > 0) {
+      const shouldContinue = confirm(
+        "Story has validation issues:\n\n" + 
+        errors.join('\n') + 
+        "\n\nPublish anyway? Players may encounter issues."
+      );
+      if (!shouldContinue) return;
+    }
+
+    setIsPublishing(true);
+    try {
+      // Create story from current editor state
+      const storyId = await dynamicStoryManager.createStoryFromEditor(
+        currentProject.name,
+        currentProject.description,
+        currentProject.metadata.author || 'Unknown Author',
+        nodes,
+        edges
+      );
+
+      // Publish the story
+      await dynamicStoryManager.toggleStoryPublication(storyId);
+
+      alert(`✅ Story "${currentProject.name}" published successfully!\nStory ID: ${storyId}`);
+      setShowPublishMenu(false);
+    } catch (error) {
+      console.error('Publish failed:', error);
+      alert('❌ Failed to publish story. Please try again.');
+    } finally {
+      setIsPublishing(false);
+    }
+  };
+
+  const handleSaveAndPublish = async () => {
+    try {
+      // First save the project
+      onSaveProject();
+      
+      // Then publish
+      await handlePublishStory();
+    } catch (error) {
+      console.error('Save and publish failed:', error);
+      alert('❌ Failed to save and publish story.');
+    }
   };
 
   const nodeTypes = [
     {
       type: 'start' as const,
-      label: 'Début',
+      label: 'Start',
       icon: Circle,
       color: 'text-green-400',
     },
     {
       type: 'story' as const,
-      label: 'Scène',
+      label: 'Scene',
       icon: FileText,
       color: 'text-blue-400',
     },
-    { type: 'end' as const, label: 'Fin', icon: Square, color: 'text-red-400' },
+    { 
+      type: 'end' as const, 
+      label: 'End', 
+      icon: Square, 
+      color: 'text-red-400' 
+    },
   ];
 
   const exportFormats = [
     {
       format: 'asylum-json',
       label: 'Asylum JSON',
-      description: 'Compatible avec votre jeu',
+      description: 'Compatible with the game platform',
     },
-    { format: 'json', label: 'JSON Standard', description: 'Format générique' },
-    { format: 'twine', label: 'Twine', description: 'Compatible Twine' },
+    { 
+      format: 'json', 
+      label: 'Standard JSON', 
+      description: 'Generic format' 
+    },
+    { 
+      format: 'twine', 
+      label: 'Twine', 
+      description: 'Twine compatible format' 
+    },
   ];
 
   const handleCreateNode = (type: 'start' | 'story' | 'end') => {
-    // Créer le nœud au centre de la vue
+    // Create node at center of view
     onCreateNode(type, {
       x: Math.random() * 300 + 200,
       y: Math.random() * 200 + 100,
@@ -163,10 +233,10 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
           <Link
             href="/"
             className="flex items-center gap-2 rounded-lg bg-gray-600 px-3 py-2 text-white transition-colors hover:bg-gray-700"
-            title="Retour au jeu"
+            title="Back to Stories"
           >
             <Home size={16} />
-            Jeu
+            Stories
           </Link>
 
           <div className="h-6 w-px bg-gray-600" />
@@ -186,28 +256,28 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
             <button
               onClick={onNewProject}
               className="flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-white transition-colors hover:bg-blue-700"
-              title="Nouveau projet"
+              title="New project"
             >
               <Plus size={16} />
-              Nouveau
+              New
             </button>
 
             <button
               onClick={onSaveProject}
               className="flex items-center gap-2 rounded-lg bg-green-600 px-3 py-2 text-white transition-colors hover:bg-green-700"
-              title="Sauvegarder"
+              title="Save"
             >
               <Save size={16} />
-              Sauvegarder
+              Save
             </button>
 
             <button
               onClick={onLoadProject}
               className="flex items-center gap-2 rounded-lg bg-gray-600 px-3 py-2 text-white transition-colors hover:bg-gray-700"
-              title="Charger"
+              title="Load"
             >
               <FolderOpen size={16} />
-              Charger
+              Load
             </button>
           </div>
         </div>
@@ -220,7 +290,7 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
               className="flex items-center gap-2 rounded-lg bg-purple-600 px-4 py-2 text-white transition-colors hover:bg-purple-700"
             >
               <Plus size={16} />
-              Ajouter Nœud
+              Add Node
             </button>
 
             {showNodeMenu && (
@@ -235,9 +305,9 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
                     <div>
                       <div className="font-medium">{label}</div>
                       <div className="text-xs text-gray-400">
-                        {type === 'start' && "Point de départ de l'histoire"}
-                        {type === 'story' && 'Scène narrative avec choix'}
-                        {type === 'end' && "Fin de l'histoire"}
+                        {type === 'start' && 'Story beginning'}
+                        {type === 'story' && 'Narrative scene with choices'}
+                        {type === 'end' && 'Story conclusion'}
                       </div>
                     </div>
                   </button>
@@ -249,22 +319,56 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
           <button
             onClick={onAutoArrange}
             className="flex items-center gap-2 rounded-lg bg-gray-600 px-3 py-2 text-white transition-colors hover:bg-gray-700"
-            title="Auto-arrangement"
+            title="Auto-arrange"
           >
             <Shuffle size={16} />
-            Arranger
+            Arrange
           </button>
         </div>
 
         {/* Right Section - Export & Tools */}
         <div className="flex items-center gap-2">
+          {/* Publish Menu */}
+          <div className="relative">
+            <button
+              onClick={() => setShowPublishMenu(!showPublishMenu)}
+              className="flex items-center gap-2 rounded-lg bg-green-600 px-3 py-2 text-white transition-colors hover:bg-green-700"
+              disabled={isPublishing}
+            >
+              <Eye size={16} />
+              {isPublishing ? 'Publishing...' : 'Publish'}
+            </button>
+
+            {showPublishMenu && (
+              <div className="absolute right-0 top-full z-10 mt-2 min-w-[250px] rounded-lg bg-gray-700 p-2 shadow-xl">
+                <button
+                  onClick={handlePublishStory}
+                  disabled={isPublishing}
+                  className="flex w-full flex-col items-start rounded px-3 py-2 text-left text-white transition-colors hover:bg-gray-600 disabled:opacity-50"
+                >
+                  <div className="font-medium">Publish Story</div>
+                  <div className="text-xs text-gray-400">Make available to players</div>
+                </button>
+                <button
+                  onClick={handleSaveAndPublish}
+                  disabled={isPublishing}
+                  className="flex w-full flex-col items-start rounded px-3 py-2 text-left text-white transition-colors hover:bg-gray-600 disabled:opacity-50"
+                >
+                  <div className="font-medium">Save & Publish</div>
+                  <div className="text-xs text-gray-400">Save project then publish</div>
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Export Menu */}
           <div className="relative">
             <button
               onClick={() => setShowExportMenu(!showExportMenu)}
               className="flex items-center gap-2 rounded-lg bg-orange-600 px-3 py-2 text-white transition-colors hover:bg-orange-700"
             >
               <Download size={16} />
-              Exporter
+              Export
             </button>
 
             {showExportMenu && (
@@ -288,15 +392,15 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
           <button
             onClick={handleTestStory}
             className="flex items-center gap-2 rounded-lg bg-green-600 px-3 py-2 text-white transition-colors hover:bg-green-700"
-            title="Tester l'histoire"
+            title="Test the story"
           >
             <Play size={16} />
-            Tester
+            Test
           </button>
 
           <button
             className="flex items-center gap-2 rounded-lg bg-gray-600 px-3 py-2 text-white transition-colors hover:bg-gray-700"
-            title="Paramètres"
+            title="Settings"
           >
             <Settings size={16} />
           </button>
@@ -307,12 +411,14 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
       {currentProject && (
         <div className="mt-3 flex items-center gap-6 text-sm text-gray-400">
           <span>
-            Créé: {currentProject.metadata.createdAt.toLocaleDateString()}
+            Created: {currentProject.metadata.createdAt.toLocaleDateString()}
           </span>
           <span>
-            Modifié: {currentProject.metadata.updatedAt.toLocaleDateString()}
+            Modified: {currentProject.metadata.updatedAt.toLocaleDateString()}
           </span>
           <span>Version: {currentProject.metadata.version}</span>
+          <span>Nodes: {nodes.length}</span>
+          <span>Connections: {edges.length}</span>
         </div>
       )}
     </div>
