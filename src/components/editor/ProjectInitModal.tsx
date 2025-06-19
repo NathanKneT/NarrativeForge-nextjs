@@ -9,8 +9,8 @@ interface ProjectInitModalProps {
   isOpen: boolean;
   onCreateNew: (projectName: string, description: string) => void;
   onLoadExisting: () => void;
-  onClose?: () => void; // Optionnel car on ne veut pas toujours permettre de fermer
-  allowClose?: boolean; // Permettre de fermer sans action
+  onClose?: () => void; // Optional because we don't always want to allow closing
+  allowClose?: boolean; // Allow closing without action
 }
 
 export const ProjectInitModal: React.FC<ProjectInitModalProps> = ({
@@ -25,7 +25,7 @@ export const ProjectInitModal: React.FC<ProjectInitModalProps> = ({
   const [step, setStep] = useState<'choice' | 'create'>('choice');
   const [isCreating, setIsCreating] = useState(false);
 
-  // Réinitialiser le state quand la modal s'ouvre
+  // Reset state when modal opens
   useEffect(() => {
     if (isOpen) {
       setProjectName('');
@@ -41,7 +41,7 @@ export const ProjectInitModal: React.FC<ProjectInitModalProps> = ({
 
   const handleConfirmCreate = async () => {
     if (!projectName.trim()) {
-      alert('❌ Le nom du projet est obligatoire !');
+      alert('❌ Project name is required!');
       return;
     }
 
@@ -49,10 +49,10 @@ export const ProjectInitModal: React.FC<ProjectInitModalProps> = ({
 
     try {
       await onCreateNew(projectName.trim(), description.trim());
-      console.log('✅ Projet créé:', projectName);
+      console.log('✅ Project created:', projectName);
     } catch (error) {
-      console.error('❌ Erreur création projet:', error);
-      alert('Erreur lors de la création du projet');
+      console.error('❌ Project creation error:', error);
+      alert('Error creating project');
     } finally {
       setIsCreating(false);
     }
@@ -99,12 +99,12 @@ export const ProjectInitModal: React.FC<ProjectInitModalProps> = ({
               </div>
               <div>
                 <h2 className="text-xl font-bold text-white">
-                  {step === 'choice' ? "Éditeur d'Histoire" : 'Nouveau Projet'}
+                  {step === 'choice' ? "Story Editor" : 'New Project'}
                 </h2>
                 <p className="text-sm text-gray-400">
                   {step === 'choice'
-                    ? 'Créez ou chargez un projet'
-                    : 'Donnez un nom à votre histoire'}
+                    ? 'Create or load a project'
+                    : 'Give your story a name'}
                 </p>
               </div>
             </div>
@@ -112,21 +112,21 @@ export const ProjectInitModal: React.FC<ProjectInitModalProps> = ({
               <button
                 onClick={onClose}
                 className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-700 hover:text-white"
-                title="Fermer"
+                title="Close"
               >
                 <X size={20} />
               </button>
             )}
           </div>
 
-          {/* Contenu selon l'étape */}
+          {/* Content according to step */}
           {step === 'choice' ? (
             <div className="space-y-4">
               <p className="mb-6 text-center text-gray-300">
-                Que souhaitez-vous faire ?
+                What would you like to do?
               </p>
 
-              {/* Bouton Créer Nouveau */}
+              {/* Create New Button */}
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
@@ -137,14 +137,14 @@ export const ProjectInitModal: React.FC<ProjectInitModalProps> = ({
                   <Plus size={20} />
                 </div>
                 <div className="flex-1 text-left">
-                  <div className="font-medium">Créer une nouvelle histoire</div>
+                  <div className="font-medium">Create a new story</div>
                   <div className="text-sm text-blue-100">
-                    Commencer un projet vierge
+                    Start a blank project
                   </div>
                 </div>
               </motion.button>
 
-              {/* Bouton Charger Existant */}
+              {/* Load Existing Button */}
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
@@ -155,9 +155,9 @@ export const ProjectInitModal: React.FC<ProjectInitModalProps> = ({
                   <FolderOpen size={20} />
                 </div>
                 <div className="flex-1 text-left">
-                  <div className="font-medium">Charger un projet existant</div>
+                  <div className="font-medium">Load an existing project</div>
                   <div className="text-sm text-gray-300">
-                    Ouvrir une histoire sauvegardée
+                    Open a saved story
                   </div>
                 </div>
               </motion.button>
@@ -170,10 +170,10 @@ export const ProjectInitModal: React.FC<ProjectInitModalProps> = ({
                     className="mt-0.5 flex-shrink-0 text-blue-400"
                   />
                   <div className="text-sm text-blue-200">
-                    <div className="mb-1 font-medium">💡 Conseil</div>
+                    <div className="mb-1 font-medium">💡 Tip</div>
                     <div>
-                      Créez toujours un nouveau projet avant de commencer. Cela
-                      évite les conflits et organise mieux votre travail.
+                      Always create a new project before starting. This
+                      prevents conflicts and better organizes your work.
                     </div>
                   </div>
                 </div>
@@ -181,51 +181,51 @@ export const ProjectInitModal: React.FC<ProjectInitModalProps> = ({
             </div>
           ) : (
             <div className="space-y-4">
-              {/* Nom du projet */}
+              {/* Project Name */}
               <div>
                 <label className="mb-2 block text-sm font-medium text-gray-300">
-                  Nom du projet *
+                  Project Name *
                 </label>
                 <input
                   type="text"
                   value={projectName}
                   onChange={(e) => setProjectName(e.target.value)}
-                  placeholder="Ex: L'Odyssée Mystérieuse"
+                  placeholder="Ex: The Mysterious Odyssey"
                   className="w-full rounded-lg border border-gray-600 bg-gray-700 px-3 py-2 text-white transition-colors focus:border-blue-500 focus:outline-none"
                   autoFocus
                   maxLength={50}
                 />
                 <div className="mt-1 text-xs text-gray-400">
-                  {projectName.length}/50 caractères
+                  {projectName.length}/50 characters
                 </div>
               </div>
 
               {/* Description */}
               <div>
                 <label className="mb-2 block text-sm font-medium text-gray-300">
-                  Description (optionnel)
+                  Description (optional)
                 </label>
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Décrivez brièvement votre histoire..."
+                  placeholder="Briefly describe your story..."
                   className="w-full resize-none rounded-lg border border-gray-600 bg-gray-700 px-3 py-2 text-white transition-colors focus:border-blue-500 focus:outline-none"
                   rows={3}
                   maxLength={200}
                 />
                 <div className="mt-1 text-xs text-gray-400">
-                  {description.length}/200 caractères
+                  {description.length}/200 characters
                 </div>
               </div>
 
-              {/* Boutons */}
+              {/* Buttons */}
               <div className="flex gap-3 pt-4">
                 <button
                   onClick={handleBack}
                   disabled={isCreating}
                   className="flex-1 rounded-lg bg-gray-600 px-4 py-2 text-white transition-colors hover:bg-gray-700 disabled:bg-gray-800"
                 >
-                  Retour
+                  Back
                 </button>
                 <button
                   onClick={handleConfirmCreate}
@@ -235,20 +235,20 @@ export const ProjectInitModal: React.FC<ProjectInitModalProps> = ({
                   {isCreating ? (
                     <>
                       <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
-                      Création...
+                      Creating...
                     </>
                   ) : (
                     <>
                       <Plus size={16} />
-                      Créer le projet
+                      Create Project
                     </>
                   )}
                 </button>
               </div>
 
-              {/* Raccourci clavier */}
+              {/* Keyboard shortcut */}
               <div className="pt-2 text-center text-xs text-gray-500">
-                💡 Appuyez sur Entrée pour créer le projet
+                💡 Press Enter to create project
               </div>
             </div>
           )}

@@ -52,7 +52,7 @@ export const NodeEditor: React.FC<NodeEditorProps> = ({
   const addChoice = () => {
     const newChoice: Choice = {
       id: `choice-${Date.now()}`,
-      text: 'Nouveau choix',
+      text: 'New choice',
       nextNodeId: '',
       conditions: [],
       consequences: [],
@@ -100,9 +100,9 @@ export const NodeEditor: React.FC<NodeEditorProps> = ({
     label: string;
     icon: LucideIcon;
   }> = [
-    { id: 'content', label: 'Contenu', icon: Code },
-    { id: 'choices', label: 'Choix', icon: Plus },
-    { id: 'metadata', label: 'Métadonnées', icon: Eye },
+    { id: 'content', label: 'Content', icon: Code },
+    { id: 'choices', label: 'Choices', icon: Plus },
+    { id: 'metadata', label: 'Metadata', icon: Eye },
   ];
 
   return (
@@ -117,7 +117,7 @@ export const NodeEditor: React.FC<NodeEditorProps> = ({
         {/* Header */}
         <div className="border-b border-gray-700 p-4">
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-lg font-bold text-white">Éditer le nœud</h2>
+            <h2 className="text-lg font-bold text-white">Edit Node</h2>
             <button
               onClick={onClose}
               className="p-2 text-gray-400 transition-colors hover:text-white"
@@ -137,9 +137,9 @@ export const NodeEditor: React.FC<NodeEditorProps> = ({
                     : 'bg-blue-600 text-white'
               }`}
             >
-              {node.data.nodeType === 'start' && 'DÉBUT'}
-              {node.data.nodeType === 'end' && 'FIN'}
-              {node.data.nodeType === 'story' && 'SCÈNE'}
+              {node.data.nodeType === 'start' && 'START'}
+              {node.data.nodeType === 'end' && 'END'}
+              {node.data.nodeType === 'story' && 'SCENE'}
             </span>
             <span className="text-sm text-gray-400">ID: {editedNode.id}</span>
           </div>
@@ -151,23 +151,23 @@ export const NodeEditor: React.FC<NodeEditorProps> = ({
               className="flex flex-1 items-center justify-center gap-2 rounded bg-green-600 px-3 py-2 text-white transition-colors hover:bg-green-700"
             >
               <Save size={16} />
-              Sauvegarder
+              Save
             </button>
             <button
               onClick={onDuplicate}
               className="rounded bg-purple-600 px-3 py-2 text-white transition-colors hover:bg-purple-700"
-              title="Dupliquer"
+              title="Duplicate"
             >
               <Copy size={16} />
             </button>
             <button
               onClick={() => {
-                if (confirm('Êtes-vous sûr de vouloir supprimer ce nœud ?')) {
+                if (confirm('Are you sure you want to delete this node?')) {
                   onDelete();
                 }
               }}
               className="rounded bg-red-600 px-3 py-2 text-white transition-colors hover:bg-red-700"
-              title="Supprimer"
+              title="Delete"
             >
               <Trash2 size={16} />
             </button>
@@ -199,7 +199,7 @@ export const NodeEditor: React.FC<NodeEditorProps> = ({
               {/* Title */}
               <div>
                 <label className="mb-2 block text-sm font-medium text-gray-300">
-                  Titre
+                  Title
                 </label>
                 <input
                   type="text"
@@ -213,14 +213,14 @@ export const NodeEditor: React.FC<NodeEditorProps> = ({
               <div>
                 <div className="mb-2 flex items-center justify-between">
                   <label className="text-sm font-medium text-gray-300">
-                    Contenu
+                    Content
                   </label>
                   <button
                     onClick={() => setPreviewMode(!previewMode)}
                     className="flex items-center gap-1 rounded bg-gray-600 px-2 py-1 text-xs text-white transition-colors hover:bg-gray-500"
                   >
                     <Eye size={12} />
-                    {previewMode ? 'Éditer' : 'Aperçu'}
+                    {previewMode ? 'Edit' : 'Preview'}
                   </button>
                 </div>
 
@@ -234,7 +234,7 @@ export const NodeEditor: React.FC<NodeEditorProps> = ({
                     value={editedNode.content}
                     onChange={(e) => updateNode({ content: e.target.value })}
                     className="min-h-[200px] w-full resize-y rounded border border-gray-600 bg-gray-700 px-3 py-2 text-white focus:border-blue-500 focus:outline-none"
-                    placeholder="Contenu du nœud... (HTML supporté)"
+                    placeholder="Node content... (HTML supported)"
                   />
                 )}
               </div>
@@ -245,23 +245,23 @@ export const NodeEditor: React.FC<NodeEditorProps> = ({
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-medium text-gray-300">
-                  Choix ({editedNode.choices.length})
+                  Choices ({editedNode.choices.length})
                 </h3>
                 <button
                   onClick={addChoice}
                   className="flex items-center gap-1 rounded bg-blue-600 px-3 py-1 text-sm text-white transition-colors hover:bg-blue-700"
                 >
                   <Plus size={14} />
-                  Ajouter
+                  Add
                 </button>
               </div>
 
               {editedNode.choices.length === 0 ? (
                 <div className="py-8 text-center text-gray-400">
                   <Plus size={32} className="mx-auto mb-2 opacity-50" />
-                  <p>Aucun choix défini</p>
+                  <p>No choices defined</p>
                   <p className="text-xs">
-                    Les nœuds de fin nont généralement pas de choix
+                    End nodes typically have no choices
                   </p>
                 </div>
               ) : (
@@ -273,12 +273,12 @@ export const NodeEditor: React.FC<NodeEditorProps> = ({
                     >
                       <div className="mb-2 flex items-center justify-between">
                         <span className="text-xs text-gray-400">
-                          Choix {index + 1}
+                          Choice {index + 1}
                         </span>
                         <button
                           onClick={() => removeChoice(index)}
                           className="p-1 text-red-400 transition-colors hover:text-red-300"
-                          title="Supprimer le choix"
+                          title="Remove choice"
                         >
                           <Minus size={14} />
                         </button>
@@ -290,7 +290,7 @@ export const NodeEditor: React.FC<NodeEditorProps> = ({
                         onChange={(e) =>
                           updateChoice(index, { text: e.target.value })
                         }
-                        placeholder="Texte du choix"
+                        placeholder="Choice text"
                         className="mb-2 w-full rounded border border-gray-500 bg-gray-600 px-2 py-1 text-sm text-white focus:border-blue-500 focus:outline-none"
                       />
 
@@ -300,7 +300,7 @@ export const NodeEditor: React.FC<NodeEditorProps> = ({
                         onChange={(e) =>
                           updateChoice(index, { nextNodeId: e.target.value })
                         }
-                        placeholder="ID du nœud suivant"
+                        placeholder="Next node ID"
                         className="w-full rounded border border-gray-500 bg-gray-600 px-2 py-1 text-sm text-white focus:border-blue-500 focus:outline-none"
                       />
                     </div>
@@ -315,7 +315,7 @@ export const NodeEditor: React.FC<NodeEditorProps> = ({
               {/* Difficulty */}
               <div>
                 <label className="mb-2 block text-sm font-medium text-gray-300">
-                  Difficulté
+                  Difficulty
                 </label>
                 <select
                   value={editedNode.metadata.difficulty || 'medium'}
@@ -332,9 +332,9 @@ export const NodeEditor: React.FC<NodeEditorProps> = ({
                   }
                   className="w-full rounded border border-gray-600 bg-gray-700 px-3 py-2 text-white focus:border-blue-500 focus:outline-none"
                 >
-                  <option value="easy">Facile</option>
-                  <option value="medium">Moyen</option>
-                  <option value="hard">Difficile</option>
+                  <option value="easy">Easy</option>
+                  <option value="medium">Medium</option>
+                  <option value="hard">Hard</option>
                 </select>
               </div>
 
@@ -361,7 +361,7 @@ export const NodeEditor: React.FC<NodeEditorProps> = ({
                 </div>
                 <input
                   type="text"
-                  placeholder="Ajouter un tag (Entrée pour confirmer)"
+                  placeholder="Add a tag (Enter to confirm)"
                   className="w-full rounded border border-gray-600 bg-gray-700 px-3 py-2 text-white focus:border-blue-500 focus:outline-none"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
@@ -375,7 +375,7 @@ export const NodeEditor: React.FC<NodeEditorProps> = ({
               {/* Visit Count */}
               <div>
                 <label className="mb-2 block text-sm font-medium text-gray-300">
-                  Nombre de visites
+                  Visit Count
                 </label>
                 <input
                   type="number"

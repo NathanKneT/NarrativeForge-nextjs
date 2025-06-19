@@ -5,19 +5,19 @@ import { Handle, Position, type NodeProps } from '@/components/LazyReactFlow';
 import { FileText, Eye, Edit, Copy, Trash2 } from 'lucide-react';
 import { type EditorNode } from '@/types/editor';
 
-// Types stricts pour les props du composant avec compatibilité React Flow v12
+// Strict types for component props with React Flow v12 compatibility
 interface StoryNodeComponentProps extends NodeProps<EditorNode> {
-  id: string; // ✅ Assurer l'accès à l'ID du nœud React Flow
+  id: string; // ✅ Ensure access to React Flow node ID
 }
 
 export const StoryNodeComponent: React.FC<StoryNodeComponentProps> = ({
   data,
   selected = false,
-  id, // ✅ Destructurer l'ID du nœud React Flow
+  id, // ✅ Destructure React Flow node ID
 }) => {
   const { storyNode } = data;
 
-  // Optimisation: mémoriser le contenu tronqué
+  // Optimization: memoize truncated content
   const { cleanContent } = useMemo(() => {
     const truncated =
       storyNode.content.length > 100
@@ -30,10 +30,10 @@ export const StoryNodeComponent: React.FC<StoryNodeComponentProps> = ({
     return { cleanContent: clean };
   }, [storyNode.content]);
 
-  // ✅ FIX: Calcul optimisé des positions des handles - CORRIGÉ
+  // ✅ FIX: Optimized handle position calculation - CORRECTED
   const handlePositions = useMemo(() => {
     const choicesCount = storyNode.choices.length;
-    const nodeId = data.id || storyNode.id; // ✅ Utiliser l'ID du nœud React Flow
+    const nodeId = data.id || storyNode.id; // ✅ Use React Flow node ID
 
     console.log(`🔍 [${storyNode.title}] Calculating handles:`, {
       choicesCount,
@@ -42,7 +42,7 @@ export const StoryNodeComponent: React.FC<StoryNodeComponentProps> = ({
 
     const existingHandles = [];
 
-    // Si on a des choix spécifiques, les ajouter
+    // If we have specific choices, add them
     if (choicesCount > 0) {
       const nodeWidth = 250;
       const handleSpacing = Math.min(
@@ -61,11 +61,11 @@ export const StoryNodeComponent: React.FC<StoryNodeComponentProps> = ({
       });
     }
 
-    // ✅ FIX: TOUJOURS garder un handle par défaut si pas de choix
+    // ✅ FIX: ALWAYS keep a default handle if no choices
     if (choicesCount === 0) {
       existingHandles.push({
         choiceId: `${nodeId}-default-source`,
-        left: 125, // Centré
+        left: 125, // Centered
         bottom: -6,
       });
     }
@@ -82,19 +82,19 @@ export const StoryNodeComponent: React.FC<StoryNodeComponentProps> = ({
           : 'border-gray-600 hover:border-gray-500'
       }`}
     >
-      {/* ✅ FIX: Handle d'entrée plus visible */}
+      {/* ✅ FIX: More visible input handle */}
       <Handle
         type="target"
         position={Position.Top}
-        // ✅ FIX: Handle d'entrée plus gros
+        // ✅ FIX: Larger input handle
         className="border-3 h-6 w-6 border-white bg-blue-500 shadow-lg transition-all hover:scale-125 hover:bg-blue-400"
         style={{
           borderRadius: '50%',
-          boxShadow: '0 0 0 4px rgba(59, 130, 246, 0.2)', // Halo bleu
+          boxShadow: '0 0 0 4px rgba(59, 130, 246, 0.2)', // Blue halo
         }}
       />
 
-      {/* Header - Zone de drag spécifique */}
+      {/* Header - Specific drag zone */}
       <div className="mb-3 flex items-center gap-2">
         <div className="drag-handle flex flex-1 cursor-move items-center gap-2 rounded p-1 hover:bg-gray-700">
           <FileText size={18} className="flex-shrink-0 text-blue-400" />
@@ -112,7 +112,7 @@ export const StoryNodeComponent: React.FC<StoryNodeComponentProps> = ({
       {/* Metadata */}
       <div className="mb-3 flex items-center justify-between text-xs text-gray-400">
         <span>ID: {storyNode.id}</span>
-        <span>{storyNode.choices.length} choix</span>
+        <span>{storyNode.choices.length} choices</span>
       </div>
 
       {/* Tags */}
@@ -139,7 +139,7 @@ export const StoryNodeComponent: React.FC<StoryNodeComponentProps> = ({
       {/* Difficulty Indicator */}
       {storyNode.metadata.difficulty && (
         <div className="mb-3 flex items-center gap-2">
-          <span className="text-xs text-gray-400">Difficulté:</span>
+          <span className="text-xs text-gray-400">Difficulty:</span>
           <div
             className={`rounded px-2 py-1 text-xs ${
               storyNode.metadata.difficulty === 'easy'
@@ -149,9 +149,9 @@ export const StoryNodeComponent: React.FC<StoryNodeComponentProps> = ({
                   : 'bg-red-600 text-white'
             }`}
           >
-            {storyNode.metadata.difficulty === 'easy' && 'Facile'}
-            {storyNode.metadata.difficulty === 'medium' && 'Moyen'}
-            {storyNode.metadata.difficulty === 'hard' && 'Difficile'}
+            {storyNode.metadata.difficulty === 'easy' && 'Easy'}
+            {storyNode.metadata.difficulty === 'medium' && 'Medium'}
+            {storyNode.metadata.difficulty === 'hard' && 'Hard'}
           </div>
         </div>
       )}
@@ -160,58 +160,58 @@ export const StoryNodeComponent: React.FC<StoryNodeComponentProps> = ({
       <div className="flex justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100">
         <button
           className="rounded bg-blue-600 p-1 text-white transition-colors hover:bg-blue-700"
-          title="Prévisualiser"
+          title="Preview"
           type="button"
         >
           <Eye size={12} />
         </button>
         <button
           className="rounded bg-gray-600 p-1 text-white transition-colors hover:bg-gray-700"
-          title="Éditer"
+          title="Edit"
           type="button"
         >
           <Edit size={12} />
         </button>
         <button
           className="rounded bg-purple-600 p-1 text-white transition-colors hover:bg-purple-700"
-          title="Dupliquer"
+          title="Duplicate"
           type="button"
         >
           <Copy size={12} />
         </button>
         <button
           className="rounded bg-red-600 p-1 text-white transition-colors hover:bg-red-700"
-          title="Supprimer"
+          title="Delete"
           type="button"
         >
           <Trash2 size={12} />
         </button>
       </div>
 
-      {/* ✅ FIX: Handles de sortie positionnés avec précision et UX améliorée */}
+      {/* ✅ FIX: Precisely positioned output handles with improved UX */}
       {handlePositions.map(({ choiceId, left, bottom }) => (
         <Handle
           key={choiceId}
           type="source"
           position={Position.Bottom}
           id={choiceId}
-          // ✅ FIX: Handles plus gros et plus visibles
+          // ✅ FIX: Larger and more visible handles
           className="border-3 h-6 w-6 cursor-pointer border-white bg-green-500 shadow-lg transition-all hover:scale-125 hover:bg-green-400"
           style={{
             left: `${left}px`,
             bottom: `${bottom}px`,
             borderRadius: '50%',
-            // ✅ FIX: Zone de clic plus grande
-            boxShadow: '0 0 0 4px rgba(34, 197, 94, 0.2)', // Halo vert
+            // ✅ FIX: Larger click area
+            boxShadow: '0 0 0 4px rgba(34, 197, 94, 0.2)', // Green halo
           }}
         />
       ))}
 
-      {/* Debug info pour les choix (en mode développement) */}
+      {/* Debug info for choices (in development mode) */}
       {process.env.NODE_ENV === 'development' &&
         storyNode.choices.length > 0 && (
           <div className="absolute -bottom-8 left-0 text-xs text-gray-500 opacity-50">
-            {storyNode.choices.length} choix • {handlePositions.length} handles
+            {storyNode.choices.length} choices • {handlePositions.length} handles
           </div>
         )}
     </div>
