@@ -1,4 +1,4 @@
-# 🎮 Asylum Interactive Story Platform
+# 🎮 NarrativeForge Interactive Story Platform
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Next.js](https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)](https://nextjs.org/)
@@ -41,7 +41,7 @@ A sophisticated web application combining an immersive story reader with a visua
 - **🔗 Smart Connection System**: Visual choice linking with automatic validation and conflict detection
 - **📝 Rich Content Editor**: Real-time HTML preview with markdown support and content validation
 - **🗂️ Advanced Project Management**: Auto-save, intelligent naming, version control, and cloud-ready architecture
-- **📤 Multi-Format Export**: Professional exports to Asylum JSON, Generic JSON, and Twine (Twee) formats
+- **📤 Multi-Format Export**: Professional exports to NarrativeForge JSON, Generic JSON, and Twine (Twee) formats
 - **🧪 Integrated Testing**: One-click story testing with temporary deployment and automatic cleanup
 
 ### 🔧 **Enterprise-Grade Technical Architecture**
@@ -107,8 +107,8 @@ npm --version     # v9.0.0+
 
 ```bash
 # Clone and install
-git clone https://github.com/NathanKneT/asylum-interactive-story-nextjs.git
-cd asylum-interactive-story-nextjs
+git clone https://github.com/NathanKneT/NarrativeForge-interactive-story-nextjs.git
+cd NarrativeForge-interactive-story-nextjs
 npm install
 
 # Environment configuration
@@ -318,7 +318,7 @@ vercel --prod
 - **📧 Email**: nathan.rihet06@gmail.com
 - **💼 LinkedIn**: [Connect with me](https://linkedin.com/in/nathan-rihet)
 - **🌐 Portfolio**: Coming Soon 
-- **📱 Repository**: [GitHub](https://github.com/NathanKneT/asylum-interactive-story-nextjs)
+- **📱 Repository**: [GitHub](https://github.com/NathanKneT/NarrativeForge-interactive-story-nextjs)
 
 ---
 
