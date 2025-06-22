@@ -17,6 +17,8 @@ import {
   Upload,
   Eye,
   EyeOff,
+  Sparkles, // Added for AI generation
+  Zap, // Added for bulk generation
 } from 'lucide-react';
 import { StoryProject } from '@/types/editor';
 import { dynamicStoryManager } from '@/lib/dynamicStoryManager';
@@ -32,9 +34,12 @@ interface EditorToolbarProps {
   onExportProject?: (format: string) => void;
   onAutoArrange: () => void;
   onTestStory: () => void;
+  onAIGenerate: () => void; // Added for AI generation
+  onBulkGenerate: () => void; // Added for bulk generation
   currentProject: StoryProject | null;
   nodes: any[];
   edges: any[];
+  hasSelectedNode: boolean; // Added to check if a node is selected
 }
 
 export const EditorToolbar: React.FC<EditorToolbarProps> = ({
@@ -45,9 +50,12 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
   onExportProject,
   onAutoArrange,
   onTestStory,
+  onAIGenerate, // Added
+  onBulkGenerate, // Added
   currentProject,
   nodes,
   edges,
+  hasSelectedNode, // Added
 }) => {
   const [showNodeMenu, setShowNodeMenu] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
@@ -282,7 +290,7 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
           </div>
         </div>
 
-        {/* Center Section - Node Creation */}
+        {/* Center Section - Node Creation + AI Generation */}
         <div className="flex items-center gap-2">
           <div className="relative">
             <button
@@ -315,6 +323,30 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
               </div>
             )}
           </div>
+
+          {/* AI Generation Button */}
+          <button
+            onClick={onAIGenerate}
+            className={`flex items-center gap-2 rounded-lg px-4 py-2 text-white transition-colors ${
+              hasSelectedNode
+                ? 'bg-green-600 hover:bg-green-700'
+                : 'bg-gray-600 hover:bg-gray-700'
+            }`}
+            title={hasSelectedNode ? 'Generate content with AI for selected node' : 'Select a node to generate AI content'}
+          >
+            <Sparkles size={16} />
+            Generate with AI
+          </button>
+
+          {/* Bulk Generation Button */}
+          <button
+            onClick={onBulkGenerate}
+            className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 px-4 py-2 text-white transition-all hover:from-purple-700 hover:to-pink-700"
+            title="Generate a complete story with multiple nodes"
+          >
+            <Zap size={16} />
+            Bulk Generate
+          </button>
 
           <button
             onClick={onAutoArrange}
@@ -419,8 +451,11 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
           <span>Version: {currentProject.metadata.version}</span>
           <span>Nodes: {nodes.length}</span>
           <span>Connections: {edges.length}</span>
+          {hasSelectedNode && (
+            <span className="text-green-400">• Node selected for AI generation</span>
+          )}
         </div>
       )}
     </div>
   );
-};
+}; 

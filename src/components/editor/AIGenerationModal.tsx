@@ -1,0 +1,559 @@
+// src/components/editor/AIGenerationModal.tsx
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { X, Sparkles, RefreshCw, AlertCircle, CheckCircle, Clock } from 'lucide-react';
+
+interface AIGenerationModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onGenerate: (content: string) => void;
+  selectedNodeId: string | null;
+  selectedNodeType: 'start' | 'story' | 'end' | null;
+}
+
+interface GenerationParams {
+  theme: string;
+  tone: 'neutral' | 'dark' | 'humorous';
+  length: number;
+  additionalNotes: string;
+}
+
+// Generation stages for better user feedback
+const GENERATION_STAGES = [
+  { id: 'analyzing', label: 'Analyzing your requirements...', duration: 1500 },
+  { id: 'crafting', label: 'AI is crafting your content...', duration: 8000 },
+  { id: 'polishing', label: 'Polishing and formatting...', duration: 1500 },
+  { id: 'finalizing', label: 'Finalizing content...', duration: 1000 },
+];
+
+export const AIGenerationModal: React.FC<AIGenerationModalProps> = ({
+  isOpen,
+  onClose,
+  onGenerate,
+  selectedNodeId,
+  selectedNodeType,
+}) => {
+  const [params, setParams] = useState<GenerationParams>({
+    theme: '',
+    tone: 'neutral',
+    length: 200,
+    additionalNotes: '',
+  });
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [generatedContent, setGeneratedContent] = useState<string>('');
+  const [currentStage, setCurrentStage] = useState(0);
+  const [stageProgress, setStageProgress] = useState(0);
+
+  // Reset state when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setParams({
+        theme: '',
+        tone: 'neutral',
+        length: 200,
+        additionalNotes: '',
+      });
+      setError(null);
+      setGeneratedContent('');
+      setCurrentStage(0);
+      setStageProgress(0);
+    }
+  }, [isOpen]);
+
+  const toneOptions = [
+    { value: 'neutral', label: 'Neutral', description: 'Balanced and versatile' },
+    { value: 'dark', label: 'Dark', description: 'Mysterious and intense' },
+    { value: 'humorous', label: 'Humorous', description: 'Light and funny' },
+  ] as const;
+
+  const getNodeTypeContext = () => {
+    switch (selectedNodeType) {
+      case 'start':
+        return 'This is a starting node - create an engaging opening that sets the scene and introduces the story.';
+      case 'end':
+        return 'This is an ending node - create a satisfying conclusion that wraps up the story.';
+      case 'story':
+        return 'This is a story node - create a narrative scene that advances the plot and provides meaningful choices.';
+      default:
+        return 'Create compelling story content.';
+    }
+  };
+
+  // Progress through generation stages
+  const progressThroughStages = async () => {
+    for (let i = 0; i < GENERATION_STAGES.length; i++) {
+      setCurrentStage(i);
+      setStageProgress(0);
+      
+      const stage = GENERATION_STAGES[i];
+      const startTime = Date.now();
+      
+      // Smooth progress animation for each stage
+      const progressInterval = setInterval(() => {
+        const elapsed = Date.now() - startTime;
+        const progress = Math.min((elapsed / stage.duration) * 100, 100);
+        setStageProgress(progress);
+        
+        if (progress >= 100) {
+          clearInterval(progressInterval);
+        }
+      }, 50);
+      
+      // Wait for stage duration
+      await new Promise(resolve => setTimeout(resolve, stage.duration));
+      clearInterval(progressInterval);
+      setStageProgress(100);
+    }
+  };
+
+  const generateWithAI = async () => {
+    if (!params.theme.trim()) {
+      setError('Please provide a story theme.');
+      return;
+    }
+
+    setIsGenerating(true);
+    setError(null);
+    setCurrentStage(0);
+    setStageProgress(0);
+
+    try {
+      // Start progress animation
+      const progressPromise = progressThroughStages();
+
+      console.log('🤖 Generating AI content with params:', params);
+
+      const response = await fetch('/api/ai/generate-story', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          theme: params.theme,
+          tone: params.tone,
+          length: params.length,
+          additionalNotes: params.additionalNotes,
+          nodeType: selectedNodeType,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || `API error: ${response.status}`);
+      }
+      
+      // Wait for progress animation to complete
+      await progressPromise;
+      
+      setGeneratedContent(data.content);
+      console.log('✅ AI generation successful:', {
+        wordCount: data.wordCount,
+        tokensUsed: data.tokensUsed,
+      });
+    } catch (err) {
+      console.error('❌ AI Generation error:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to generate story content. Please try again.';
+      
+      // Show specific error messages for common issues
+      if (errorMessage.includes('API key')) {
+        setError('OpenAI API key is missing or invalid. Please check your configuration.');
+      } else if (errorMessage.includes('rate limit')) {
+        setError('Rate limit exceeded. Please wait a moment before trying again.');
+      } else if (errorMessage.includes('quota')) {
+        setError('OpenAI quota exceeded. Please check your account billing.');
+      } else if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
+        setError('Network error. Please check your connection and try again.');
+      } else {
+        setError(errorMessage);
+      }
+      
+      // Fallback to demo content in development
+      if (process.env.NODE_ENV === 'development') {
+        try {
+          const fallbackResponse = await simulateAIGeneration('', params.length);
+          setGeneratedContent(fallbackResponse);
+          setError('Using demo content - OpenAI API not available. Configure your API key for full functionality.');
+        } catch (fallbackErr) {
+          // Keep the original error if fallback also fails
+        }
+      }
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  // Simulate AI generation for development/fallback
+  const simulateAIGeneration = async (prompt: string, targetLength: number): Promise<string> => {
+    // Generate sample content based on parameters
+    const samples = {
+      start: {
+        neutral: `<p>The ancient door creaks open before you, revealing a dimly lit corridor that stretches into darkness. The air is thick with the scent of old parchment and forgotten secrets.</p><p>Your footsteps echo softly against the stone floor as you step inside, the weight of countless untold stories pressing down from the shadows above. This is where your journey truly begins.</p>`,
+        dark: `<p>Blood-red moonlight filters through the cracked windows of the abandoned mansion, casting twisted shadows across the dusty floor. The very walls seem to whisper of the horrors that once unfolded within these cursed halls.</p><p>You feel a chill run down your spine as you cross the threshold, knowing that some doors, once opened, can never be closed again.</p>`,
+        humorous: `<p>You stand before the most ridiculously oversized door you've ever seen, complete with a doorbell that plays "The Entertainer" in off-key chimes. A sign reads: "Welcome to the Adventure! Please wipe your feet and try not to die."</p><p>Well, that's reassuring. You adjust your slightly-too-small adventuring hat and wonder if you should have brought a bigger sword... or maybe just a good insurance policy.</p>`
+      },
+      story: {
+        neutral: `<p>The marketplace bustles with activity as merchants hawk their wares and travelers share tales from distant lands. You notice a hooded figure watching you intently from across the square.</p><p>The stranger's gaze never wavers, and you catch a glimpse of an ornate medallion hanging from their neck - the same symbol you've been searching for. This could be the break you've been waiting for.</p>`,
+        dark: `<p>The victory feels hollow as you stand among the ashes of what once was. Yes, you've defeated the evil that threatened the world, but at what cost? The silence around you speaks of sacrifices that can never be undone.</p><p>In saving everyone, you've lost everything that mattered to you. Perhaps this is the true price of heroism - to save the world while losing your own.</p>`,
+        humorous: `<p>And so your epic quest comes to an end, not with a bang, but with a whimper... and a really good sandwich. Turns out the "ancient evil" was just a really grumpy baker who hadn't had lunch.</p><p>You've saved the day, gotten a fantastic recipe for sourdough, and made a new friend. Not bad for a Tuesday! Now if only you could figure out where you parked your horse...</p>`
+      }
+    };
+
+    const nodeType = selectedNodeType || 'story';
+    const content = samples[nodeType][params.tone] || samples.story.neutral;
+    
+    return content;
+  };
+
+  const handleGenerate = () => {
+    generateWithAI();
+  };
+
+  const handleUseGenerated = () => {
+    if (generatedContent) {
+      onGenerate(generatedContent);
+      onClose();
+    }
+  };
+
+  const handleRegenerateContent = () => {
+    setGeneratedContent('');
+    generateWithAI();
+  };
+
+  if (!isOpen) return null;
+
+  const currentStageInfo = GENERATION_STAGES[currentStage];
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80 p-4"
+        onClick={onClose}
+      >
+        <motion.div
+          initial={{ scale: 0.8, opacity: 0, y: 50 }}
+          animate={{ scale: 1, opacity: 1, y: 0 }}
+          exit={{ scale: 0.8, opacity: 0, y: 50 }}
+          transition={{ type: 'spring', damping: 20 }}
+          className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-xl border border-gray-700 bg-gray-800 shadow-2xl"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Header */}
+          <div className="border-b border-gray-700 p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="rounded-lg bg-green-600 p-2">
+                  <Sparkles size={20} className="text-white" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-white">
+                    Generate with AI
+                  </h2>
+                  <p className="text-sm text-gray-400">
+                    {selectedNodeId ? (
+                      <>
+                        {isGenerating ? 'Generating content...' : 'Generating content for'}{' '}
+                        <span className="capitalize text-green-400">
+                          {selectedNodeType}
+                        </span>{' '}
+                        node
+                      </>
+                    ) : (
+                      'No node selected'
+                    )}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={onClose}
+                disabled={isGenerating}
+                className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-700 hover:text-white disabled:opacity-50"
+                title="Close"
+              >
+                <X size={20} />
+              </button>
+            </div>
+          </div>
+
+          {/* Content */}
+          <div className="flex-1 overflow-y-auto p-6">
+            {!selectedNodeId ? (
+              <div className="py-12 text-center">
+                <AlertCircle size={48} className="mx-auto mb-4 text-yellow-500" />
+                <h3 className="mb-2 text-lg font-medium text-white">
+                  No Node Selected
+                </h3>
+                <p className="text-gray-400">
+                  Please select a node in the editor before generating content.
+                </p>
+              </div>
+            ) : isGenerating ? (
+              /* Enhanced Generation Progress */
+              <div className="space-y-6 text-center">
+                {/* Main Progress Indicator */}
+                <div className="relative mx-auto h-20 w-20">
+                  <div className="absolute inset-0 rounded-full border-4 border-green-600/20"></div>
+                  <div 
+                    className="absolute inset-0 rounded-full border-4 border-green-600 border-t-transparent animate-spin"
+                  ></div>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <Sparkles size={28} className="text-green-400" />
+                  </div>
+                </div>
+
+                {/* Stage Information */}
+                <div>
+                  <h3 className="mb-3 text-lg font-bold text-white">
+                    {generatedContent ? 'Content Generated Successfully!' : 'Creating Your Content...'}
+                  </h3>
+                  
+                  {!generatedContent && (
+                    <>
+                      <p className="mb-4 text-green-300">
+                        {currentStageInfo?.label || 'Processing...'}
+                      </p>
+                      
+                      {/* Stage Progress Bar */}
+                      <div className="mx-auto mb-6 max-w-md">
+                        <div className="mb-2 flex justify-between text-sm text-gray-400">
+                          <span>Stage {currentStage + 1} of {GENERATION_STAGES.length}</span>
+                          <span>{Math.round(stageProgress)}%</span>
+                        </div>
+                        <div className="h-2 rounded-full bg-gray-700">
+                          <div 
+                            className="h-2 rounded-full bg-gradient-to-r from-green-600 to-emerald-600 transition-all duration-300 ease-out"
+                            style={{ width: `${stageProgress}%` }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Overall Progress */}
+                      <div className="mx-auto max-w-md">
+                        <div className="mb-2 text-sm text-gray-400">Overall Progress</div>
+                        <div className="h-2 rounded-full bg-gray-700">
+                          <div 
+                            className="h-2 rounded-full bg-green-600 transition-all duration-500"
+                            style={{ 
+                              width: `${((currentStage + (stageProgress / 100)) / GENERATION_STAGES.length) * 100}%` 
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {generatedContent && (
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-center gap-2 text-green-400">
+                        <CheckCircle size={24} />
+                        <span className="text-lg font-medium">Content Ready!</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                
+                {/* Process Information */}
+                {!generatedContent && (
+                  <div className="rounded-lg border border-blue-600 bg-blue-900/20 p-4">
+                    <div className="flex items-start gap-3">
+                      <Clock size={16} className="mt-0.5 flex-shrink-0 text-blue-400" />
+                      <div className="text-sm text-blue-200">
+                        <div className="mb-2 font-medium">AI is working on your content:</div>
+                        <ul className="space-y-1 text-left text-blue-300">
+                          <li>• Understanding your theme and requirements</li>
+                          <li>• Crafting engaging narrative content</li>
+                          <li>• Matching the {params.tone} tone you selected</li>
+                          <li>• Optimizing for {selectedNodeType} node type</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              /* Configuration Form */
+              <div className="space-y-6">
+                {/* Parameters Form */}
+                <div className="space-y-4">
+                  {/* Node Type Context */}
+                  <div className="rounded-lg border border-green-600 bg-green-900/20 p-3">
+                    <div className="flex items-start gap-2">
+                      <Sparkles size={16} className="mt-0.5 flex-shrink-0 text-green-400" />
+                      <div className="text-sm text-green-200">
+                        <div className="mb-1 font-medium">Node Context:</div>
+                        <div>{getNodeTypeContext()}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Story Theme */}
+                  <div>
+                    <label className="mb-2 block text-sm font-medium text-gray-300">
+                      Story Theme *
+                    </label>
+                    <input
+                      type="text"
+                      value={params.theme}
+                      onChange={(e) =>
+                        setParams({ ...params, theme: e.target.value })
+                      }
+                      placeholder="e.g., Medieval Adventure, Cyberpunk Mystery, Fantasy Quest"
+                      className="w-full rounded-lg border border-gray-600 bg-gray-700 px-3 py-2 text-white transition-colors focus:border-green-500 focus:outline-none"
+                      autoFocus
+                    />
+                  </div>
+
+                  {/* Tone */}
+                  <div>
+                    <label className="mb-2 block text-sm font-medium text-gray-300">
+                      Tone
+                    </label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {toneOptions.map((option) => (
+                        <button
+                          key={option.value}
+                          onClick={() =>
+                            setParams({ ...params, tone: option.value })
+                          }
+                          className={`rounded-lg border-2 p-3 text-left transition-all ${
+                            params.tone === option.value
+                              ? 'border-green-500 bg-green-900/50'
+                              : 'border-gray-600 hover:border-gray-500'
+                          }`}
+                        >
+                          <div className="font-medium text-white">
+                            {option.label}
+                          </div>
+                          <div className="text-xs text-gray-400">
+                            {option.description}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Length */}
+                  <div>
+                    <label className="mb-2 block text-sm font-medium text-gray-300">
+                      Length: {params.length} words
+                    </label>
+                    <input
+                      type="range"
+                      min="100"
+                      max="500"
+                      step="25"
+                      value={params.length}
+                      onChange={(e) =>
+                        setParams({ ...params, length: parseInt(e.target.value) })
+                      }
+                      className="w-full accent-green-500"
+                    />
+                    <div className="mt-1 flex justify-between text-xs text-gray-400">
+                      <span>100 words</span>
+                      <span>500 words</span>
+                    </div>
+                  </div>
+
+                  {/* Additional Notes */}
+                  <div>
+                    <label className="mb-2 block text-sm font-medium text-gray-300">
+                      Additional Notes (Optional)
+                    </label>
+                    <textarea
+                      value={params.additionalNotes}
+                      onChange={(e) =>
+                        setParams({ ...params, additionalNotes: e.target.value })
+                      }
+                      placeholder="Any specific requirements, character details, or plot points..."
+                      className="w-full resize-none rounded-lg border border-gray-600 bg-gray-700 px-3 py-2 text-white transition-colors focus:border-green-500 focus:outline-none"
+                      rows={3}
+                    />
+                  </div>
+                </div>
+
+                {/* Error Display */}
+                {error && (
+                  <div className="rounded-lg border border-red-600 bg-red-900/50 p-3">
+                    <div className="flex items-center gap-2">
+                      <AlertCircle size={16} className="text-red-400" />
+                      <span className="text-red-300">{error}</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Generated Content Preview */}
+                {generatedContent && (
+                  <div className="rounded-lg border border-green-600 bg-green-900/20 p-4">
+                    <div className="mb-3 flex items-center justify-between">
+                      <h3 className="font-medium text-green-400">
+                        Generated Content
+                      </h3>
+                      <button
+                        onClick={handleRegenerateContent}
+                        disabled={isGenerating}
+                        className="flex items-center gap-1 rounded bg-green-600 px-2 py-1 text-xs text-white transition-colors hover:bg-green-700 disabled:bg-gray-600"
+                      >
+                        <RefreshCw size={12} />
+                        Regenerate
+                      </button>
+                    </div>
+                    <div
+                      className="prose prose-invert prose-sm max-w-none text-gray-300"
+                      dangerouslySetInnerHTML={{ __html: generatedContent }}
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Footer */}
+          {selectedNodeId && !isGenerating && (
+            <div className="border-t border-gray-700 p-6">
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-gray-400">
+                  {generatedContent
+                    ? 'Content ready to apply'
+                    : 'Configure parameters and generate content'}
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    onClick={onClose}
+                    className="rounded-lg bg-gray-600 px-4 py-2 text-white transition-colors hover:bg-gray-700"
+                  >
+                    Cancel
+                  </button>
+                  {generatedContent ? (
+                    <button
+                      onClick={handleUseGenerated}
+                      className="flex items-center gap-2 rounded-lg bg-green-600 px-6 py-2 text-white transition-colors hover:bg-green-700"
+                    >
+                      <Sparkles size={16} />
+                      Use This Content
+                    </button>
+                  ) : (
+                    <button
+                      onClick={handleGenerate}
+                      disabled={!params.theme.trim()}
+                      className="flex items-center gap-2 rounded-lg bg-green-600 px-6 py-2 text-white transition-colors hover:bg-green-700 disabled:bg-gray-600"
+                    >
+                      <Sparkles size={16} />
+                      Generate Content
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
+  );
+}

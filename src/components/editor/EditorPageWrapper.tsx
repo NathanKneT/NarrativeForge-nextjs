@@ -7,10 +7,10 @@ const EditorSkeleton = () => (
     <div className="text-center">
       <div className="mx-auto h-16 w-16 animate-spin rounded-full border-b-2 border-purple-600"></div>
       <p className="mt-4 text-lg text-gray-300">
-        Chargement de l'éditeur de stories...
+        Loading the editor...
       </p>
       <p className="mt-2 text-sm text-gray-500">
-        Préparation des outils d'édition
+        Preparate tools and resources for your story creation.
       </p>
     </div>
   </div>
