@@ -1,3 +1,4 @@
+// src/components/editor/EditorToolbar.tsx
 'use client';
 
 import React, { useState } from 'react';
@@ -17,11 +18,14 @@ import {
   Upload,
   Eye,
   EyeOff,
-  Sparkles, // Added for AI generation
-  Zap, // Added for bulk generation
+  Sparkles,
+  Zap,
 } from 'lucide-react';
 import { StoryProject } from '@/types/editor';
 import { dynamicStoryManager } from '@/lib/dynamicStoryManager';
+import { ProfessionalButton } from '@/components/ui/PanelButton';
+import { EnhancedAutoSave } from '@/components/ui/AutoSave';
+import { ProfessionalTooltip } from '@/components/ui/PanelTooltip';
 
 interface EditorToolbarProps {
   onCreateNode: (
@@ -34,12 +38,12 @@ interface EditorToolbarProps {
   onExportProject?: (format: string) => void;
   onAutoArrange: () => void;
   onTestStory: () => void;
-  onAIGenerate: () => void; // Added for AI generation
-  onBulkGenerate: () => void; // Added for bulk generation
+  onAIGenerate: () => void;
+  onBulkGenerate: () => void;
   currentProject: StoryProject | null;
   nodes: any[];
   edges: any[];
-  hasSelectedNode: boolean; // Added to check if a node is selected
+  hasSelectedNode: boolean;
 }
 
 export const EditorToolbar: React.FC<EditorToolbarProps> = ({
@@ -50,12 +54,12 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
   onExportProject,
   onAutoArrange,
   onTestStory,
-  onAIGenerate, // Added
-  onBulkGenerate, // Added
+  onAIGenerate,
+  onBulkGenerate,
   currentProject,
   nodes,
   edges,
-  hasSelectedNode, // Added
+  hasSelectedNode,
 }) => {
   const [showNodeMenu, setShowNodeMenu] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
@@ -66,7 +70,6 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
   const validateStoryForTest = () => {
     const errors: string[] = [];
 
-    // Check for at least one start node
     const startNodes = nodes.filter((node) => node.data?.nodeType === 'start');
     if (startNodes.length === 0) {
       errors.push('At least one start node is required');
@@ -75,13 +78,11 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
       errors.push('Only one start node is allowed');
     }
 
-    // Check for at least one end node
     const endNodes = nodes.filter((node) => node.data?.nodeType === 'end');
     if (endNodes.length === 0) {
       errors.push('At least one end node is required');
     }
 
-    // Check that all nodes (except end) have outgoing connections
     nodes.forEach((node) => {
       if (node.data?.nodeType !== 'end') {
         const hasOutgoingConnection = edges.some(
@@ -95,7 +96,6 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
       }
     });
 
-    // Check that all nodes (except start) have incoming connections
     nodes.forEach((node) => {
       if (node.data?.nodeType !== 'start') {
         const hasIncomingConnection = edges.some(
@@ -122,7 +122,6 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
       return;
     }
 
-    // If no errors, launch the test
     onTestStory();
   };
 
@@ -144,7 +143,6 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
 
     setIsPublishing(true);
     try {
-      // Create story from current editor state
       const storyId = await dynamicStoryManager.createStoryFromEditor(
         currentProject.name,
         currentProject.description,
@@ -153,7 +151,6 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
         edges
       );
 
-      // Publish the story
       await dynamicStoryManager.toggleStoryPublication(storyId);
 
       alert(`✅ Story "${currentProject.name}" published successfully!\nStory ID: ${storyId}`);
@@ -168,10 +165,7 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
 
   const handleSaveAndPublish = async () => {
     try {
-      // First save the project
       onSaveProject();
-      
-      // Then publish
       await handlePublishStory();
     } catch (error) {
       console.error('Save and publish failed:', error);
@@ -219,7 +213,6 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
   ];
 
   const handleCreateNode = (type: 'start' | 'story' | 'end') => {
-    // Create node at center of view
     onCreateNode(type, {
       x: Math.random() * 300 + 200,
       y: Math.random() * 200 + 100,
@@ -261,45 +254,49 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
           <div className="h-6 w-px bg-gray-600" />
 
           <div className="flex items-center gap-2">
-            <button
+            <ProfessionalButton
+              variant="primary"
+              size="md"
+              icon={Plus}
               onClick={onNewProject}
-              className="flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-white transition-colors hover:bg-blue-700"
-              title="New project"
+              title="Create new project"
             >
-              <Plus size={16} />
               New
-            </button>
+            </ProfessionalButton>
 
-            <button
+            <ProfessionalButton
+              variant="success"
+              size="md"
+              icon={Save}
               onClick={onSaveProject}
-              className="flex items-center gap-2 rounded-lg bg-green-600 px-3 py-2 text-white transition-colors hover:bg-green-700"
-              title="Save"
+              title="Save current project"
             >
-              <Save size={16} />
               Save
-            </button>
+            </ProfessionalButton>
 
-            <button
+            <ProfessionalButton
+              variant="secondary"
+              size="md"
+              icon={FolderOpen}
               onClick={onLoadProject}
-              className="flex items-center gap-2 rounded-lg bg-gray-600 px-3 py-2 text-white transition-colors hover:bg-gray-700"
-              title="Load"
+              title="Load existing project"
             >
-              <FolderOpen size={16} />
               Load
-            </button>
+            </ProfessionalButton>
           </div>
         </div>
 
         {/* Center Section - Node Creation + AI Generation */}
         <div className="flex items-center gap-2">
           <div className="relative">
-            <button
+            <ProfessionalButton
+              variant="primary"
+              size="md"
+              icon={Plus}
               onClick={() => setShowNodeMenu(!showNodeMenu)}
-              className="flex items-center gap-2 rounded-lg bg-purple-600 px-4 py-2 text-white transition-colors hover:bg-purple-700"
             >
-              <Plus size={16} />
               Add Node
-            </button>
+            </ProfessionalButton>
 
             {showNodeMenu && (
               <div className="absolute left-0 top-full z-10 mt-2 min-w-[200px] rounded-lg bg-gray-700 p-2 shadow-xl">
@@ -325,51 +322,57 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
           </div>
 
           {/* AI Generation Button */}
-          <button
-            onClick={onAIGenerate}
-            className={`flex items-center gap-2 rounded-lg px-4 py-2 text-white transition-colors ${
-              hasSelectedNode
-                ? 'bg-green-600 hover:bg-green-700'
-                : 'bg-gray-600 hover:bg-gray-700'
-            }`}
-            title={hasSelectedNode ? 'Generate content with AI for selected node' : 'Select a node to generate AI content'}
+          <ProfessionalTooltip 
+            content={hasSelectedNode ? 'Generate AI content for selected node' : 'Select a node first to generate AI content'}
           >
-            <Sparkles size={16} />
-            Generate with AI
-          </button>
+            <ProfessionalButton
+              variant={hasSelectedNode ? "success" : "secondary"}
+              size="md"
+              icon={Sparkles}
+              onClick={onAIGenerate}
+              disabled={!hasSelectedNode}
+            >
+              Generate with AI
+            </ProfessionalButton>
+          </ProfessionalTooltip>
 
           {/* Bulk Generation Button */}
-          <button
-            onClick={onBulkGenerate}
-            className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 px-4 py-2 text-white transition-all hover:from-purple-700 hover:to-pink-700"
-            title="Generate a complete story with multiple nodes"
-          >
-            <Zap size={16} />
-            Bulk Generate
-          </button>
+          <ProfessionalTooltip content="Generate complete story with 8-30 nodes using AI">
+            <ProfessionalButton
+              variant="primary"
+              size="md"
+              icon={Zap}
+              onClick={onBulkGenerate}
+              className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+            >
+              Bulk Generate
+            </ProfessionalButton>
+          </ProfessionalTooltip>
 
-          <button
+          <ProfessionalButton
+            variant="secondary"
+            size="md"
+            icon={Shuffle}
             onClick={onAutoArrange}
-            className="flex items-center gap-2 rounded-lg bg-gray-600 px-3 py-2 text-white transition-colors hover:bg-gray-700"
-            title="Auto-arrange"
+            title="Auto-arrange nodes"
           >
-            <Shuffle size={16} />
             Arrange
-          </button>
+          </ProfessionalButton>
         </div>
 
         {/* Right Section - Export & Tools */}
         <div className="flex items-center gap-2">
           {/* Publish Menu */}
           <div className="relative">
-            <button
+            <ProfessionalButton
+              variant="success"
+              size="md"
+              icon={Eye}
+              loading={isPublishing}
               onClick={() => setShowPublishMenu(!showPublishMenu)}
-              className="flex items-center gap-2 rounded-lg bg-green-600 px-3 py-2 text-white transition-colors hover:bg-green-700"
-              disabled={isPublishing}
             >
-              <Eye size={16} />
               {isPublishing ? 'Publishing...' : 'Publish'}
-            </button>
+            </ProfessionalButton>
 
             {showPublishMenu && (
               <div className="absolute right-0 top-full z-10 mt-2 min-w-[250px] rounded-lg bg-gray-700 p-2 shadow-xl">
@@ -395,13 +398,14 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
 
           {/* Export Menu */}
           <div className="relative">
-            <button
+            <ProfessionalButton
+              variant="secondary"
+              size="md"
+              icon={Download}
               onClick={() => setShowExportMenu(!showExportMenu)}
-              className="flex items-center gap-2 rounded-lg bg-orange-600 px-3 py-2 text-white transition-colors hover:bg-orange-700"
             >
-              <Download size={16} />
               Export
-            </button>
+            </ProfessionalButton>
 
             {showExportMenu && (
               <div className="absolute right-0 top-full z-10 mt-2 min-w-[250px] rounded-lg bg-gray-700 p-2 shadow-xl">
@@ -421,41 +425,61 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
 
           <div className="h-6 w-px bg-gray-600" />
 
-          <button
+          <ProfessionalButton
+            variant="success"
+            size="md"
+            icon={Play}
             onClick={handleTestStory}
-            className="flex items-center gap-2 rounded-lg bg-green-600 px-3 py-2 text-white transition-colors hover:bg-green-700"
             title="Test the story"
           >
-            <Play size={16} />
             Test
-          </button>
+          </ProfessionalButton>
 
-          <button
-            className="flex items-center gap-2 rounded-lg bg-gray-600 px-3 py-2 text-white transition-colors hover:bg-gray-700"
+          <ProfessionalButton
+            variant="secondary"
+            size="md"
+            icon={Settings}
             title="Settings"
           >
-            <Settings size={16} />
-          </button>
+            Settings
+          </ProfessionalButton>
         </div>
       </div>
 
-      {/* Quick Stats */}
+      {/* Quick Stats with Auto-Save */}
       {currentProject && (
-        <div className="mt-3 flex items-center gap-6 text-sm text-gray-400">
-          <span>
-            Created: {currentProject.metadata.createdAt.toLocaleDateString()}
-          </span>
-          <span>
-            Modified: {currentProject.metadata.updatedAt.toLocaleDateString()}
-          </span>
-          <span>Version: {currentProject.metadata.version}</span>
-          <span>Nodes: {nodes.length}</span>
-          <span>Connections: {edges.length}</span>
-          {hasSelectedNode && (
-            <span className="text-green-400">• Node selected for AI generation</span>
-          )}
+        <div className="mt-3 flex items-center justify-between">
+          <div className="flex items-center gap-6 text-sm text-gray-400">
+            <span>Created: {currentProject.metadata.createdAt.toLocaleDateString()}</span>
+            <span>Modified: {currentProject.metadata.updatedAt.toLocaleDateString()}</span>
+            <span>Version: {currentProject.metadata.version}</span>
+            <span>Nodes: {nodes.length}</span>
+            <span>Connections: {edges.length}</span>
+            {hasSelectedNode && (
+              <span className="text-green-400">• Node selected for AI generation</span>
+            )}
+          </div>
+          
+          {/* Auto-save indicator */}
+          <EnhancedAutoSave
+            data={{ nodes, edges, currentProject }}
+            projectName={currentProject.name}
+            onSave={async (data) => {
+              const serializedProject = {
+                ...data.currentProject,
+                nodes: data.nodes,
+                edges: data.edges,
+                metadata: {
+                  ...data.currentProject.metadata,
+                  updatedAt: new Date().toISOString(),
+                },
+              };
+              localStorage.setItem(data.currentProject.id, JSON.stringify(serializedProject));
+            }}
+            showDetailedStatus={process.env.NODE_ENV === 'development'}
+          />
         </div>
       )}
     </div>
   );
-}; 
+};

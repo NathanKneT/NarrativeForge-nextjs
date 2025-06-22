@@ -1,8 +1,11 @@
+// src/components/editor/BulkStoryGeneratorModal.tsx
 'use client';
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Sparkles, RefreshCw, AlertCircle, Zap, Eye, Settings, CheckCircle, Clock } from 'lucide-react';
+import { X, Sparkles, RefreshCw, AlertCircle, Zap, Eye, Settings, CheckCircle, Clock, Brain, Layout, Target } from 'lucide-react';
+import { EnhancedAIProgress } from '@/components/ui/AIProgress';
+import { ProfessionalButton } from '@/components/ui/PanelButton';
 
 interface BulkGenerationParams {
   theme: string;
@@ -48,11 +51,11 @@ interface GeneratedStoryStructure {
 
 // Enhanced loading stages for better user feedback
 const GENERATION_STAGES = [
-  { id: 'planning', label: 'Planning story structure...', duration: 2000 },
-  { id: 'generating', label: 'AI is crafting your story...', duration: 25000 },
-  { id: 'organizing', label: 'Organizing nodes and connections...', duration: 3000 },
-  { id: 'positioning', label: 'Arranging intelligent layout...', duration: 2000 },
-  { id: 'finalizing', label: 'Finalizing story structure...', duration: 1000 },
+  { id: 'planning', label: 'Planning story structure...', description: 'Analyzing theme and requirements', icon: Brain, duration: 2000 },
+  { id: 'generating', label: 'AI is crafting your story...', description: 'Creating interconnected story nodes', icon: Sparkles, duration: 25000 },
+  { id: 'organizing', label: 'Organizing nodes and connections...', description: 'Building narrative flow', icon: Layout, duration: 3000 },
+  { id: 'positioning', label: 'Arranging intelligent layout...', description: 'Optimizing node positions', icon: Target, duration: 2000 },
+  { id: 'finalizing', label: 'Finalizing story structure...', description: 'Applying finishing touches', icon: CheckCircle, duration: 1000 },
 ];
 
 export const BulkStoryGeneratorModal: React.FC<BulkStoryGeneratorModalProps> = ({
@@ -397,7 +400,6 @@ export const BulkStoryGeneratorModal: React.FC<BulkStoryGeneratorModalProps> = (
   if (!isOpen) return null;
 
   const stats = getEstimatedStats();
-  const currentStageInfo = GENERATION_STAGES[currentStage];
 
   return (
     <AnimatePresence>
@@ -448,89 +450,14 @@ export const BulkStoryGeneratorModal: React.FC<BulkStoryGeneratorModalProps> = (
             {isGenerating ? (
               /* Enhanced Generation Progress */
               <div className="space-y-6 text-center">
-                {/* Main Progress Indicator */}
-                <div className="relative mx-auto h-24 w-24">
-                  <div className="absolute inset-0 rounded-full border-4 border-purple-600/20"></div>
-                  <div 
-                    className="absolute inset-0 rounded-full border-4 border-purple-600 border-t-transparent animate-spin"
-                    style={{
-                      animation: 'spin 2s linear infinite'
-                    }}
-                  ></div>
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <Sparkles size={32} className="text-purple-400" />
-                  </div>
-                </div>
-
-                {/* Stage Information */}
-                <div>
-                  <h3 className="mb-3 text-xl font-bold text-white">
-                    {generatedStory ? 'Story Generated Successfully!' : 'Creating Your Story...'}
-                  </h3>
-                  
-                  {!generatedStory && (
-                    <>
-                      <p className="mb-4 text-lg text-purple-300">
-                        {currentStageInfo?.label || 'Processing...'}
-                      </p>
-                      
-                      {/* Stage Progress Bar */}
-                      <div className="mx-auto mb-6 max-w-md">
-                        <div className="mb-2 flex justify-between text-sm text-gray-400">
-                          <span>Stage {currentStage + 1} of {GENERATION_STAGES.length}</span>
-                          <span>{Math.round(stageProgress)}%</span>
-                        </div>
-                        <div className="h-3 rounded-full bg-gray-700">
-                          <div 
-                            className="h-3 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 transition-all duration-300 ease-out"
-                            style={{ width: `${stageProgress}%` }}
-                          />
-                        </div>
-                      </div>
-
-                      {/* Overall Progress */}
-                      <div className="mx-auto max-w-md">
-                        <div className="mb-2 text-sm text-gray-400">Overall Progress</div>
-                        <div className="h-2 rounded-full bg-gray-700">
-                          <div 
-                            className="h-2 rounded-full bg-purple-600 transition-all duration-500"
-                            style={{ 
-                              width: `${((currentStage + (stageProgress / 100)) / GENERATION_STAGES.length) * 100}%` 
-                            }}
-                          />
-                        </div>
-                      </div>
-                    </>
-                  )}
-
-                  {generatedStory && (
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-center gap-2 text-green-400">
-                        <CheckCircle size={24} />
-                        <span className="text-lg font-medium">Complete!</span>
-                      </div>
-                      <div className="rounded-lg bg-green-900/30 border border-green-600/50 p-4">
-                        <h4 className="font-bold text-green-300 mb-2">
-                          "{generatedStory.metadata.title}"
-                        </h4>
-                        <div className="grid grid-cols-3 gap-4 text-sm text-green-200">
-                          <div>
-                            <div className="text-green-400">Nodes</div>
-                            <div className="font-medium">{generatedStory.metadata.totalNodes}</div>
-                          </div>
-                          <div>
-                            <div className="text-green-400">Choices</div>
-                            <div className="font-medium">{generatedStory.metadata.totalChoices}</div>
-                          </div>
-                          <div>
-                            <div className="text-green-400">Play Time</div>
-                            <div className="font-medium">{generatedStory.metadata.estimatedPlayTime}</div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
+                <EnhancedAIProgress
+                  currentStage={currentStage}
+                  stageProgress={stageProgress}
+                  stages={GENERATION_STAGES}
+                  isComplete={!!generatedStory}
+                  totalNodes={stats.nodeCount}
+                  generationType="bulk"
+                />
                 
                 {/* Process Information */}
                 {!generatedStory && (
@@ -756,20 +683,23 @@ export const BulkStoryGeneratorModal: React.FC<BulkStoryGeneratorModalProps> = (
                   This will create a complete story with intelligently organized nodes
                 </div>
                 <div className="flex gap-3">
-                  <button
+                  <ProfessionalButton
+                    variant="secondary"
+                    size="md"
                     onClick={onClose}
-                    className="rounded-lg bg-gray-600 px-4 py-2 text-white transition-colors hover:bg-gray-700"
                   >
                     Cancel
-                  </button>
-                  <button
+                  </ProfessionalButton>
+                  <ProfessionalButton
+                    variant="primary"
+                    size="md"
+                    icon={Zap}
                     onClick={generateBulkStory}
                     disabled={!params.theme.trim()}
-                    className="flex items-center gap-2 rounded-lg bg-purple-600 px-6 py-2 text-white transition-colors hover:bg-purple-700 disabled:bg-gray-600"
+                    className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
                   >
-                    <Zap size={16} />
                     Generate Complete Story
-                  </button>
+                  </ProfessionalButton>
                 </div>
               </div>
             </div>
@@ -779,4 +709,3 @@ export const BulkStoryGeneratorModal: React.FC<BulkStoryGeneratorModalProps> = (
     </AnimatePresence>
   );
 };
-                  
