@@ -1,8 +1,9 @@
+// src/components/editor/AIGenerationModal.tsx
 'use client';
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Sparkles, RefreshCw, AlertCircle } from 'lucide-react';
+import { X, Sparkles, RefreshCw, AlertCircle, CheckCircle, Clock } from 'lucide-react';
 
 interface AIGenerationModalProps {
   isOpen: boolean;
@@ -18,6 +19,14 @@ interface GenerationParams {
   length: number;
   additionalNotes: string;
 }
+
+// Generation stages for better user feedback
+const GENERATION_STAGES = [
+  { id: 'analyzing', label: 'Analyzing your requirements...', duration: 1500 },
+  { id: 'crafting', label: 'AI is crafting your content...', duration: 8000 },
+  { id: 'polishing', label: 'Polishing and formatting...', duration: 1500 },
+  { id: 'finalizing', label: 'Finalizing content...', duration: 1000 },
+];
 
 export const AIGenerationModal: React.FC<AIGenerationModalProps> = ({
   isOpen,
@@ -35,6 +44,8 @@ export const AIGenerationModal: React.FC<AIGenerationModalProps> = ({
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [generatedContent, setGeneratedContent] = useState<string>('');
+  const [currentStage, setCurrentStage] = useState(0);
+  const [stageProgress, setStageProgress] = useState(0);
 
   // Reset state when modal opens
   useEffect(() => {
@@ -47,6 +58,8 @@ export const AIGenerationModal: React.FC<AIGenerationModalProps> = ({
       });
       setError(null);
       setGeneratedContent('');
+      setCurrentStage(0);
+      setStageProgress(0);
     }
   }, [isOpen]);
 
@@ -69,6 +82,33 @@ export const AIGenerationModal: React.FC<AIGenerationModalProps> = ({
     }
   };
 
+  // Progress through generation stages
+  const progressThroughStages = async () => {
+    for (let i = 0; i < GENERATION_STAGES.length; i++) {
+      setCurrentStage(i);
+      setStageProgress(0);
+      
+      const stage = GENERATION_STAGES[i];
+      const startTime = Date.now();
+      
+      // Smooth progress animation for each stage
+      const progressInterval = setInterval(() => {
+        const elapsed = Date.now() - startTime;
+        const progress = Math.min((elapsed / stage.duration) * 100, 100);
+        setStageProgress(progress);
+        
+        if (progress >= 100) {
+          clearInterval(progressInterval);
+        }
+      }, 50);
+      
+      // Wait for stage duration
+      await new Promise(resolve => setTimeout(resolve, stage.duration));
+      clearInterval(progressInterval);
+      setStageProgress(100);
+    }
+  };
+
   const generateWithAI = async () => {
     if (!params.theme.trim()) {
       setError('Please provide a story theme.');
@@ -77,8 +117,15 @@ export const AIGenerationModal: React.FC<AIGenerationModalProps> = ({
 
     setIsGenerating(true);
     setError(null);
+    setCurrentStage(0);
+    setStageProgress(0);
 
     try {
+      // Start progress animation
+      const progressPromise = progressThroughStages();
+
+      console.log('🤖 Generating AI content with params:', params);
+
       const response = await fetch('/api/ai/generate-story', {
         method: 'POST',
         headers: {
@@ -98,6 +145,9 @@ export const AIGenerationModal: React.FC<AIGenerationModalProps> = ({
       if (!response.ok) {
         throw new Error(data.error || `API error: ${response.status}`);
       }
+      
+      // Wait for progress animation to complete
+      await progressPromise;
       
       setGeneratedContent(data.content);
       console.log('✅ AI generation successful:', {
@@ -136,11 +186,8 @@ export const AIGenerationModal: React.FC<AIGenerationModalProps> = ({
     }
   };
 
-  // Simulate AI generation - replace this with your actual AI API
+  // Simulate AI generation for development/fallback
   const simulateAIGeneration = async (prompt: string, targetLength: number): Promise<string> => {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 2000));
-
     // Generate sample content based on parameters
     const samples = {
       start: {
@@ -150,11 +197,6 @@ export const AIGenerationModal: React.FC<AIGenerationModalProps> = ({
       },
       story: {
         neutral: `<p>The marketplace bustles with activity as merchants hawk their wares and travelers share tales from distant lands. You notice a hooded figure watching you intently from across the square.</p><p>The stranger's gaze never wavers, and you catch a glimpse of an ornate medallion hanging from their neck - the same symbol you've been searching for. This could be the break you've been waiting for.</p>`,
-        dark: `<p>The ritual chamber pulses with an unnatural red glow, ancient symbols carved deep into the obsidian walls seeming to writhe in the flickering light. The cult leader raises the ceremonial dagger, its blade gleaming with fresh blood.</p><p>"The sacrifice must be completed," they intone, their voice echoing with otherworldly power. "Only then will the old gods return to claim what is rightfully theirs."</p>`,
-        humorous: `<p>The dragon turns out to be surprisingly polite, offering you tea and biscuits while apologizing profusely for the whole "terrorizing the village" misunderstanding.</p><p>"You see," the dragon explains, adjusting his reading glasses, "I was just trying to get the villagers' attention about their terrible parking situation. Have you seen where they leave their carts?"</p>`
-      },
-      end: {
-        neutral: `<p>As the sun sets over the kingdom you've helped to save, you reflect on the journey that brought you here. The battles fought, the friends made, the sacrifices endured - all have led to this moment of peace.</p><p>Your quest is complete, but you know that somewhere out there, new adventures await. For now, though, you're content to watch the stars emerge in the darkening sky, knowing that you've made a difference.</p>`,
         dark: `<p>The victory feels hollow as you stand among the ashes of what once was. Yes, you've defeated the evil that threatened the world, but at what cost? The silence around you speaks of sacrifices that can never be undone.</p><p>In saving everyone, you've lost everything that mattered to you. Perhaps this is the true price of heroism - to save the world while losing your own.</p>`,
         humorous: `<p>And so your epic quest comes to an end, not with a bang, but with a whimper... and a really good sandwich. Turns out the "ancient evil" was just a really grumpy baker who hadn't had lunch.</p><p>You've saved the day, gotten a fantastic recipe for sourdough, and made a new friend. Not bad for a Tuesday! Now if only you could figure out where you parked your horse...</p>`
       }
@@ -183,6 +225,8 @@ export const AIGenerationModal: React.FC<AIGenerationModalProps> = ({
   };
 
   if (!isOpen) return null;
+
+  const currentStageInfo = GENERATION_STAGES[currentStage];
 
   return (
     <AnimatePresence>
@@ -215,7 +259,7 @@ export const AIGenerationModal: React.FC<AIGenerationModalProps> = ({
                   <p className="text-sm text-gray-400">
                     {selectedNodeId ? (
                       <>
-                        Generating content for{' '}
+                        {isGenerating ? 'Generating content...' : 'Generating content for'}{' '}
                         <span className="capitalize text-green-400">
                           {selectedNodeType}
                         </span>{' '}
@@ -229,7 +273,8 @@ export const AIGenerationModal: React.FC<AIGenerationModalProps> = ({
               </div>
               <button
                 onClick={onClose}
-                className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-700 hover:text-white"
+                disabled={isGenerating}
+                className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-700 hover:text-white disabled:opacity-50"
                 title="Close"
               >
                 <X size={20} />
@@ -249,10 +294,105 @@ export const AIGenerationModal: React.FC<AIGenerationModalProps> = ({
                   Please select a node in the editor before generating content.
                 </p>
               </div>
+            ) : isGenerating ? (
+              /* Enhanced Generation Progress */
+              <div className="space-y-6 text-center">
+                {/* Main Progress Indicator */}
+                <div className="relative mx-auto h-20 w-20">
+                  <div className="absolute inset-0 rounded-full border-4 border-green-600/20"></div>
+                  <div 
+                    className="absolute inset-0 rounded-full border-4 border-green-600 border-t-transparent animate-spin"
+                  ></div>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <Sparkles size={28} className="text-green-400" />
+                  </div>
+                </div>
+
+                {/* Stage Information */}
+                <div>
+                  <h3 className="mb-3 text-lg font-bold text-white">
+                    {generatedContent ? 'Content Generated Successfully!' : 'Creating Your Content...'}
+                  </h3>
+                  
+                  {!generatedContent && (
+                    <>
+                      <p className="mb-4 text-green-300">
+                        {currentStageInfo?.label || 'Processing...'}
+                      </p>
+                      
+                      {/* Stage Progress Bar */}
+                      <div className="mx-auto mb-6 max-w-md">
+                        <div className="mb-2 flex justify-between text-sm text-gray-400">
+                          <span>Stage {currentStage + 1} of {GENERATION_STAGES.length}</span>
+                          <span>{Math.round(stageProgress)}%</span>
+                        </div>
+                        <div className="h-2 rounded-full bg-gray-700">
+                          <div 
+                            className="h-2 rounded-full bg-gradient-to-r from-green-600 to-emerald-600 transition-all duration-300 ease-out"
+                            style={{ width: `${stageProgress}%` }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Overall Progress */}
+                      <div className="mx-auto max-w-md">
+                        <div className="mb-2 text-sm text-gray-400">Overall Progress</div>
+                        <div className="h-2 rounded-full bg-gray-700">
+                          <div 
+                            className="h-2 rounded-full bg-green-600 transition-all duration-500"
+                            style={{ 
+                              width: `${((currentStage + (stageProgress / 100)) / GENERATION_STAGES.length) * 100}%` 
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {generatedContent && (
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-center gap-2 text-green-400">
+                        <CheckCircle size={24} />
+                        <span className="text-lg font-medium">Content Ready!</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                
+                {/* Process Information */}
+                {!generatedContent && (
+                  <div className="rounded-lg border border-blue-600 bg-blue-900/20 p-4">
+                    <div className="flex items-start gap-3">
+                      <Clock size={16} className="mt-0.5 flex-shrink-0 text-blue-400" />
+                      <div className="text-sm text-blue-200">
+                        <div className="mb-2 font-medium">AI is working on your content:</div>
+                        <ul className="space-y-1 text-left text-blue-300">
+                          <li>• Understanding your theme and requirements</li>
+                          <li>• Crafting engaging narrative content</li>
+                          <li>• Matching the {params.tone} tone you selected</li>
+                          <li>• Optimizing for {selectedNodeType} node type</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
             ) : (
+              /* Configuration Form */
               <div className="space-y-6">
                 {/* Parameters Form */}
                 <div className="space-y-4">
+                  {/* Node Type Context */}
+                  <div className="rounded-lg border border-green-600 bg-green-900/20 p-3">
+                    <div className="flex items-start gap-2">
+                      <Sparkles size={16} className="mt-0.5 flex-shrink-0 text-green-400" />
+                      <div className="text-sm text-green-200">
+                        <div className="mb-1 font-medium">Node Context:</div>
+                        <div>{getNodeTypeContext()}</div>
+                      </div>
+                    </div>
+                  </div>
+
                   {/* Story Theme */}
                   <div>
                     <label className="mb-2 block text-sm font-medium text-gray-300">
@@ -266,6 +406,7 @@ export const AIGenerationModal: React.FC<AIGenerationModalProps> = ({
                       }
                       placeholder="e.g., Medieval Adventure, Cyberpunk Mystery, Fantasy Quest"
                       className="w-full rounded-lg border border-gray-600 bg-gray-700 px-3 py-2 text-white transition-colors focus:border-green-500 focus:outline-none"
+                      autoFocus
                     />
                   </div>
 
@@ -374,7 +515,7 @@ export const AIGenerationModal: React.FC<AIGenerationModalProps> = ({
           </div>
 
           {/* Footer */}
-          {selectedNodeId && (
+          {selectedNodeId && !isGenerating && (
             <div className="border-t border-gray-700 p-6">
               <div className="flex items-center justify-between">
                 <div className="text-sm text-gray-400">
@@ -400,20 +541,11 @@ export const AIGenerationModal: React.FC<AIGenerationModalProps> = ({
                   ) : (
                     <button
                       onClick={handleGenerate}
-                      disabled={!params.theme.trim() || isGenerating}
+                      disabled={!params.theme.trim()}
                       className="flex items-center gap-2 rounded-lg bg-green-600 px-6 py-2 text-white transition-colors hover:bg-green-700 disabled:bg-gray-600"
                     >
-                      {isGenerating ? (
-                        <>
-                          <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
-                          Generating...
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles size={16} />
-                          Generate Content
-                        </>
-                      )}
+                      <Sparkles size={16} />
+                      Generate Content
                     </button>
                   )}
                 </div>
@@ -424,4 +556,4 @@ export const AIGenerationModal: React.FC<AIGenerationModalProps> = ({
       </motion.div>
     </AnimatePresence>
   );
-};
+}

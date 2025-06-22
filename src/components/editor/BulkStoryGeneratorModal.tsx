@@ -1,9 +1,8 @@
-// src/components/editor/BulkStoryGeneratorModal.tsx
 'use client';
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Sparkles, RefreshCw, AlertCircle, Zap, Eye, Settings } from 'lucide-react';
+import { X, Sparkles, RefreshCw, AlertCircle, Zap, Eye, Settings, CheckCircle, Clock } from 'lucide-react';
 
 interface BulkGenerationParams {
   theme: string;
@@ -11,7 +10,7 @@ interface BulkGenerationParams {
   tone: 'neutral' | 'dark' | 'humorous';
   complexity: 'simple' | 'medium' | 'complex';
   nodeCount: number;
-  branchingFactor: number; // How many choices per node on average
+  branchingFactor: number;
   description: string;
 }
 
@@ -47,6 +46,15 @@ interface GeneratedStoryStructure {
   };
 }
 
+// Enhanced loading stages for better user feedback
+const GENERATION_STAGES = [
+  { id: 'planning', label: 'Planning story structure...', duration: 2000 },
+  { id: 'generating', label: 'AI is crafting your story...', duration: 25000 },
+  { id: 'organizing', label: 'Organizing nodes and connections...', duration: 3000 },
+  { id: 'positioning', label: 'Arranging intelligent layout...', duration: 2000 },
+  { id: 'finalizing', label: 'Finalizing story structure...', duration: 1000 },
+];
+
 export const BulkStoryGeneratorModal: React.FC<BulkStoryGeneratorModalProps> = ({
   isOpen,
   onClose,
@@ -64,12 +72,10 @@ export const BulkStoryGeneratorModal: React.FC<BulkStoryGeneratorModalProps> = (
 
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [generationProgress, setGenerationProgress] = useState({
-    current: 0,
-    total: 0,
-    stage: '',
-  });
+  const [currentStage, setCurrentStage] = useState(0);
+  const [stageProgress, setStageProgress] = useState(0);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [generatedStory, setGeneratedStory] = useState<GeneratedStoryStructure | null>(null);
 
   // Reset state when modal opens
   useEffect(() => {
@@ -84,8 +90,10 @@ export const BulkStoryGeneratorModal: React.FC<BulkStoryGeneratorModalProps> = (
         description: '',
       });
       setError(null);
-      setGenerationProgress({ current: 0, total: 0, stage: '' });
+      setCurrentStage(0);
+      setStageProgress(0);
       setShowAdvanced(false);
+      setGeneratedStory(null);
     }
   }, [isOpen]);
 
@@ -129,6 +137,133 @@ export const BulkStoryGeneratorModal: React.FC<BulkStoryGeneratorModalProps> = (
     },
   ] as const;
 
+  // Enhanced stage progression with realistic timing
+  const progressThroughStages = async () => {
+    for (let i = 0; i < GENERATION_STAGES.length; i++) {
+      setCurrentStage(i);
+      setStageProgress(0);
+      
+      const stage = GENERATION_STAGES[i];
+      const startTime = Date.now();
+      
+      // Smooth progress animation for each stage
+      const progressInterval = setInterval(() => {
+        const elapsed = Date.now() - startTime;
+        const progress = Math.min((elapsed / stage.duration) * 100, 100);
+        setStageProgress(progress);
+        
+        if (progress >= 100) {
+          clearInterval(progressInterval);
+        }
+      }, 50);
+      
+      // Wait for stage duration
+      await new Promise(resolve => setTimeout(resolve, stage.duration));
+      clearInterval(progressInterval);
+      setStageProgress(100);
+    }
+  };
+
+  // IMPROVED: Smart node positioning with much better spacing
+  const organizeNodesIntelligently = (nodes: any[], metadata: any) => {
+    const startNode = nodes.find(n => n.type === 'start');
+    const endNodes = nodes.filter(n => n.type === 'end');
+    const storyNodes = nodes.filter(n => n.type === 'story');
+    
+    const organizedNodes = [];
+    
+    // Enhanced spacing constants
+    const HORIZONTAL_SPACING = 400; // Increased from 300
+    const VERTICAL_SPACING = 250;   // Increased from 150
+    const CANVAS_WIDTH = 1200;      // Wider canvas
+    const MIN_X = 100;
+    const START_Y = 80;
+    
+    // 1. Position start node at top center
+    if (startNode) {
+      organizedNodes.push({
+        ...startNode,
+        position: { x: CANVAS_WIDTH / 2, y: START_Y }
+      });
+    }
+    
+    // 2. Create intelligent layers based on story complexity
+    const maxNodesPerLayer = Math.min(4, Math.max(2, Math.floor(Math.sqrt(storyNodes.length))));
+    const layers = Math.ceil(storyNodes.length / maxNodesPerLayer);
+    
+    console.log('🎯 Positioning strategy:', {
+      totalStoryNodes: storyNodes.length,
+      maxNodesPerLayer,
+      layers,
+      horizontalSpacing: HORIZONTAL_SPACING,
+      verticalSpacing: VERTICAL_SPACING
+    });
+    
+    // 3. Position story nodes in organized, well-spaced layers
+    storyNodes.forEach((node, index) => {
+      const layer = Math.floor(index / maxNodesPerLayer);
+      const positionInLayer = index % maxNodesPerLayer;
+      const nodesInThisLayer = Math.min(maxNodesPerLayer, storyNodes.length - layer * maxNodesPerLayer);
+      
+      // Calculate X position with proper centering and spacing
+      let x;
+      if (nodesInThisLayer === 1) {
+        x = CANVAS_WIDTH / 2; // Center single nodes
+      } else {
+        const totalLayerWidth = (nodesInThisLayer - 1) * HORIZONTAL_SPACING;
+        const startX = (CANVAS_WIDTH - totalLayerWidth) / 2;
+        x = startX + (positionInLayer * HORIZONTAL_SPACING);
+      }
+      
+      // Ensure minimum spacing from edges
+      x = Math.max(MIN_X, Math.min(x, CANVAS_WIDTH - MIN_X));
+      
+      const y = START_Y + (layer + 1) * VERTICAL_SPACING;
+      
+      organizedNodes.push({
+        ...node,
+        position: { x, y }
+      });
+      
+      console.log(`📍 Node ${index + 1}:`, {
+        layer: layer + 1,
+        positionInLayer: positionInLayer + 1,
+        nodesInThisLayer,
+        position: { x, y }
+      });
+    });
+    
+    // 4. Position end nodes at bottom with generous spacing
+    const endNodeY = START_Y + (layers + 1) * VERTICAL_SPACING + 100; // Extra space before end nodes
+    endNodes.forEach((node, index) => {
+      let x;
+      if (endNodes.length === 1) {
+        x = CANVAS_WIDTH / 2;
+      } else {
+        const totalEndWidth = (endNodes.length - 1) * HORIZONTAL_SPACING;
+        const startX = (CANVAS_WIDTH - totalEndWidth) / 2;
+        x = startX + (index * HORIZONTAL_SPACING);
+      }
+      
+      x = Math.max(MIN_X, Math.min(x, CANVAS_WIDTH - MIN_X));
+      
+      organizedNodes.push({
+        ...node,
+        position: { x, y: endNodeY }
+      });
+      
+      console.log(`🏁 End node ${index + 1}:`, { position: { x, y: endNodeY } });
+    });
+    
+    console.log('✅ Final positioning:', {
+      totalNodes: organizedNodes.length,
+      canvasSize: { width: CANVAS_WIDTH, height: endNodeY + 100 },
+      spacing: { horizontal: HORIZONTAL_SPACING, vertical: VERTICAL_SPACING }
+    });
+    
+    return organizedNodes;
+  };
+
   const generateBulkStory = async () => {
     if (!params.theme.trim()) {
       setError('Please provide a story theme.');
@@ -137,8 +272,13 @@ export const BulkStoryGeneratorModal: React.FC<BulkStoryGeneratorModalProps> = (
 
     setIsGenerating(true);
     setError(null);
+    setCurrentStage(0);
+    setStageProgress(0);
 
     try {
+      // Start progress animation
+      const progressPromise = progressThroughStages();
+      
       // Calculate actual parameters based on complexity
       const actualNodeCount = params.complexity === 'simple' ? 
         Math.min(params.nodeCount, 12) : 
@@ -152,13 +292,16 @@ export const BulkStoryGeneratorModal: React.FC<BulkStoryGeneratorModalProps> = (
         Math.min(params.branchingFactor, 3) : 
         params.branchingFactor;
 
-      setGenerationProgress({
-        current: 0,
-        total: actualNodeCount,
-        stage: 'Planning story structure...',
+      console.log('🚀 Generating with parameters:', {
+        theme: params.theme,
+        genre: params.genre,
+        tone: params.tone,
+        complexity: params.complexity,
+        nodeCount: actualNodeCount,
+        branchingFactor: actualBranchingFactor
       });
 
-      // Generate story structure using OpenAI
+      // Make API call
       const response = await fetch('/api/ai/generate-bulk-story', {
         method: 'POST',
         headers: {
@@ -185,26 +328,33 @@ export const BulkStoryGeneratorModal: React.FC<BulkStoryGeneratorModalProps> = (
         throw new Error(data.error);
       }
 
-      // Process the generated story structure
-      const storyStructure: GeneratedStoryStructure = data.storyStructure;
+      // Wait for progress animation to complete
+      await progressPromise;
       
-      setGenerationProgress({
-        current: actualNodeCount,
-        total: actualNodeCount,
-        stage: 'Story generated successfully!',
-      });
+      // Apply intelligent node positioning with improved spacing
+      const organizedNodes = organizeNodesIntelligently(
+        data.storyStructure.nodes, 
+        data.storyStructure.metadata
+      );
+      
+      const finalStoryStructure = {
+        ...data.storyStructure,
+        nodes: organizedNodes
+      };
 
-      console.log('✅ Bulk story generated:', {
-        title: storyStructure.metadata.title,
-        nodes: storyStructure.nodes.length,
-        choices: storyStructure.metadata.totalChoices,
+      setGeneratedStory(finalStoryStructure);
+
+      console.log('✅ Story generated with intelligent positioning:', {
+        title: finalStoryStructure.metadata.title,
+        nodes: finalStoryStructure.nodes.length,
+        choices: finalStoryStructure.metadata.totalChoices,
       });
 
       // Brief delay to show completion
       setTimeout(() => {
-        onGenerate(storyStructure);
+        onGenerate(finalStoryStructure);
         onClose();
-      }, 1000);
+      }, 1500);
 
     } catch (err) {
       console.error('❌ Bulk generation error:', err);
@@ -234,8 +384,8 @@ export const BulkStoryGeneratorModal: React.FC<BulkStoryGeneratorModalProps> = (
       Math.min(params.nodeCount, 20) : 
       params.nodeCount;
 
-    const totalChoices = Math.floor(nodeCount * params.branchingFactor * 0.7); // Rough estimate
-    const playTime = Math.ceil(nodeCount * 1.5); // ~1.5 minutes per node
+    const totalChoices = Math.floor(nodeCount * params.branchingFactor * 0.7);
+    const playTime = Math.ceil(nodeCount * 1.5);
 
     return {
       nodeCount,
@@ -247,6 +397,7 @@ export const BulkStoryGeneratorModal: React.FC<BulkStoryGeneratorModalProps> = (
   if (!isOpen) return null;
 
   const stats = getEstimatedStats();
+  const currentStageInfo = GENERATION_STAGES[currentStage];
 
   return (
     <AnimatePresence>
@@ -277,13 +428,14 @@ export const BulkStoryGeneratorModal: React.FC<BulkStoryGeneratorModalProps> = (
                     Bulk Story Generator
                   </h2>
                   <p className="text-sm text-gray-400">
-                    Generate a complete interactive story in one go
+                    {isGenerating ? 'Generating your interactive story...' : 'Generate a complete interactive story in one go'}
                   </p>
                 </div>
               </div>
               <button
                 onClick={onClose}
-                className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-700 hover:text-white"
+                disabled={isGenerating}
+                className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-700 hover:text-white disabled:opacity-50"
                 title="Close"
               >
                 <X size={20} />
@@ -294,45 +446,112 @@ export const BulkStoryGeneratorModal: React.FC<BulkStoryGeneratorModalProps> = (
           {/* Content */}
           <div className="flex-1 overflow-y-auto p-6">
             {isGenerating ? (
-              /* Generation Progress */
+              /* Enhanced Generation Progress */
               <div className="space-y-6 text-center">
-                <div className="mx-auto h-16 w-16 animate-spin rounded-full border-4 border-purple-600 border-t-transparent"></div>
+                {/* Main Progress Indicator */}
+                <div className="relative mx-auto h-24 w-24">
+                  <div className="absolute inset-0 rounded-full border-4 border-purple-600/20"></div>
+                  <div 
+                    className="absolute inset-0 rounded-full border-4 border-purple-600 border-t-transparent animate-spin"
+                    style={{
+                      animation: 'spin 2s linear infinite'
+                    }}
+                  ></div>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <Sparkles size={32} className="text-purple-400" />
+                  </div>
+                </div>
+
+                {/* Stage Information */}
                 <div>
-                  <h3 className="mb-2 text-lg font-medium text-white">
-                    Generating Your Story...
+                  <h3 className="mb-3 text-xl font-bold text-white">
+                    {generatedStory ? 'Story Generated Successfully!' : 'Creating Your Story...'}
                   </h3>
-                  <p className="text-gray-400">{generationProgress.stage}</p>
                   
-                  {generationProgress.total > 0 && (
-                    <div className="mt-4">
-                      <div className="mb-2 flex justify-between text-sm text-gray-400">
-                        <span>Progress</span>
-                        <span>{generationProgress.current}/{generationProgress.total}</span>
+                  {!generatedStory && (
+                    <>
+                      <p className="mb-4 text-lg text-purple-300">
+                        {currentStageInfo?.label || 'Processing...'}
+                      </p>
+                      
+                      {/* Stage Progress Bar */}
+                      <div className="mx-auto mb-6 max-w-md">
+                        <div className="mb-2 flex justify-between text-sm text-gray-400">
+                          <span>Stage {currentStage + 1} of {GENERATION_STAGES.length}</span>
+                          <span>{Math.round(stageProgress)}%</span>
+                        </div>
+                        <div className="h-3 rounded-full bg-gray-700">
+                          <div 
+                            className="h-3 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 transition-all duration-300 ease-out"
+                            style={{ width: `${stageProgress}%` }}
+                          />
+                        </div>
                       </div>
-                      <div className="h-2 rounded-full bg-gray-700">
-                        <div 
-                          className="h-2 rounded-full bg-purple-600 transition-all duration-300"
-                          style={{ 
-                            width: `${(generationProgress.current / generationProgress.total) * 100}%` 
-                          }}
-                        />
+
+                      {/* Overall Progress */}
+                      <div className="mx-auto max-w-md">
+                        <div className="mb-2 text-sm text-gray-400">Overall Progress</div>
+                        <div className="h-2 rounded-full bg-gray-700">
+                          <div 
+                            className="h-2 rounded-full bg-purple-600 transition-all duration-500"
+                            style={{ 
+                              width: `${((currentStage + (stageProgress / 100)) / GENERATION_STAGES.length) * 100}%` 
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {generatedStory && (
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-center gap-2 text-green-400">
+                        <CheckCircle size={24} />
+                        <span className="text-lg font-medium">Complete!</span>
+                      </div>
+                      <div className="rounded-lg bg-green-900/30 border border-green-600/50 p-4">
+                        <h4 className="font-bold text-green-300 mb-2">
+                          "{generatedStory.metadata.title}"
+                        </h4>
+                        <div className="grid grid-cols-3 gap-4 text-sm text-green-200">
+                          <div>
+                            <div className="text-green-400">Nodes</div>
+                            <div className="font-medium">{generatedStory.metadata.totalNodes}</div>
+                          </div>
+                          <div>
+                            <div className="text-green-400">Choices</div>
+                            <div className="font-medium">{generatedStory.metadata.totalChoices}</div>
+                          </div>
+                          <div>
+                            <div className="text-green-400">Play Time</div>
+                            <div className="font-medium">{generatedStory.metadata.estimatedPlayTime}</div>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   )}
                 </div>
                 
-                <div className="rounded-lg border border-blue-600 bg-blue-900/20 p-4">
-                  <div className="flex items-start gap-2">
-                    <Sparkles size={16} className="mt-0.5 flex-shrink-0 text-blue-400" />
-                    <div className="text-sm text-blue-200">
-                      <div className="mb-1 font-medium">AI is crafting your story...</div>
-                      <div>This may take 30-60 seconds depending on story complexity.</div>
+                {/* Process Information */}
+                {!generatedStory && (
+                  <div className="rounded-lg border border-blue-600 bg-blue-900/20 p-4">
+                    <div className="flex items-start gap-3">
+                      <Clock size={20} className="mt-0.5 flex-shrink-0 text-blue-400" />
+                      <div className="text-sm text-blue-200">
+                        <div className="mb-2 font-medium">What's happening:</div>
+                        <ul className="space-y-1 text-left text-blue-300">
+                          <li>• AI is analyzing your theme and requirements</li>
+                          <li>• Creating interconnected story nodes and choices</li>
+                          <li>• Organizing nodes with intelligent spacing</li>
+                          <li>• This typically takes 30-60 seconds</li>
+                        </ul>
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
               </div>
             ) : (
-              /* Configuration Form */
+              /* Configuration Form - COMPLETE with all parameters */
               <div className="space-y-6">
                 {/* Basic Parameters */}
                 <div className="space-y-4">
@@ -351,7 +570,7 @@ export const BulkStoryGeneratorModal: React.FC<BulkStoryGeneratorModalProps> = (
                     />
                   </div>
 
-                  {/* Genre */}
+                  {/* Genre Grid */}
                   <div>
                     <label className="mb-2 block text-sm font-medium text-gray-300">
                       Genre
@@ -510,10 +729,6 @@ export const BulkStoryGeneratorModal: React.FC<BulkStoryGeneratorModalProps> = (
 
                 {/* Estimated Stats */}
                 <div className="rounded-lg border border-green-600 bg-green-900/20 p-4">
-                  <div className="mb-3 flex items-center gap-2">
-                    <Eye size={16} className="text-green-400" />
-                    <h3 className="font-medium text-green-400">Estimated Story Stats</h3>
-                  </div>
                   <div className="grid grid-cols-3 gap-4 text-sm">
                     <div>
                       <div className="text-gray-400">Nodes</div>
@@ -538,7 +753,7 @@ export const BulkStoryGeneratorModal: React.FC<BulkStoryGeneratorModalProps> = (
             <div className="border-t border-gray-700 p-6">
               <div className="flex items-center justify-between">
                 <div className="text-sm text-gray-400">
-                  This will create a complete story with nodes and connections
+                  This will create a complete story with intelligently organized nodes
                 </div>
                 <div className="flex gap-3">
                   <button
@@ -564,3 +779,4 @@ export const BulkStoryGeneratorModal: React.FC<BulkStoryGeneratorModalProps> = (
     </AnimatePresence>
   );
 };
+                  

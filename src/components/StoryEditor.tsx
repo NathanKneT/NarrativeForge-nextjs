@@ -43,9 +43,8 @@ import { GraphToStoryConverter } from '@/lib/graphToStoryConverter';
 import { ProjectInitModal } from './editor/ProjectInitModal';
 import { SaveNotification, useNotification } from './editor/SaveNotification';
 import { LoadProjectModal } from './editor/LoadProjectModal';
-import { AIGenerationModal } from './editor/AIGenerationModal'; // 🆕 NEW: AI Generation Modal
-import { BulkStoryGeneratorModal } from './editor/BulkStoryGeneratorModal'; // 🆕 NEW: Bulk Story Generator Modal
-// 🔧 FIX: Import the dynamic story manager
+import { AIGenerationModal } from './editor/AIGenerationModal';
+import { BulkStoryGeneratorModal } from './editor/BulkStoryGeneratorModal';
 import { dynamicStoryManager } from '@/lib/dynamicStoryManager';
 
 // Custom node types with strict types compatible with React Flow v12
@@ -176,7 +175,7 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
     const [isProjectInitialized, setIsProjectInitialized] =
       useState<boolean>(false);
 
-    // 🆕 NEW: AI Generation state
+    // AI Generation state
     const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
     const [isAIModalOpen, setIsAIModalOpen] = useState<boolean>(false);
     const [isBulkGeneratorOpen, setIsBulkGeneratorOpen] = useState<boolean>(false);
@@ -202,7 +201,7 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
       project: null,
     });
 
-    // 🔧 FIX: Add validation function for story testing
+    // Add validation function for story testing
     const validateStoryForTest = useCallback(() => {
       const errors: string[] = [];
       const warnings: string[] = [];
@@ -253,7 +252,7 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
       return { errors, warnings };
     }, [nodes, edges]);
 
-    // 🆕 NEW: Get selected node information for AI generation
+    // Get selected node information for AI generation
     const selectedNodeForAI = useMemo(() => {
       if (!selectedNodeId) return null;
       return nodes.find(node => node.id === selectedNodeId) || null;
@@ -274,7 +273,7 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
       [nodes, edges, currentProject]
     );
 
-    // 🔧 FIX: Auto-save to localStorage with typed error handling
+    // Auto-save to localStorage with typed error handling
     const autoSave = useCallback((): void => {
       if (nodes.length > 0) {
         const autoSaveProject: StoryProject = {
@@ -386,7 +385,7 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
     const memoizedNodes = useMemo(() => nodes, [nodes]);
     const memoizedEdges = useMemo(() => edges, [edges]);
 
-    // 🔧 FIX: Connection handler with modal - Strict types
+    // Connection handler with modal - Strict types
     const onConnect: OnConnect = useCallback(
       (params: Connection) => {
         console.log('🔍 onConnect called with params:', {
@@ -472,7 +471,7 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
         const params = choiceModal.connectionParams;
         if (!params || !params.source || !params.target) return;
 
-        // ✅ FIX: Handle ALL types of sourceHandle
+        // Handle ALL types of sourceHandle
         const sourceHandle = params.sourceHandle;
         const isDefaultHandle = sourceHandle?.includes('-default-source');
 
@@ -483,14 +482,14 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
           target: params.target,
         });
 
-        // ✅ FIX: If it's a default handle, replace it with a specific choice
+        // If it's a default handle, replace it with a specific choice
         if (isDefaultHandle) {
           // Use the default handle ID as sourceHandle
           const newEdge: EditorEdge = {
             id: `edge-${params.source}-${params.target}-${Date.now()}`,
             source: params.source,
             target: params.target,
-            sourceHandle: sourceHandle, // ✅ Keep existing default handle
+            sourceHandle: sourceHandle, // Keep existing default handle
             targetHandle: params.targetHandle,
             type: 'smoothstep',
             data: {
@@ -516,13 +515,12 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
           // Add the edge
           setEdges((eds) => addEdge(newEdge, eds));
 
-          // ✅ FIX: Update source node - ADD choice without changing existing handles
+          // Update source node - ADD choice without changing existing handles
           setNodes((nds) =>
             nds.map((node) => {
               if (node.id === params.source) {
                 const newChoice: Choice = {
-                  // ✅ Explicit Choice type
-                  id: sourceHandle ?? `choice-${Date.now()}`, // ✅ Handle null with fallback
+                  id: sourceHandle ?? `choice-${Date.now()}`, // Handle null with fallback
                   text: choiceText,
                   nextNodeId: params.target,
                   conditions: [],
@@ -538,7 +536,7 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
                       choices: [...node.data.storyNode.choices, newChoice],
                     },
                   },
-                } as EditorNode; // ✅ Explicit cast to ensure type
+                } as EditorNode; // Explicit cast to ensure type
               }
               return node;
             })
@@ -550,7 +548,7 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
             type: 'default-handle',
           });
         } else {
-          // ✅ FIX: Specific handle - normal logic
+          // Specific handle - normal logic
           const uniqueChoiceId = `choice-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
           const newEdge: EditorEdge = {
@@ -615,7 +613,7 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
           });
         }
 
-        // ✅ FIX: Forced re-render with longer delay
+        // Forced re-render with longer delay
         setTimeout(() => {
           setEdges((currentEdges) => {
             console.log('🔄 Force re-render edges:', currentEdges.length);
@@ -646,7 +644,7 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
       });
     }, []);
 
-    // 🔧 FIX: Create new node with validation - Strict types
+    // Create new node with validation - Strict types
     const createNode = useCallback(
       (
         type: 'start' | 'story' | 'end',
@@ -713,7 +711,6 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
           dragHandle: '.drag-handle',
         };
 
-        // 🔍 DEBUG: Add these logs
         console.log('🔍 Creating node:', {
           type: type,
           reactFlowType: newNode.type,
@@ -727,18 +724,32 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
       [setNodes, nodes, isProjectInitialized]
     );
 
+    // Enhanced project creation with better naming
     const handleCreateNewProject = useCallback(
       (projectName: string, description: string) => {
+        // Clean and validate project name
+        const cleanName = projectName
+          .trim()
+          .replace(/[^a-zA-Z0-9\s\-_]/g, '')
+          .substring(0, 50);
+
+        if (!cleanName) {
+          showNotification('Invalid project name!', 'error');
+          return;
+        }
+
         const newProject: StoryProject = {
-          id: `project-${Date.now()}`,
-          name: projectName,
-          description: description,
+          id: `asylum-project-${cleanName.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`,
+          name: cleanName,
+          description: description.trim().substring(0, 200),
           nodes: [],
           edges: [],
           metadata: {
             createdAt: new Date(),
             updatedAt: new Date(),
             version: '1.0.0',
+            author: 'User',
+            aiGenerated: false,
           },
         };
 
@@ -746,19 +757,37 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
         setNodes([]);
         setEdges([]);
         setSelectedNode(null);
-        setSelectedNodeId(null); // 🆕 NEW: Reset AI selection
+        setSelectedNodeId(null);
         setIsNodeEditorOpen(false);
         setShowInitModal(false);
         setIsProjectInitialized(true);
 
-        console.log('✅ New project created:', projectName);
+        console.log('✅ New project created:', {
+          name: cleanName,
+          id: newProject.id
+        });
 
+        showNotification(`📝 Project "${cleanName}" created!`, 'success');
+
+        // Auto-save new project
         setTimeout(() => {
-          // Force immediate state update before creating node
-          setIsProjectInitialized(true);
-        }, 50);
+          try {
+            const serializedProject = {
+              ...newProject,
+              metadata: {
+                ...newProject.metadata,
+                createdAt: newProject.metadata.createdAt.toISOString(),
+                updatedAt: newProject.metadata.updatedAt.toISOString(),
+              },
+            };
+            localStorage.setItem(newProject.id, JSON.stringify(serializedProject));
+            console.log('💾 New project auto-saved');
+          } catch (error) {
+            console.warn('⚠️ New project auto-save error:', error);
+          }
+        }, 1000);
       },
-      [createNode, setNodes, setEdges]
+      [setNodes, setEdges, showNotification]
     );
 
     const handleLoadExistingProject = useCallback(() => {
@@ -770,7 +799,7 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
       setShowLoadModal(true);
     }, []);
 
-    // 🔧 FIX: Delete node with edge and choice cleanup - Strict types
+    // Delete node with edge and choice cleanup - Strict types
     const deleteNode = useCallback(
       (nodeId: string): void => {
         // Check if it's the last start node
@@ -821,7 +850,7 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
           }
         });
 
-        // 🆕 NEW: Clear AI selection if deleted node was selected
+        // Clear AI selection if deleted node was selected
         if (selectedNodeId === nodeId) {
           setSelectedNodeId(null);
         }
@@ -839,7 +868,7 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
       (node: EditorNode): EditorNode => {
         const nodeId = `node-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-        // 🔧 FIX: Don't duplicate start nodes
+        // Don't duplicate start nodes
         if (node.data.nodeType === 'start') {
           alert('❌ Cannot duplicate start node!');
           return node;
@@ -858,7 +887,7 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
               ...node.data.storyNode,
               id: nodeId,
               title: `${node.data.storyNode.title} (copy)`,
-              choices: [], // 🔧 FIX: Reset choices to avoid conflicts
+              choices: [], // Reset choices to avoid conflicts
             },
           },
         };
@@ -875,7 +904,7 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
         // Safe type assertion for EditorNode
         const editorNode = node as EditorNode;
         setSelectedNode(editorNode);
-        setSelectedNodeId(editorNode.id); // 🆕 NEW: Track node selection for AI
+        setSelectedNodeId(editorNode.id); // Track node selection for AI
       },
       []
     );
@@ -885,13 +914,13 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
         // Safe type assertion for EditorNode
         const editorNode = node as EditorNode;
         setSelectedNode(editorNode);
-        setSelectedNodeId(editorNode.id); // 🆕 NEW: Track node selection for AI
+        setSelectedNodeId(editorNode.id); // Track node selection for AI
         setIsNodeEditorOpen(true);
       },
       []
     );
 
-    // 🆕 NEW: Handle pane click to deselect nodes
+    // Handle pane click to deselect nodes
     const onPaneClick = useCallback(() => {
       setSelectedNodeId(null);
     }, []);
@@ -961,7 +990,7 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
       [selectedNode, setNodes, setEdges]
     );
 
-    // 🆕 NEW: AI Generation handlers
+    // AI Generation handlers
     const handleAIGenerate = useCallback(() => {
       if (!selectedNodeId) {
         showNotification('Please select a node first', 'error');
@@ -974,6 +1003,7 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
       setIsBulkGeneratorOpen(true);
     }, []);
 
+    // Enhanced bulk story application with better positioning
     const handleApplyBulkStory = useCallback((storyStructure: any) => {
       try {
         // Clear existing nodes and edges
@@ -981,33 +1011,46 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
         setEdges([]);
         setSelectedNodeId(null);
 
-        // Convert generated story structure to editor format
-        const editorNodes = storyStructure.nodes.map((node: any) => ({
-          id: node.id,
-          type: node.type === 'start' ? 'startNode' : 
-                node.type === 'end' ? 'endNode' : 'storyNode',
-          position: node.position,
-          data: {
-            storyNode: {
-              id: node.id,
-              title: node.title,
-              content: node.content,
-              choices: node.choices,
-              multimedia: {},
-              metadata: {
-                tags: [],
-                visitCount: 0,
-                difficulty: 'medium',
-              },
-            },
-            nodeType: node.type,
-            isStartNode: node.type === 'start',
-            isEndNode: node.type === 'end',
-          },
-          dragHandle: '.drag-handle',
-        }));
+        console.log('🎯 Applying generated story:', {
+          title: storyStructure.metadata.title,
+          nodes: storyStructure.nodes.length,
+          theme: storyStructure.metadata.theme
+        });
 
-        // Generate edges from choices
+        // Convert generated story structure to editor format with improved spacing
+        const editorNodes = storyStructure.nodes.map((node: any) => {
+          console.log(`📍 Node positioned: ${node.title} at (${node.position.x}, ${node.position.y})`);
+          
+          return {
+            id: node.id,
+            type: node.type === 'start' ? 'startNode' : 
+                  node.type === 'end' ? 'endNode' : 'storyNode',
+            position: {
+              x: node.position.x,
+              y: node.position.y
+            },
+            data: {
+              storyNode: {
+                id: node.id,
+                title: node.title,
+                content: node.content,
+                choices: node.choices,
+                multimedia: {},
+                metadata: {
+                  tags: [],
+                  visitCount: 0,
+                  difficulty: 'medium' as const,
+                },
+              },
+              nodeType: node.type,
+              isStartNode: node.type === 'start',
+              isEndNode: node.type === 'end',
+            },
+            dragHandle: '.drag-handle',
+          };
+        });
+
+        // Generate edges from choices with better organization
         const editorEdges: EditorEdge[] = [];
         editorNodes.forEach((node: any) => {
           node.data.storyNode.choices.forEach((choice: any) => {
@@ -1026,36 +1069,116 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
           });
         });
 
-        // Update project metadata
-        if (currentProject) {
-          const updatedProject = {
-            ...currentProject,
-            name: storyStructure.metadata.title,
-            description: storyStructure.metadata.description,
-            nodes: editorNodes,
-            edges: editorEdges,
-            metadata: {
-              ...currentProject.metadata,
-              updatedAt: new Date(),
-            },
-          };
-          setCurrentProject(updatedProject);
-        }
+        // Better project name management
+        const generatedTitle = storyStructure.metadata.title || 'Generated Story';
+        const cleanTitle = generatedTitle
+          .replace(/[^a-zA-Z0-9\s\-_]/g, '') // Remove special characters
+          .trim()
+          .substring(0, 50); // Limit length
 
-        // Apply to editor
+        // Create or update project with preserved name
+        const updatedProject: StoryProject = {
+          id: currentProject?.id || `project-generated-${Date.now()}`,
+          name: cleanTitle, // Use the AI-generated title
+          description: storyStructure.metadata.description || `AI-generated ${storyStructure.metadata.genre} story - ${storyStructure.metadata.theme}`,
+          nodes: editorNodes,
+          edges: editorEdges,
+          metadata: {
+            createdAt: currentProject?.metadata.createdAt || new Date(),
+            updatedAt: new Date(),
+            version: currentProject?.metadata.version || '1.0.0',
+            author: currentProject?.metadata.author || 'AI Generator',
+            // ADD: Preserve AI generation metadata
+            aiGenerated: true,
+            originalTheme: storyStructure.metadata.theme,
+            genre: storyStructure.metadata.genre,
+            estimatedPlayTime: storyStructure.metadata.estimatedPlayTime,
+          },
+        };
+
+        setCurrentProject(updatedProject);
         setNodes(editorNodes);
         setEdges(editorEdges);
 
-        showNotification(`✨ Generated "${storyStructure.metadata.title}" with ${storyStructure.metadata.totalNodes} nodes!`, 'success');
+        // Auto-save with better naming
+        try {
+          const serializedProject = {
+            ...updatedProject,
+            metadata: {
+              ...updatedProject.metadata,
+              createdAt: updatedProject.metadata.createdAt.toISOString(),
+              updatedAt: updatedProject.metadata.updatedAt.toISOString(),
+            },
+          };
+
+          // Save with descriptive name
+          const saveKey = `asylum-project-${cleanTitle.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`;
+          localStorage.setItem(saveKey, JSON.stringify(serializedProject));
+          
+          console.log('💾 Project auto-saved:', {
+            key: saveKey,
+            name: cleanTitle,
+            nodes: editorNodes.length
+          });
+
+        } catch (saveError) {
+          console.warn('⚠️ Auto-save error:', saveError);
+        }
+
+        showNotification(`✨ "${cleanTitle}" generated with ${storyStructure.metadata.totalNodes} nodes!`, 'success');
         
-        // Auto-save after generation
-        setTimeout(() => autoSave(), 1000);
+        // Force layout refresh to ensure proper positioning
+        setTimeout(() => {
+          console.log('🔄 Refreshing layout...');
+          setNodes(currentNodes => [...currentNodes]);
+          setEdges(currentEdges => [...currentEdges]);
+        }, 500);
 
       } catch (error) {
-        console.error('Error applying bulk story:', error);
+        console.error('❌ Error applying bulk story:', error);
         showNotification('Error applying generated story', 'error');
       }
-    }, [setNodes, setEdges, currentProject, showNotification, autoSave]);
+    }, [setNodes, setEdges, currentProject, showNotification]);
+
+    // Function to clean up old auto-saves to prevent localStorage bloat
+    const cleanupOldAutoSaves = useCallback(() => {
+      try {
+        const keysToRemove: string[] = [];
+        const maxAutoSaves = 5; // Keep only 5 most recent auto-saves
+        
+        // Find all auto-save keys
+        const autoSaveKeys: Array<{key: string, timestamp: number}> = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && key.startsWith('asylum-project-') && key.includes('auto')) {
+            const match = key.match(/(\d+)$/);
+            const timestamp = match ? parseInt(match[1]) : 0;
+            autoSaveKeys.push({ key, timestamp });
+          }
+        }
+        
+        // Sort by timestamp and remove old ones
+        autoSaveKeys.sort((a, b) => b.timestamp - a.timestamp);
+        if (autoSaveKeys.length > maxAutoSaves) {
+          const oldKeys = autoSaveKeys.slice(maxAutoSaves);
+          oldKeys.forEach(({ key }) => {
+            localStorage.removeItem(key);
+            keysToRemove.push(key);
+          });
+        }
+        
+        if (keysToRemove.length > 0) {
+          console.log('🧹 Cleaned up old auto-saves:', keysToRemove.length);
+        }
+      } catch (error) {
+        console.warn('⚠️ Auto-save cleanup error:', error);
+      }
+    }, []);
+
+    // Run cleanup on component mount
+    React.useEffect(() => {
+      cleanupOldAutoSaves();
+    }, [cleanupOldAutoSaves]);
 
     const handleApplyAIContent = useCallback((generatedContent: string) => {
       if (!selectedNodeId) return;
@@ -1092,7 +1215,7 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
       setShowInitModal(true);
     }, []);
 
-    // Save project - Strict types
+    // Enhanced save project function with better naming
     const saveProject = useCallback((): void => {
       if (!currentProject) {
         showNotification('No project to save!', 'error');
@@ -1112,10 +1235,17 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
 
         setCurrentProject(updatedProject);
 
-        // ✅ ADD: Save to localStorage with unique ID
-        const projectId = currentProject.id.startsWith('asylum-project-')
+        // Better save key generation
+        const cleanName = currentProject.name
+          .replace(/[^a-zA-Z0-9\s\-_]/g, '')
+          .trim()
+          .substring(0, 30)
+          .toLowerCase()
+          .replace(/\s+/g, '-');
+
+        const saveKey = currentProject.id.startsWith('asylum-project-')
           ? currentProject.id
-          : `asylum-project-${currentProject.id}`;
+          : `asylum-project-${cleanName}-${Date.now()}`;
 
         const serializedProject = {
           ...updatedProject,
@@ -1126,21 +1256,21 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
           },
         };
 
-        localStorage.setItem(projectId, JSON.stringify(serializedProject));
+        localStorage.setItem(saveKey, JSON.stringify(serializedProject));
 
         if (onSave) {
           onSave(updatedProject);
         }
 
-        // ✅ ADD: Show success notification
-        showNotification(
-          `✅ Project "${updatedProject.name}" saved!`,
-          'success'
-        );
+        showNotification(`✅ Project "${updatedProject.name}" saved!`, 'success');
 
-        if (process.env.NODE_ENV === 'development') {
-          console.log('💾 Project saved:', updatedProject.name);
-        }
+        console.log('💾 Project saved:', {
+          name: updatedProject.name,
+          key: saveKey,
+          nodes: nodes.length,
+          edges: edges.length
+        });
+
       } catch (error) {
         console.error('❌ Save error:', error);
         showNotification('Error during save', 'error');
@@ -1293,7 +1423,7 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
           setNodes(project.nodes || []);
           setEdges(project.edges || []);
           setSelectedNode(null);
-          setSelectedNodeId(null); // 🆕 NEW: Reset AI selection
+          setSelectedNodeId(null); // Reset AI selection
           setIsNodeEditorOpen(false);
           setIsProjectInitialized(true);
 
@@ -1307,7 +1437,7 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
       [setNodes, setEdges, showNotification]
     );
 
-    // 🔧 FIX: NEW CORRECTED TEST FUNCTION with dynamicStoryManager
+    // NEW CORRECTED TEST FUNCTION with dynamicStoryManager
     const testStory = useCallback((): void => {
       try {
         if (nodes.length === 0) {
@@ -1362,7 +1492,7 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
           }
         }
 
-        // 🔧 FIX: Create a temporary story in the dynamic manager for testing
+        // Create a temporary story in the dynamic manager for testing
         const createTestStory = async () => {
           try {
             // Create a temporary test story
@@ -1497,7 +1627,7 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
       setNodes(layoutedNodes);
     }, [nodes, edges, setNodes]);
 
-    // 🔧 FIX: Request notification permission with verification
+    // Request notification permission with verification
     React.useEffect(() => {
       if (
         typeof window !== 'undefined' &&
@@ -1521,7 +1651,7 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
 
     return (
       <div className="flex h-screen flex-col bg-gray-900">
-        {/* Toolbar - 🆕 NEW: Added AI generation props */}
+        {/* Toolbar - Added AI generation props */}
         <EditorToolbar
           onCreateNode={createNode}
           onNewProject={createNewProject}
@@ -1530,12 +1660,12 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
           onExportProject={handleExportProject}
           onAutoArrange={autoArrange}
           onTestStory={testStory}
-          onAIGenerate={handleAIGenerate} // 🆕 NEW: AI generation handler
-          onBulkGenerate={handleBulkGenerate} // 🆕 NEW: Bulk generation handler
+          onAIGenerate={handleAIGenerate} // AI generation handler
+          onBulkGenerate={handleBulkGenerate} // Bulk generation handler
           currentProject={currentProject}
           nodes={memoizedNodes}
           edges={memoizedEdges}
-          hasSelectedNode={selectedNodeId !== null} // 🆕 NEW: Pass selection state
+          hasSelectedNode={selectedNodeId !== null} // Pass selection state
         />
 
         {/* Main Editor */}
@@ -1550,7 +1680,7 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
               onConnect={onConnect}
               onNodeClick={onNodeClick}
               onNodeDoubleClick={onNodeDoubleClick}
-              onPaneClick={onPaneClick} // 🆕 NEW: Handle pane click for deselection
+              onPaneClick={onPaneClick} // Handle pane click for deselection
               nodeTypes={nodeTypes}
               defaultEdgeOptions={defaultEdgeOptions}
               fitView
@@ -1560,7 +1690,7 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
               deleteKeyCode={['Delete', 'Backspace']}
               connectionLineStyle={{ stroke: '#e94560', strokeWidth: 3 }}
               connectionLineType={ConnectionLineType.SmoothStep}
-              // 🔧 FIX: Add properties to improve UX
+              // Add properties to improve UX
               connectionRadius={20}
               snapToGrid={true}
               snapGrid={[15, 15]}
@@ -1595,7 +1725,7 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
                       End:{' '}
                       {nodes.filter((n) => n.data.nodeType === 'end').length}
                     </div>
-                    {/* 🆕 NEW: Show AI selection status */}
+                    {/* Show AI selection status */}
                     {selectedNodeForAI && (
                       <div className="mt-2 border-t border-gray-600 pt-2">
                         <div className="font-medium text-green-400">
@@ -1626,7 +1756,7 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
                 </div>
               </Panel>
 
-              {/* 🔧 FIX: Help panel for keyboard shortcuts */}
+              {/* Help panel for keyboard shortcuts */}
               <Panel
                 position="bottom-right"
                 className="max-w-sm rounded-lg bg-gray-800 p-3 text-xs text-white"
@@ -1638,7 +1768,7 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
                   <div>• Drag: Move nodes</div>
                   <div>• Ctrl+S: Save</div>
                   <div>• Escape: Close editor</div>
-                  <div>• Click node + AI: Generate content</div> {/* 🆕 NEW */}
+                  <div>• Click node + AI: Generate content</div>
                 </div>
               </Panel>
             </ReactFlow>
@@ -1656,7 +1786,7 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
           )}
         </div>
 
-        {/* ✅ ADD: Project loading modal */}
+        {/* Project loading modal */}
         <LoadProjectModal
           isOpen={showLoadModal}
           onClose={() => setShowLoadModal(false)}
@@ -1682,7 +1812,7 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
           onCancel={handleChoiceCancel}
         />
 
-        {/* 🆕 NEW: AI Generation Modal */}
+        {/* AI Generation Modal */}
         <AIGenerationModal
           isOpen={isAIModalOpen}
           onClose={() => setIsAIModalOpen(false)}
@@ -1691,14 +1821,14 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
           selectedNodeType={selectedNodeForAI?.data?.nodeType || null}
         />
 
-        {/* 🆕 NEW: Bulk Story Generator Modal */}
+        {/* Bulk Story Generator Modal */}
         <BulkStoryGeneratorModal
           isOpen={isBulkGeneratorOpen}
           onClose={() => setIsBulkGeneratorOpen(false)}
           onGenerate={handleApplyBulkStory}
         />
 
-        {/* ✅ ADD: Save notification */}
+        {/* Save notification */}
         <SaveNotification
           isVisible={notification.isVisible}
           message={notification.message}
@@ -1706,7 +1836,7 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
           onClose={hideNotification}
         />
 
-        {/* 🔧 FIX: Global keyboard shortcut handling */}
+        {/* Global keyboard shortcut handling */}
         <div
           className="sr-only"
           onKeyDown={(e) => {
@@ -1720,7 +1850,7 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
                   e.preventDefault();
                   createNewProject();
                   break;
-                case 'o': // ✅ ADD: Shortcut to open
+                case 'o': // Shortcut to open
                   e.preventDefault();
                   handleToolbarLoadProject();
                   break;
@@ -1728,11 +1858,11 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
                   e.preventDefault();
                   testStory();
                   break;
-                case 'g': // 🆕 NEW: AI generation shortcut
+                case 'g': // AI generation shortcut
                   e.preventDefault();
                   handleAIGenerate();
                   break;
-                case 'b': // 🆕 NEW: Bulk generation shortcut
+                case 'b': // Bulk generation shortcut
                   e.preventDefault();
                   handleBulkGenerate();
                   break;
@@ -1741,9 +1871,9 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
               }
             } else if (e.key === 'Escape') {
               setIsNodeEditorOpen(false);
-              setShowLoadModal(false); // ✅ ADD: Close load modal
-              setIsAIModalOpen(false); // 🆕 NEW: Close AI modal
-              setIsBulkGeneratorOpen(false); // 🆕 NEW: Close bulk generator modal
+              setShowLoadModal(false); // Close load modal
+              setIsAIModalOpen(false); // Close AI modal
+              setIsBulkGeneratorOpen(false); // Close bulk generator modal
             }
           }}
           tabIndex={-1}
@@ -1755,7 +1885,7 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
 
 StoryEditorContent.displayName = 'StoryEditorContent';
 
-// 🔧 FIX: Main wrapper with error handling
+// Main wrapper with error handling
 export function StoryEditor(props: StoryEditorProps): React.ReactElement {
   return (
     <ReactFlowProvider>
