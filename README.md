@@ -12,6 +12,10 @@ A sophisticated web application combining an immersive story reader with a visua
 
 ---
 
+## 📸 **Demo Preview**
+<!-- docs/img/demo_editor.png display this image-->
+![Demo Editor](docs/img/demo_editor.png)
+
 ## ✨ **Feature Highlights**
 
 ### 🤖 **AI-Powered Story Creation** *(New)*
