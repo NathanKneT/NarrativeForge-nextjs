@@ -3,7 +3,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Sparkles, RefreshCw, AlertCircle, CheckCircle, Clock } from 'lucide-react';
+import { X, Sparkles, RefreshCw, AlertCircle, CheckCircle, Clock, Brain, Layout } from 'lucide-react';
+import { EnhancedAIProgress } from '@/components/ui/AIProgress';
+import { ProfessionalButton } from '@/components/ui/PanelButton';
 
 interface AIGenerationModalProps {
   isOpen: boolean;
@@ -22,10 +24,10 @@ interface GenerationParams {
 
 // Generation stages for better user feedback
 const GENERATION_STAGES = [
-  { id: 'analyzing', label: 'Analyzing your requirements...', duration: 1500 },
-  { id: 'crafting', label: 'AI is crafting your content...', duration: 8000 },
-  { id: 'polishing', label: 'Polishing and formatting...', duration: 1500 },
-  { id: 'finalizing', label: 'Finalizing content...', duration: 1000 },
+  { id: 'analyzing', label: 'Analyzing your requirements...', description: 'Processing theme and parameters', icon: Brain, duration: 1500 },
+  { id: 'crafting', label: 'AI is crafting your content...', description: 'Creating engaging narrative content', icon: Sparkles, duration: 8000 },
+  { id: 'polishing', label: 'Polishing and formatting...', description: 'Applying finishing touches', icon: Layout, duration: 1500 },
+  { id: 'finalizing', label: 'Finalizing content...', description: 'Preparing your content', icon: CheckCircle, duration: 1000 },
 ];
 
 export const AIGenerationModal: React.FC<AIGenerationModalProps> = ({
@@ -202,7 +204,7 @@ export const AIGenerationModal: React.FC<AIGenerationModalProps> = ({
       }
     };
 
-    const nodeType = selectedNodeType || 'story';
+    const nodeType = selectedNodeType === 'start' ? 'start' : 'story';
     const content = samples[nodeType][params.tone] || samples.story.neutral;
     
     return content;
@@ -225,8 +227,6 @@ export const AIGenerationModal: React.FC<AIGenerationModalProps> = ({
   };
 
   if (!isOpen) return null;
-
-  const currentStageInfo = GENERATION_STAGES[currentStage];
 
   return (
     <AnimatePresence>
@@ -297,73 +297,19 @@ export const AIGenerationModal: React.FC<AIGenerationModalProps> = ({
             ) : isGenerating ? (
               /* Enhanced Generation Progress */
               <div className="space-y-6 text-center">
-                {/* Main Progress Indicator */}
-                <div className="relative mx-auto h-20 w-20">
-                  <div className="absolute inset-0 rounded-full border-4 border-green-600/20"></div>
-                  <div 
-                    className="absolute inset-0 rounded-full border-4 border-green-600 border-t-transparent animate-spin"
-                  ></div>
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <Sparkles size={28} className="text-green-400" />
-                  </div>
-                </div>
+                <EnhancedAIProgress
+                  currentStage={currentStage}
+                  stageProgress={stageProgress}
+                  stages={GENERATION_STAGES}
+                  isComplete={!!generatedContent}
+                  generationType="single"
+                />
 
-                {/* Stage Information */}
-                <div>
-                  <h3 className="mb-3 text-lg font-bold text-white">
-                    {generatedContent ? 'Content Generated Successfully!' : 'Creating Your Content...'}
-                  </h3>
-                  
-                  {!generatedContent && (
-                    <>
-                      <p className="mb-4 text-green-300">
-                        {currentStageInfo?.label || 'Processing...'}
-                      </p>
-                      
-                      {/* Stage Progress Bar */}
-                      <div className="mx-auto mb-6 max-w-md">
-                        <div className="mb-2 flex justify-between text-sm text-gray-400">
-                          <span>Stage {currentStage + 1} of {GENERATION_STAGES.length}</span>
-                          <span>{Math.round(stageProgress)}%</span>
-                        </div>
-                        <div className="h-2 rounded-full bg-gray-700">
-                          <div 
-                            className="h-2 rounded-full bg-gradient-to-r from-green-600 to-emerald-600 transition-all duration-300 ease-out"
-                            style={{ width: `${stageProgress}%` }}
-                          />
-                        </div>
-                      </div>
-
-                      {/* Overall Progress */}
-                      <div className="mx-auto max-w-md">
-                        <div className="mb-2 text-sm text-gray-400">Overall Progress</div>
-                        <div className="h-2 rounded-full bg-gray-700">
-                          <div 
-                            className="h-2 rounded-full bg-green-600 transition-all duration-500"
-                            style={{ 
-                              width: `${((currentStage + (stageProgress / 100)) / GENERATION_STAGES.length) * 100}%` 
-                            }}
-                          />
-                        </div>
-                      </div>
-                    </>
-                  )}
-
-                  {generatedContent && (
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-center gap-2 text-green-400">
-                        <CheckCircle size={24} />
-                        <span className="text-lg font-medium">Content Ready!</span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-                
                 {/* Process Information */}
                 {!generatedContent && (
                   <div className="rounded-lg border border-blue-600 bg-blue-900/20 p-4">
                     <div className="flex items-start gap-3">
-                      <Clock size={16} className="mt-0.5 flex-shrink-0 text-blue-400" />
+                      <Clock size={20} className="mt-0.5 flex-shrink-0 text-blue-400" />
                       <div className="text-sm text-blue-200">
                         <div className="mb-2 font-medium">AI is working on your content:</div>
                         <ul className="space-y-1 text-left text-blue-300">
@@ -495,14 +441,15 @@ export const AIGenerationModal: React.FC<AIGenerationModalProps> = ({
                       <h3 className="font-medium text-green-400">
                         Generated Content
                       </h3>
-                      <button
+                      <ProfessionalButton
+                        variant="secondary"
+                        size="sm"
+                        icon={RefreshCw}
                         onClick={handleRegenerateContent}
-                        disabled={isGenerating}
-                        className="flex items-center gap-1 rounded bg-green-600 px-2 py-1 text-xs text-white transition-colors hover:bg-green-700 disabled:bg-gray-600"
+                        loading={isGenerating}
                       >
-                        <RefreshCw size={12} />
                         Regenerate
-                      </button>
+                      </ProfessionalButton>
                     </div>
                     <div
                       className="prose prose-invert prose-sm max-w-none text-gray-300"
@@ -524,29 +471,32 @@ export const AIGenerationModal: React.FC<AIGenerationModalProps> = ({
                     : 'Configure parameters and generate content'}
                 </div>
                 <div className="flex gap-3">
-                  <button
+                  <ProfessionalButton
+                    variant="secondary"
+                    size="md"
                     onClick={onClose}
-                    className="rounded-lg bg-gray-600 px-4 py-2 text-white transition-colors hover:bg-gray-700"
                   >
                     Cancel
-                  </button>
+                  </ProfessionalButton>
                   {generatedContent ? (
-                    <button
+                    <ProfessionalButton
+                      variant="success"
+                      size="md"
+                      icon={Sparkles}
                       onClick={handleUseGenerated}
-                      className="flex items-center gap-2 rounded-lg bg-green-600 px-6 py-2 text-white transition-colors hover:bg-green-700"
                     >
-                      <Sparkles size={16} />
                       Use This Content
-                    </button>
+                    </ProfessionalButton>
                   ) : (
-                    <button
+                    <ProfessionalButton
+                      variant="primary"
+                      size="md"
+                      icon={Sparkles}
                       onClick={handleGenerate}
                       disabled={!params.theme.trim()}
-                      className="flex items-center gap-2 rounded-lg bg-green-600 px-6 py-2 text-white transition-colors hover:bg-green-700 disabled:bg-gray-600"
                     >
-                      <Sparkles size={16} />
                       Generate Content
-                    </button>
+                    </ProfessionalButton>
                   )}
                 </div>
               </div>
@@ -556,4 +506,4 @@ export const AIGenerationModal: React.FC<AIGenerationModalProps> = ({
       </motion.div>
     </AnimatePresence>
   );
-}
+};

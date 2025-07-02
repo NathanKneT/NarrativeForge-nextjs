@@ -1680,7 +1680,7 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
               onConnect={onConnect}
               onNodeClick={onNodeClick}
               onNodeDoubleClick={onNodeDoubleClick}
-              onPaneClick={onPaneClick} // Handle pane click for deselection
+              onPaneClick={onPaneClick}
               nodeTypes={nodeTypes}
               defaultEdgeOptions={defaultEdgeOptions}
               fitView
@@ -1690,7 +1690,6 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
               deleteKeyCode={['Delete', 'Backspace']}
               connectionLineStyle={{ stroke: '#e94560', strokeWidth: 3 }}
               connectionLineType={ConnectionLineType.SmoothStep}
-              // Add properties to improve UX
               connectionRadius={20}
               snapToGrid={true}
               snapGrid={[15, 15]}
@@ -1871,9 +1870,9 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
               }
             } else if (e.key === 'Escape') {
               setIsNodeEditorOpen(false);
-              setShowLoadModal(false); // Close load modal
-              setIsAIModalOpen(false); // Close AI modal
-              setIsBulkGeneratorOpen(false); // Close bulk generator modal
+              setShowLoadModal(false); 
+              setIsAIModalOpen(false);
+              setIsBulkGeneratorOpen(false);
             }
           }}
           tabIndex={-1}
@@ -1885,7 +1884,6 @@ const StoryEditorContent = forwardRef<StoryEditorRef, StoryEditorProps>(
 
 StoryEditorContent.displayName = 'StoryEditorContent';
 
-// Main wrapper with error handling
 export function StoryEditor(props: StoryEditorProps): React.ReactElement {
   return (
     <ReactFlowProvider>

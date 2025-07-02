@@ -37,7 +37,6 @@ export const SaveLoadModal: React.FC<SaveLoadModalProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Charger les sauvegardes
   useEffect(() => {
     if (isOpen) {
       loadSaves();
@@ -65,7 +64,7 @@ export const SaveLoadModal: React.FC<SaveLoadModalProps> = ({
     try {
       await onSave(newSaveName);
       setNewSaveName('');
-      loadSaves(); // Recharger la liste
+      loadSaves();
       setError(null);
     } catch (error) {
       setError('Erreur lors de la sauvegarde');
@@ -139,7 +138,6 @@ export const SaveLoadModal: React.FC<SaveLoadModalProps> = ({
     };
     reader.readAsText(file);
 
-    // Reset input
     event.target.value = '';
   };
 

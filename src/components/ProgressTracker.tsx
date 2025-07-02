@@ -1,4 +1,3 @@
-// src/components/ProgressTracker.tsx
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -24,7 +23,6 @@ export const ProgressTracker: React.FC<ProgressTrackerProps> = ({
   }, []);
 
   if (!isClient) {
-    // Simplified version for SSR
     return (
       <div className="mb-6 rounded-lg bg-gray-700 p-4">
         <div className="mb-2 flex items-center justify-between">

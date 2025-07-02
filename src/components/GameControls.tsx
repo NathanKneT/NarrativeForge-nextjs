@@ -1,4 +1,3 @@
-// src/components/GameControls.tsx
 'use client';
 
 import React from 'react';

@@ -1,4 +1,3 @@
-// src/app/page.tsx - Fixed for SSR and async loading
 'use client';
 import dynamic from 'next/dynamic';
 import { useState, useEffect } from 'react';
@@ -8,6 +7,7 @@ import {
   Download, Trash2, Edit, Eye, Settings 
 } from 'lucide-react';
 import { dynamicStoryManager, StoryListItem } from '@/lib/dynamicStoryManager';
+import { ProfessionalButton } from '@/components/ui/PanelButton';
 
 const ClientOnlyGame = dynamic(
   () => import('@/components/ClientOnlyGame').then((mod) => ({
@@ -37,7 +37,7 @@ export default function HomePage() {
     if (typeof window !== 'undefined') {
       loadStories();
       
-      // 🔧 FIX: Check for test story parameter
+      // Check for test story parameter
       const urlParams = new URLSearchParams(window.location.search);
       const testStoryId = urlParams.get('testStory');
       
@@ -227,37 +227,41 @@ export default function HomePage() {
       </header>
 
       <div className="container mx-auto px-4 py-12">
-        {/* Action Buttons */}
+        {/* Action Buttons - REMPLACÉ PAR PROFESSIONALBUTTON */}
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
           className="mb-12 flex flex-wrap justify-center gap-4"
         >
-          <button
+          <ProfessionalButton
+            variant="primary"
+            size="lg"
+            icon={Plus}
             onClick={handleCreateStory}
-            className="flex items-center gap-3 rounded-lg bg-gradient-to-r from-purple-600 to-blue-600 px-8 py-4 text-white font-medium transition-all hover:from-purple-700 hover:to-blue-700 hover:scale-105 shadow-lg"
+            className="shadow-2xl"
           >
-            <Plus size={24} />
             Create New Story
-          </button>
+          </ProfessionalButton>
           
-          <button
+          <ProfessionalButton
+            variant="success"
+            size="lg"
+            icon={Upload}
+            loading={isImporting}
             onClick={handleImportStory}
-            disabled={isImporting}
-            className="flex items-center gap-3 rounded-lg bg-green-600 px-8 py-4 text-white font-medium transition-all hover:bg-green-700 hover:scale-105 shadow-lg disabled:opacity-50"
           >
-            <Upload size={24} />
             {isImporting ? 'Importing...' : 'Import Story'}
-          </button>
+          </ProfessionalButton>
 
-          <button
+          <ProfessionalButton
+            variant="secondary"
+            size="lg"
+            icon={Settings}
             onClick={() => setShowManagement(!showManagement)}
-            className="flex items-center gap-3 rounded-lg bg-gray-700 px-8 py-4 text-white font-medium transition-all hover:bg-gray-600 hover:scale-105 shadow-lg"
           >
-            <Settings size={24} />
             Manage Stories
-          </button>
+          </ProfessionalButton>
         </motion.div>
 
         {/* Story Management Panel */}
@@ -291,34 +295,37 @@ export default function HomePage() {
                       </div>
                     </div>
                     
+                    {/* BOUTONS MANAGEMENT - REMPLACÉ PAR PROFESSIONALBUTTON */}
                     <div className="flex items-center gap-2">
-                      <button
+                      <ProfessionalButton
+                        variant={story.published ? "secondary" : "success"}
+                        size="sm"
+                        icon={Eye}
                         onClick={() => handleTogglePublication(story.id)}
-                        className={`rounded px-3 py-1 text-xs font-medium transition-colors ${
-                          story.published 
-                            ? 'bg-yellow-600 hover:bg-yellow-700 text-white' 
-                            : 'bg-green-600 hover:bg-green-700 text-white'
-                        }`}
                         title={story.published ? 'Unpublish' : 'Publish'}
                       >
-                        <Eye size={14} />
-                      </button>
+                        {story.published ? 'Unpublish' : 'Publish'}
+                      </ProfessionalButton>
                       
-                      <button
+                      <ProfessionalButton
+                        variant="secondary"
+                        size="sm"
+                        icon={Download}
                         onClick={() => handleExportStory(story.id, story.title)}
-                        className="rounded bg-blue-600 px-3 py-1 text-white transition-colors hover:bg-blue-700"
                         title="Export"
                       >
-                        <Download size={14} />
-                      </button>
+                        Export
+                      </ProfessionalButton>
                       
-                      <button
+                      <ProfessionalButton
+                        variant="danger"
+                        size="sm"
+                        icon={Trash2}
                         onClick={() => handleDeleteStory(story.id, story.title)}
-                        className="rounded bg-red-600 px-3 py-1 text-white transition-colors hover:bg-red-700"
                         title="Delete"
                       >
-                        <Trash2 size={14} />
-                      </button>
+                        Delete
+                      </ProfessionalButton>
                     </div>
                   </div>
                 ))}
@@ -426,21 +433,17 @@ export default function HomePage() {
                     </span>
                   </div>
 
-                  {/* Play Button */}
-                  <button
+                  {/* PLAY BUTTON - REMPLACÉ PAR PROFESSIONALBUTTON */}
+                  <ProfessionalButton
+                    variant="primary"
+                    size="md"
+                    icon={Play}
+                    loading={isLoading}
                     onClick={() => handlePlayStory(story)}
-                    disabled={isLoading}
-                    className="flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 py-3 font-medium text-white transition-all hover:from-blue-700 hover:to-purple-700 disabled:opacity-50"
+                    className="w-full"
                   >
-                    {isLoading ? (
-                      <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
-                    ) : (
-                      <>
-                        <Play size={18} />
-                        Play Story
-                      </>
-                    )}
-                  </button>
+                    {isLoading ? 'Loading...' : 'Play Story'}
+                  </ProfessionalButton>
                 </motion.div>
               ))}
             </div>
@@ -464,21 +467,24 @@ export default function HomePage() {
               <p className="mb-8 text-gray-400 max-w-md mx-auto">
                 Get started by creating your first interactive story or importing an existing one.
               </p>
+              {/* NO STORIES BUTTONS - REMPLACÉ PAR PROFESSIONALBUTTON */}
               <div className="flex justify-center gap-4">
-                <button
+                <ProfessionalButton
+                  variant="primary"
+                  size="lg"
+                  icon={Plus}
                   onClick={handleCreateStory}
-                  className="flex items-center gap-2 rounded-lg bg-purple-600 px-6 py-3 text-white font-medium transition-all hover:bg-purple-700"
                 >
-                  <Plus size={20} />
                   Create First Story
-                </button>
-                <button
+                </ProfessionalButton>
+                <ProfessionalButton
+                  variant="success"
+                  size="lg"
+                  icon={Upload}
                   onClick={handleImportStory}
-                  className="flex items-center gap-2 rounded-lg bg-green-600 px-6 py-3 text-white font-medium transition-all hover:bg-green-700"
                 >
-                  <Upload size={20} />
                   Import Story
-                </button>
+                </ProfessionalButton>
               </div>
             </div>
           ) : (
@@ -513,13 +519,17 @@ export default function HomePage() {
                     By {story.author} • {story.totalNodes} scenes
                   </div>
                   
-                  <button
+                  {/* SMALL PLAY BUTTON - REMPLACÉ PAR PROFESSIONALBUTTON */}
+                  <ProfessionalButton
+                    variant="primary"
+                    size="sm"
+                    icon={Play}
+                    loading={isLoading}
                     onClick={() => handlePlayStory(story)}
-                    disabled={isLoading}
-                    className="w-full rounded bg-blue-600 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
+                    className="w-full"
                   >
                     {isLoading ? 'Loading...' : 'Play'}
-                  </button>
+                  </ProfessionalButton>
                 </motion.div>
               ))}
             </div>
@@ -541,13 +551,16 @@ export default function HomePage() {
                 Use our visual editor to craft branching narratives with an intuitive node-based interface. 
                 No coding required - just drag, connect, and tell your story.
               </p>
-              <button
+              {/* EDITOR BUTTON - REMPLACÉ PAR PROFESSIONALBUTTON */}
+              <ProfessionalButton
+                variant="primary"
+                size="lg"
+                icon={Edit}
                 onClick={handleCreateStory}
-                className="flex items-center gap-2 rounded-lg bg-white px-6 py-3 font-medium text-purple-800 transition-all hover:bg-gray-100"
+                className="bg-white text-purple-800 hover:bg-gray-100"
               >
-                <Edit size={20} />
                 Open Story Editor
-              </button>
+              </ProfessionalButton>
             </div>
 
             {/* Import Stories */}
@@ -558,14 +571,17 @@ export default function HomePage() {
                 Compatible with our export format and many interactive fiction formats.
               </p>
               <div className="flex gap-3">
-                <button
+                {/* IMPORT BUTTON - REMPLACÉ PAR PROFESSIONALBUTTON */}
+                <ProfessionalButton
+                  variant="primary"
+                  size="lg"
+                  icon={Upload}
+                  loading={isImporting}
                   onClick={handleImportStory}
-                  disabled={isImporting}
-                  className="flex items-center gap-2 rounded-lg bg-white px-6 py-3 font-medium text-green-800 transition-all hover:bg-gray-100 disabled:opacity-50"
+                  className="bg-white text-green-800 hover:bg-gray-100"
                 >
-                  <Upload size={20} />
                   {isImporting ? 'Importing...' : 'Import JSON'}
-                </button>
+                </ProfessionalButton>
               </div>
             </div>
           </div>
