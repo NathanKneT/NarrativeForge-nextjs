@@ -5,7 +5,6 @@ import { Handle, Position, type NodeProps } from '@/components/LazyReactFlow'; /
 import { Flag, Trophy, Skull, Heart } from 'lucide-react';
 import { type EditorNode } from '@/types/editor';
 
-// Types stricts pour les props du composant avec compatibilité React Flow v12
 interface EndNodeComponentProps extends NodeProps<EditorNode> {
   // Props additionnelles si nécessaires
 }

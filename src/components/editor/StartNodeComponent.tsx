@@ -5,7 +5,6 @@ import { Handle, Position, type NodeProps } from '@/components/LazyReactFlow';
 import { Play, Star } from 'lucide-react';
 import { type EditorNode } from '@/types/editor';
 
-// Strict types for component props with React Flow v12 compatibility
 interface StartNodeComponentProps extends NodeProps<EditorNode> {
   id: string; // ✅ Ensure access to React Flow node ID
 }

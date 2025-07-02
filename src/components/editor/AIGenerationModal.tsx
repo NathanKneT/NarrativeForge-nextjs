@@ -204,7 +204,7 @@ export const AIGenerationModal: React.FC<AIGenerationModalProps> = ({
       }
     };
 
-    const nodeType = selectedNodeType || 'story';
+    const nodeType = selectedNodeType === 'start' ? 'start' : 'story';
     const content = samples[nodeType][params.tone] || samples.story.neutral;
     
     return content;

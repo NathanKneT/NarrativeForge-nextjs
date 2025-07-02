@@ -4,7 +4,6 @@ import dynamic from 'next/dynamic';
 import { Suspense } from 'react';
 import React from 'react';
 
-// 🔧 FIX: Skeleton amélioré avec le thème de votre app
 const EditorSkeleton = () => (
   <div className="flex h-full w-full items-center justify-center bg-gray-800">
     <div className="text-center">
@@ -17,7 +16,6 @@ const EditorSkeleton = () => (
   </div>
 );
 
-// 🔧 FIX: Lazy loading des composants uniquement (pas les hooks)
 const ReactFlow = dynamic(
   () => import('@xyflow/react').then((mod) => ({ default: mod.ReactFlow })),
   {
@@ -51,8 +49,6 @@ const Handle = dynamic(
   { ssr: false }
 );
 
-// 🔧 FIX: Export des types et hooks directement (pas de chargement dynamique)
-// Les hooks et types doivent être importés statiquement
 export type {
   NodeProps,
   Node,
@@ -66,10 +62,9 @@ export type {
   OnEdgesChange,
 } from '@xyflow/react';
 
-// 🔧 FIX: Export direct des hooks, enums et utilitaires (pas de dynamic)
 export {
   ReactFlowProvider,
-  Position, // ✅ CORRIGÉ: Export direct de Position
+  Position,
   ConnectionMode,
   ConnectionLineType,
   addEdge,
@@ -79,25 +74,20 @@ export {
   applyEdgeChanges,
 } from '@xyflow/react';
 
-// 🔧 NEW: Export PositionEnum comme alias pour compatibilité
 export { Position as PositionEnum } from '@xyflow/react';
 
-// Export lazy pour les composants seulement
 export { ReactFlow, Controls, Background, MiniMap, Panel, Handle };
 
-// 🔧 FIX: Wrapper avec Suspense amélioré
 export const LazyReactFlowEditor = ({ children, ...props }: any) => (
   <Suspense fallback={<EditorSkeleton />}>
     <ReactFlow {...props}>{children}</ReactFlow>
   </Suspense>
 );
 
-// 🔧 FIX: Hook personnalisé pour vérifier si React Flow est prêt
 export const useReactFlowReady = () => {
   const [isReady, setIsReady] = React.useState(false);
 
   React.useEffect(() => {
-    // Vérifier si React Flow est disponible
     import('@xyflow/react')
       .then(() => setIsReady(true))
       .catch((error) => {

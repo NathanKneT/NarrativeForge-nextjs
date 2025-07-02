@@ -20,7 +20,6 @@ export class ErrorBoundary extends Component<Props, State> {
   };
 
   public static getDerivedStateFromError(error: Error): State {
-    // Met à jour l'état pour que le prochain rendu affiche l'UI de fallback
     return {
       hasError: true,
       error,
@@ -36,13 +35,9 @@ export class ErrorBoundary extends Component<Props, State> {
       errorInfo,
     });
 
-    // Appeler le callback d'erreur personnalisé si fourni
     if (this.props.onError) {
       this.props.onError(error, errorInfo);
     }
-
-    // Optionnel: Envoyer l'erreur à un service de monitoring
-    // reportErrorToService(error, errorInfo);
   }
 
   private handleReset = (): void => {
@@ -59,12 +54,10 @@ export class ErrorBoundary extends Component<Props, State> {
 
   public override render(): ReactNode {
     if (this.state.hasError) {
-      // Utiliser le fallback personnalisé s'il est fourni
       if (this.props.fallback) {
         return this.props.fallback;
       }
 
-      // UI de fallback par défaut
       return (
         <div className="flex min-h-screen items-center justify-center bg-gray-900 p-4">
           <div className="w-full max-w-lg rounded-lg bg-gray-800 p-8 text-center">
@@ -132,17 +125,12 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 }
 
-// Hook pour utiliser ErrorBoundary avec des composants fonctionnels
 export function useErrorHandler() {
   return (error: Error, errorInfo?: ErrorInfo) => {
     console.error('Error caught by useErrorHandler:', error, errorInfo);
-
-    // Optionnel: Envoyer à un service de monitoring
-    // reportErrorToService(error, errorInfo);
   };
 }
 
-// HOC pour wrapper automatiquement un composant avec ErrorBoundary
 export function withErrorBoundary<P extends object>(
   WrappedComponent: React.ComponentType<P>,
   fallback?: ReactNode,
