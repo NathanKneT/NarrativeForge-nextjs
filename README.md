@@ -343,6 +343,6 @@ This project is available for technical review and demonstration purposes. Profe
 
 **💡 Demonstrating: Full-Stack • AI Integration • Professional UX/UI • Scalable Architecture**
 
-*Ready for technical interviews • Available for immediate collaboration*
+* Available for immediate collaboration*
 
 </div>
