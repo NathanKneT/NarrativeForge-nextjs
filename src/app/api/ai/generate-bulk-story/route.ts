@@ -1,10 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
 interface BulkGenerationParams {
   theme: string;
   genre: 'fantasy' | 'sci-fi' | 'horror' | 'mystery' | 'romance' | 'adventure' | 'thriller';
@@ -61,6 +57,10 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
+
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
 
     console.log('🤖 Starting bulk story generation with GPT-4.1 Mini:', {
       theme,

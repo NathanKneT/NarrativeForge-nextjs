@@ -29,5 +29,9 @@ export interface StoryProject {
     updatedAt: Date;
     version: string;
     author?: string;
+    aiGenerated?: boolean;
+    originalTheme?: string;
+    genre?: string;
+    estimatedPlayTime?: string;
   };
 }

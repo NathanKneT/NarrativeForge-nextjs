@@ -1,4 +1,4 @@
-import { StoryNode } from '@/types/story';
+import { Choice, StoryNode } from '@/types/story';
 
 export interface StoryMetadata {
   id: string;
@@ -475,7 +475,7 @@ export class DynamicStoryManager {
       
       // If no edges but original choices exist, preserve them
       if (choices.length === 0 && storyNode.choices && storyNode.choices.length > 0) {
-        choices.push(...storyNode.choices.map(choice => ({
+        choices.push(...storyNode.choices.map((choice: Choice) => ({
           ...choice,
           conditions: choice.conditions || [],
           consequences: choice.consequences || [],
