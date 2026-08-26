@@ -1,348 +1,128 @@
-# 🎮 NarrativeForge Interactive Story Platform
+# NarrativeForge
 
-[![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![Next.js](https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)](https://nextjs.org/)
-[![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://reactjs.org/)
-[![OpenAI](https://img.shields.io/badge/OpenAI-412991?style=for-the-badge&logo=openai&logoColor=white)](https://openai.com/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
+NarrativeForge is a prototype for authoring and playing branching interactive
+stories. It combines a visual graph editor with a story reader and optional
+OpenAI-assisted content generation.
 
-> **🚀 Next-Generation Interactive Storytelling Platform** • Professional-grade visual story editor with AI content generation - Demonstrating cutting-edge full-stack development with GenAI integration
+![NarrativeForge visual editor](docs/img/demo_editor.png)
 
-A sophisticated web application combining an immersive story reader with a visual node-based editor enhanced by **AI-powered content generation**. Built with modern React/Next.js technologies, strict TypeScript, and seamless OpenAI integration.
+## What it demonstrates
 
----
+- Modelling branching narratives as typed nodes, edges and choices.
+- Editing Start, Story and End nodes through a React Flow interface.
+- Validating graph connectivity and references before testing or export.
+- Saving projects and reading progress in browser `localStorage`.
+- Importing and exporting browser-local stories as JSON.
+- Implementing export adapters for NarrativeForge JSON, generic JSON and
+  Twine/Twee formats.
+- Generating individual scenes or a draft story graph through server-side
+  OpenAI API routes.
+- Testing React components and story utilities with Jest and Testing Library.
 
-## 📸 **Demo Preview**
-<!-- docs/img/demo_editor.png display this image-->
-![Demo Editor](docs/img/demo_editor.png)
+The repository is a portfolio prototype, not a hosted multi-user service.
+Projects remain in the current browser, and AI generation requires the user to
+provide an OpenAI API key locally.
 
-## ✨ **Feature Highlights**
+## Architecture
 
-### 🤖 **AI-Powered Story Creation** *(New)*
-
-- **🧠 Intelligent Content Generation**: OpenAI GPT-4 integration for creating compelling narrative content
-- **⚡ Bulk Story Generator**: Generate complete interactive stories (8-30 nodes) with intelligent branching
-- **🎯 Contextual AI**: Smart content adaptation based on node type (start/story/end) and narrative tone
-- **📊 Multi-Stage Progress**: Real-time generation progress with detailed status updates (30-60s process)
-- **🎨 Creative Control**: Genre selection, tone adjustment, complexity levels, and thematic guidance
-- **🔄 Iterative Refinement**: Regenerate content with different parameters until perfect
-
-### 📖 **Interactive Story Reader**
-
-- **🎬 Smooth Navigation**: Seamless scene transitions with Framer Motion animations
-- **💾 Advanced Save System**: Persistent localStorage with progress tracking and completion metrics
-- **📱 Responsive Design**: Optimized experience across mobile, tablet, and desktop devices
-- **🎮 Immersive UX**: Intuitive choice-driven gameplay with visual feedback
-
-### 🎨 **Professional Visual Story Editor**
-
-- **🌐 Node-Based Interface**: Powerful React Flow integration for visual story architecture
-- **🎯 Specialized Node Types**: Custom-designed Start, Story, and End nodes with intelligent styling
-- **🔗 Smart Connection System**: Visual choice linking with automatic validation and conflict detection
-- **📝 Rich Content Editor**: Real-time HTML preview with markdown support and content validation
-- **🗂️ Advanced Project Management**: Auto-save, intelligent naming, version control, and cloud-ready architecture
-- **📤 Multi-Format Export**: Professional exports to NarrativeForge JSON, Generic JSON, and Twine (Twee) formats
-- **🧪 Integrated Testing**: One-click story testing with temporary deployment and automatic cleanup
-
-### 🔧 **Enterprise-Grade Technical Architecture**
-
-- **⚡ Strict TypeScript**: 100% type safety and comprehensive interface definitions
-- **🚀 Optimized Performance**: React.memo, optimized hooks, and intelligent re-rendering strategies
-- **📦 Lazy Loading**: Dynamic imports for heavy components with loading states
-- **🛡️ Robust Error Handling**: Comprehensive Error Boundaries with graceful fallbacks
-- **🏗️ Modular Design**: Clear separation of concerns with scalable architecture patterns
-
----
-
-## 🤖 **AI Integration Deep Dive**
-
-### **OpenAI GPT-4 Integration**
-
-```typescript
-// Professional API implementation with error handling
-const generateStoryContent = async (params: GenerationParams) => {
-  const response = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
-    messages: [
-      {
-        role: "system",
-        content: "Expert interactive fiction writer and game designer..."
-      },
-      { role: "user", content: createPrompt(params) }
-    ],
-    max_tokens: Math.ceil(params.length * 1.5),
-    temperature: getTemperatureForTone(params.tone),
-    response_format: { type: "json_object" }, // Structured output
-  });
-};
+```text
+Browser
+├── Story editor
+│   ├── React Flow nodes and edges
+│   ├── graph validation and conversion
+│   └── local project persistence
+├── Story reader
+│   └── saved reading progress
+└── Next.js API routes
+    ├── POST /api/ai/generate-story
+    └── POST /api/ai/generate-bulk-story
+             │
+             └── OpenAI gpt-4o-mini
 ```
 
-### **Intelligent Story Generation Features**
+The editor owns the graph state. `GraphToStoryConverter` validates and converts
+that graph into the format consumed by the reader and export adapters. AI
+requests pass through Next.js route handlers so the API key is not sent to the
+browser.
 
-- **🎭 Genre Intelligence**: Fantasy, Sci-Fi, Horror, Mystery, Romance, Adventure, Thriller
-- **🎨 Tone Adaptation**: Neutral, Dark, Humorous with contextual language modeling
-- **🏗️ Complexity Management**: Simple (linear), Medium (branching), Complex (multi-ending)
-- **📏 Dynamic Length Control**: 100-500 word range with intelligent content scaling
-- **🧠 Context Awareness**: Node-type specific prompting for narrative coherence
+## Technology
 
-### **Advanced AI Features**
+| Area | Implementation |
+| --- | --- |
+| Application | Next.js 14, React 18, TypeScript |
+| Visual editor | React Flow |
+| State | Zustand and React state |
+| Persistence | Browser localStorage |
+| Assisted generation | OpenAI `gpt-4o-mini` through Next.js API routes |
+| Styling and motion | Tailwind CSS, Framer Motion |
+| Testing | Jest, Testing Library, Playwright configuration |
 
-- **🔄 Multi-Stage Generation**: Analyzing → Crafting → Organizing → Positioning → Finalizing
-- **📍 Intelligent Node Positioning**: Automatic layout with 400px horizontal, 250px vertical spacing
-- **🔗 Connection Validation**: Ensures all nodes are reachable and story flow is logical
-- **💡 Content Optimization**: HTML formatting, paragraph structuring, and narrative flow enhancement
+## Run locally
 
----
-
-## 🚀 **Installation & Development**
-
-### **Prerequisites**
+Requirements: Node.js 18.17 or later, npm 9 or later, and an OpenAI API key for
+the assisted-generation features.
 
 ```bash
-node --version    # v18.17.0+
-npm --version     # v9.0.0+
+git clone https://github.com/NathanKneT/NarrativeForge-nextjs.git
+cd NarrativeForge-nextjs
+npm ci
 ```
 
-### **Environment Setup**
+Create `.env.local`:
 
 ```bash
-# Clone and install
-git clone https://github.com/NathanKneT/NarrativeForge-interactive-story-nextjs.git
-cd NarrativeForge-interactive-story-nextjs
-npm install
+OPENAI_API_KEY=your_key_here
+```
 
-# Environment configuration
-cp .env.example .env.local
-# Add your OpenAI API key: OPENAI_API_KEY=sk-...
+Start the development server:
 
-# Development
+```bash
 npm run dev
-# → http://localhost:3000 (story reader)
-# → http://localhost:3000/editor (AI-powered story editor)
-
-# Production deployment
-npm run build && npm run start
 ```
 
-### **Quick Demo**
+Open:
 
-1. **Open Editor**: Navigate to `/editor`
-2. **Create Project**: Click "New" → Enter project details
-3. **AI Generation**: Click "Bulk Generate" → Configure theme, genre, tone
-4. **Watch Magic**: 30-60 second AI generation with real-time progress
-5. **Intelligent Layout**: Nodes automatically positioned with optimal spacing
-6. **Test Story**: One-click testing with temporary deployment
+- `http://localhost:3000/` for the story library and reader.
+- `http://localhost:3000/editor` for the visual editor.
 
----
+The reader and editor work locally. Only AI-assisted generation requires an
+OpenAI API key.
 
-## 🏗️ **Professional Architecture**
-
-### **Project Structure**
-
-```
-src/
-├── app/
-│   ├── api/ai/              # AI Generation API Routes
-│   │   ├── generate-story/     # Single node content generation
-│   │   └── generate-bulk-story/ # Complete story generation
-│   ├── editor/              # Visual Editor Application
-│   └── layout.tsx           # Root layout with metadata
-├── components/
-│   ├── editor/              # Professional Editor Components
-│   │   ├── AIGenerationModal.tsx      # Single node AI generation
-│   │   ├── BulkStoryGeneratorModal.tsx # Complete story generation
-│   │   ├── EditorToolbar.tsx           # Professional toolbar
-│   │   ├── NodeEditor.tsx              # Rich content editor
-│   │   └── StoryNodeComponent.tsx      # Visual node components
-│   ├── ClientOnlyGame.tsx   # Main story reader
-│   └── StoryViewer.tsx      # Scene display component
-├── lib/
-│   ├── graphToStoryConverter.ts   # Editor → Game conversion
-│   ├── dynamicStoryManager.ts     # Story lifecycle management
-│   ├── saveManager.ts             # Persistent storage
-│   └── aiService.ts               # OpenAI integration layer
-├── hooks/
-│   └── useAIService.ts            # AI generation hook
-├── stores/                        # Zustand state management
-├── types/                         # Comprehensive TypeScript definitions
-└── data/                         # Sample story data
-```
-
-### **Technology Stack**
-
-- **🎯 Frontend**: React 18 + TypeScript + Next.js 14 App Router
-- **🤖 AI Integration**: OpenAI GPT-4 API with structured outputs
-- **🗃️ State Management**: Zustand with localStorage persistence
-- **🎨 Styling**: Tailwind CSS + custom design system
-- **📊 Visual Editor**: React Flow with custom node types
-- **✨ Animations**: Framer Motion for smooth transitions
-- **🔍 Validation**: Strict TypeScript + ESLint + comprehensive error handling
-
----
-
-## 📊 **Current Project Status**
-
-### ✅ **Production-Ready Features**
-
-- [x] **🤖 Complete AI Integration**: GPT-4 powered content generation
-- [x] **⚡ Bulk Story Generation**: Full interactive stories in 60 seconds
-- [x] **🎯 Contextual AI**: Smart content based on node type and narrative context
-- [x] **📍 Intelligent Positioning**: Automatic node layout with collision detection
-- [x] **💾 Advanced Project Management**: Smart saving, loading, and auto-cleanup
-- [x] **🧪 Integrated Testing**: One-click story testing with temporary deployment
-- [x] **📤 Professional Export**: Multiple format support with validation
-- [x] **🎨 Visual Editor**: Complete node-based story creation interface
-- [x] **📖 Story Reader**: Immersive gameplay with save/load system
-- [x] **🛡️ Error Handling**: Comprehensive error boundaries and graceful fallbacks
-- [x] **📱 Responsive Design**: Mobile-first design with desktop optimization
-
-### 🔨 **Next-Level Enhancements (In Progress)**
-
-- [ ] **🧪 Comprehensive Testing**: Jest + Playwright test suite (90%+ coverage target)
-- [ ] **📊 Performance Monitoring**: Real-time metrics and optimization
-- [ ] **♿ WCAG Compliance**: Full accessibility audit and improvements
-- [ ] **🚀 PWA Features**: Service worker and offline functionality
-- [ ] **🎨 Advanced Theming**: Customizable visual themes and branding
-
-
-## 🚧 **Roadmap Features**
-
-### **📋 Immediate Enhancements (1-2 weeks)**
-
-- [ ] **🧪 Complete Testing Suite**
-  - Unit tests for all critical components (>90% coverage)
-  - Integration tests for AI generation workflow
-  - E2E tests for complete user journeys
-  - Performance benchmarking and optimization
-
-- [ ] **🔒 Enterprise Security**
-  - API rate limiting and usage monitoring
-  - Input sanitization and validation
-  - Security headers and CSRF protection
-  - OpenAI API key management and rotation
-
-- [ ] **📊 Analytics & Monitoring**
-  - Real-time performance metrics (Web Vitals)
-  - User interaction analytics
-  - AI generation success rates and timing
-  - Error tracking and alerting (Sentry integration)
-
-### **🚀 Advanced Features (2-4 weeks)**
-
-- [ ] **👥 Multi-User Architecture**
-  - User authentication (NextAuth.js)
-  - Project sharing and collaboration
-  - Real-time collaborative editing
-  - Permission-based access control
-
-- [ ] **🗄️ Database Integration**
-  - PostgreSQL with Prisma ORM
-  - Story versioning and history
-  - User profiles and preferences
-  - Performance-optimized queries
-
-- [ ] **☁️ Cloud-Native Features**
-  - AWS S3 integration for media storage
-  - CDN for global performance
-  - Serverless deployment optimization
-  - Auto-scaling and load balancing ready
-
-### **🤖 Advanced AI Features (3-6 weeks)**
-
-- [ ] **🧠 Multi-Modal AI**
-  - DALL-E integration for scene illustrations
-  - Character portrait generation
-  - Voice synthesis for narration (OpenAI TTS)
-  - Dynamic music generation
-
-- [ ] **📈 Intelligent Analytics**
-  - Story engagement prediction
-  - A/B testing for narrative choices
-  - Player behavior analysis
-  - Content optimization recommendations
-
-- [ ] **🌐 Enterprise Integration**
-  - API for third-party integrations
-  - Webhook system for external services
-  - White-label customization
-  - Multi-tenant architecture
-
----
-
-## 🛠️ **Development & Deployment**
-
-### **Available Scripts**
+## Validation
 
 ```bash
-# Development
-npm run dev              # Development server with hot reload
-npm run build           # Optimized production build
-npm run start           # Production server
-
-# Code Quality
-npm run type-check      # Strict TypeScript validation
-npm run lint           # ESLint with custom rules
-npm run lint:fix       # Automatic code formatting
-
-# Testing (Enhanced)
-npm run test           # Jest unit tests
-npm run test:e2e       # Playwright E2E tests
-npm run test:coverage  # Coverage report
-npm run validate       # Complete project validation
-
-# Performance
-npm run analyze        # Bundle size analysis
-npm run lighthouse     # Performance audit
-```
-
-### **Production Deployment**
-
-```bash
-# Environment setup
-export OPENAI_API_KEY="your-api-key"
-export NODE_ENV="production"
-
-# Build and deploy
+npm run type-check
+npm run lint
+npm test
 npm run build
-npm run start
-
-# Or deploy to Vercel
-vercel --prod
 ```
 
----
+The repository contains unit and component tests plus an end-to-end test
+specification. Their presence is not presented as a coverage guarantee.
 
-## 💼 **Professional Contact**
+## Current boundaries
 
-- **👨‍💻 Developer**: [Nathan RIHET](https://github.com/NathanKneT)
-- **📧 Email**: nathan.rihet06@gmail.com
-- **💼 LinkedIn**: [Connect with me](https://linkedin.com/in/nathan-rihet)
-- **🌐 Portfolio**: Coming Soon 
-- **📱 Repository**: [GitHub](https://github.com/NathanKneT/NarrativeForge-interactive-story-nextjs)
+- Persistence is browser-local; there is no shared database or account system.
+- Collaboration, permissions and project sharing are not implemented.
+- AI routes do not currently include production rate limiting or usage quotas.
+- Accessibility and production security still require a dedicated review.
+- No public hosted demo is maintained.
 
----
+These boundaries are intentional in the public description: the project is an
+exploration of visual story modelling and assisted authoring, rather than a
+production SaaS claim.
 
-## 📄 **License & Usage**
+## Possible next steps
 
-MIT License - See [LICENSE](./LICENSE) for details.
+- Add authenticated server-side persistence and project ownership.
+- Add rate limiting, schema validation and usage controls to AI routes.
+- Complete the Playwright workflow for critical editor-to-reader journeys.
+- Run and document an accessibility audit.
+- Add story version history and collaborative editing only after server-side
+  persistence exists.
 
-This project is available for technical review and demonstration purposes. Professional collaboration opportunities welcome.
+## Author
 
----
-
-<div align="center">
-
-**🎯 Professional Portfolio Project - Job Interview Ready**
-
-[![AI Integration](https://img.shields.io/badge/AI-GPT4_Integrated-green?style=for-the-badge&logo=openai)](#)
-[![TypeScript](https://img.shields.io/badge/TypeScript-100%25-blue?style=for-the-badge&logo=typescript)](#)
-[![Production Ready](https://img.shields.io/badge/Production-Ready-success?style=for-the-badge)](#)
-[![Enterprise Grade](https://img.shields.io/badge/Enterprise-Grade-purple?style=for-the-badge)](#)
-
----
-
-**💡 Demonstrating: Full-Stack • AI Integration • Professional UX/UI • Scalable Architecture**
-
-* Available for immediate collaboration*
-
-</div>
+[Nathan Rihet](https://github.com/NathanKneT) ·
+[Portfolio](https://nathanglhf.com/) ·
+[LinkedIn](https://www.linkedin.com/in/nathan-rihet/)
