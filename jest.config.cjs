@@ -33,7 +33,6 @@ const customJestConfig = {
     '<rootDir>/src/__tests__/e2e/',
     // Keep the existing tests that might conflict
     '<rootDir>/src/__tests__/components/gameStore.test.tsx',
-    '<rootDir>/src/__tests__/components/graphToStoryConverter.test.ts',
   ],
   
   // Basic coverage collection

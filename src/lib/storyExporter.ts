@@ -173,6 +173,12 @@ export class StoryExporter {
   ) {
     const conversionResult = GraphToStoryConverter.convert(nodes, edges);
 
+    if (conversionResult.errors.length > 0) {
+      throw new Error(
+        `Erreurs de conversion: ${conversionResult.errors.join(', ')}`
+      );
+    }
+
     const exportData = {
       format: 'generic-interactive-story',
       version: '1.0',
@@ -210,6 +216,12 @@ export class StoryExporter {
     options: ExportOptions
   ) {
     const conversionResult = GraphToStoryConverter.convert(nodes, edges);
+
+    if (conversionResult.errors.length > 0) {
+      throw new Error(
+        `Erreurs de conversion: ${conversionResult.errors.join(', ')}`
+      );
+    }
 
     let tweeContent = '';
 
